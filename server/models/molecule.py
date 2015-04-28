@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.constants import AccessType
 
