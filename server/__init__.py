@@ -67,7 +67,7 @@ class Molecule(Resource):
         Description('Create a molecule')
         .param(
             'body',
-            'The name to give the cluster.',
+            'The molecule to be added to the database.',
             dataType='MoleculeParams',
             required=True, paramType='body'))
 
