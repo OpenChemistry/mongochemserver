@@ -26,8 +26,6 @@ class Molecule(Resource):
 
     @access.public
     def find(self, params):
-        print "Find my molecule!"
-        print params
         return { 'inchi': params.get('inchi', 'No InChI supplied!') }
     find.description = (
             Description('Find a molecule.')
@@ -36,8 +34,6 @@ class Molecule(Resource):
 
     @access.public
     def find_inchi(self, inchi, params):
-        print "Find my InChI!!!"
-        print params
         mol = self._model.find_inchi(inchi)
         if not mol:
             raise RestException('Molecule not found.', code=404)
@@ -50,7 +46,7 @@ class Molecule(Resource):
     
     @access.user
     def create(self, params):
-        body = json.loads(cherrypy.request.body.read())
+        body = self.getBodyJson()
         inchi = body['inchi']
         user = self.getCurrentUser()
         self._model.create(user, inchi)
