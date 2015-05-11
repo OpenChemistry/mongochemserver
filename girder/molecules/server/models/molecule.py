@@ -19,8 +19,18 @@ class Molecule(AccessControlledModel):
         mol = self.findOne(query)
         return mol
 
+    def find_inchikey(self, inchikey):
+        query = { 'inchikey': inchikey }
+        mol = self.findOne(query)
+        return mol
+
     def create(self, user, inchi):
         mol = { 'inchi': inchi }
+        self.setUserAccess(mol, user=user, level=AccessType.ADMIN)
+        self.save(mol)
+        return mol
+
+    def create_xyz(self, user, mol):
         self.setUserAccess(mol, user=user, level=AccessType.ADMIN)
         self.save(mol)
         return mol

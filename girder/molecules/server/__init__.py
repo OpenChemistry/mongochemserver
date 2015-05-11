@@ -13,7 +13,7 @@ class Molecule(Resource):
     def __init__(self):
         self.resourceName = 'molecules'
         self.route('GET', (), self.find)
-        self.route('GET', ('inchi', ':inchi'), self.find_inchi)
+        self.route('GET', ('inchikey', ':inchikey'), self.find_inchikey)
         self.route('POST', (), self.create)
         self.route('DELETE', ('inchi', ':inchi'), self.delete_inchi)
 
@@ -33,14 +33,14 @@ class Molecule(Resource):
             .errorResponse())
 
     @access.public
-    def find_inchi(self, inchi, params):
-        mol = self._model.find_inchi(inchi)
+    def find_inchikey(self, inchikey, params):
+        mol = self._model.find_inchikey(inchikey)
         if not mol:
             raise RestException('Molecule not found.', code=404)
         return self._clean(mol)
-    find_inchi.description = (
-            Description('Find a molecule by inchi.')
-            .param('inchi', 'The InChI of the molecule', paramType='path')
+    find_inchikey.description = (
+            Description('Find a molecule by InChI key.')
+            .param('inchi', 'The InChI key of the molecule', paramType='path')
             .errorResponse()
            .errorResponse('Molecule not found.', 404))
     
@@ -49,7 +49,10 @@ class Molecule(Resource):
         body = self.getBodyJson()
         inchi = body['inchi']
         user = self.getCurrentUser()
-        self._model.create(user, inchi)
+        if 'xyz' in body:
+          self._model.create_xyz(user, body)
+        else:
+          self._model.create(user, inchi)
 
     addModel('MoleculeParams', {
         "id": "MoleculeParams",
