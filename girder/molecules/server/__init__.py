@@ -26,10 +26,11 @@ class Molecule(Resource):
 
     @access.public
     def find(self, params):
-        return { 'inchi': params.get('inchi', 'No InChI supplied!') }
+        return self._model.findmol()
     find.description = (
             Description('Find a molecule.')
-            .param('inchi', 'The InChI of the molecule', paramType='query')
+            .param('inchi', 'The InChI of the molecule', paramType='query',
+                   required=False)
             .errorResponse())
 
     @access.public

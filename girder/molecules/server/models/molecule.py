@@ -14,6 +14,15 @@ class Molecule(AccessControlledModel):
     def validate(self, doc):
         return doc
 
+    def findmol(self):
+        cursor = self.find()
+        mols = list()
+        for mol in cursor:
+            molecule = { 'id': mol['_id'], 'inchikey': mol['inchikey'],
+                         'name': mol['name']}
+            mols.append(molecule)
+        return mols
+
     def find_inchi(self, inchi):
         query = { 'inchi': inchi }
         mol = self.findOne(query)
