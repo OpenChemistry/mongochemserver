@@ -1,0 +1,5 @@
+.project
+.pydevproject
+.settings
+girder/molecules/server/__pycache__/
+girder/molecules/server/models/__pycache__/
