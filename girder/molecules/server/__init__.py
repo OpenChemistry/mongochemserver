@@ -8,6 +8,7 @@ from girder.api.docs import addModel
 from girder.api.rest import Resource
 from girder.api.rest import RestException
 from girder.api import access
+from girder.constants import AccessType
 
 class Molecule(Resource):
     def __init__(self):
@@ -15,13 +16,16 @@ class Molecule(Resource):
         self.route('GET', (), self.find)
         self.route('GET', ('inchikey', ':inchikey'), self.find_inchikey)
         self.route('POST', (), self.create)
-        self.route('DELETE', ('inchi', ':inchi'), self.delete_inchi)
+        self.route('DELETE', (':id',), self.delete)
+        self.route('PATCH', (':id',), self.update)
 
         self._model = self.model('molecule', 'molecules')
 
     def _clean(self, doc):
         del doc['access']
-        doc['_id'] = str(doc['_id'])
+        doc['id'] = str(doc['_id'])
+        del doc['_id']
+
         return doc
 
     @access.public
@@ -44,7 +48,7 @@ class Molecule(Resource):
             .param('inchi', 'The InChI key of the molecule', paramType='path')
             .errorResponse()
            .errorResponse('Molecule not found.', 404))
-    
+
     @access.user
     def create(self, params):
         body = self.getBodyJson()
@@ -72,16 +76,50 @@ class Molecule(Resource):
             required=True, paramType='body'))
 
     @access.user
-    def delete_inchi(self, inchi, params):
+    def delete(self, id, params):
         user = self.getCurrentUser()
-        result = self._model.delete_inchi(user, inchi)
+        result = self._model.delete(user, id)
         if not result:
             raise RestException('Molecule not found.', code=404)
         return result
-    delete_inchi.description = (
-            Description('Delete a molecule by inchi.')
-            .param('inchi', 'The InChI of the molecule', paramType='path')
+    delete.description = (
+            Description('Delete a molecule by id.')
+            .param('id', 'The id of the molecule', paramType='path')
             .errorResponse()
+            .errorResponse('Molecule not found.', 404))
+
+    @access.user
+    def update(self, id, params):
+        user = self.getCurrentUser()
+
+        mol = self._model.load(id, user=user, level=AccessType.WRITE)
+
+        if not mol:
+            raise RestException('Molecule not found.', code=404)
+
+        body = self.getBodyJson()
+
+        if 'logs' in body:
+            logs = mol.setdefault('logs', [])
+            logs += body['logs']
+
+        mol = self._model.update(mol)
+
+        return self._clean(mol)
+    addModel('UpdateMoleculeParams', {
+        "id": "UpdateMoleculeParams",
+        "properties": {
+            "logs": {"type": "array", "description": "List of Girder file ids"}
+        }
+    })
+    update.description = (
+            Description('Update a molecule by id.')
+            .param('id', 'The id of the molecule', paramType='path')
+            .param(
+            'body',
+            'The update to the molecule.',
+            dataType='UpdateMoleculeParams',
+            required=True, paramType='body')
             .errorResponse('Molecule not found.', 404))
 
 def load(info):

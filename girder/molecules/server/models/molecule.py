@@ -4,7 +4,7 @@ from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.constants import AccessType
 
 class Molecule(AccessControlledModel):
-    
+
     def __init__(self):
         super(Molecule, self).__init__()
 
@@ -50,3 +50,8 @@ class Molecule(AccessControlledModel):
             return False
         else:
             return self.remove(mol)
+
+    def update(self, mol):
+        self.save(mol)
+
+        return mol
