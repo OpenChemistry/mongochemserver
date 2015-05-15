@@ -78,10 +78,13 @@ class Molecule(Resource):
     @access.user
     def delete(self, id, params):
         user = self.getCurrentUser()
-        result = self._model.delete(user, id)
-        if not result:
+        mol = self._model.load(id, user=user, level=AccessType.WRITE)
+
+        if not mol:
             raise RestException('Molecule not found.', code=404)
-        return result
+
+        return self._model.remove(mol)
+
     delete.description = (
             Description('Delete a molecule by id.')
             .param('id', 'The id of the molecule', paramType='path')
