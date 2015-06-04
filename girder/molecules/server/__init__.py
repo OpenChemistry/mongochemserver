@@ -2,6 +2,8 @@
 
 import cherrypy
 import json
+import os
+import functools
 
 from girder.api.describe import Description
 from girder.api.docs import addModel
@@ -9,6 +11,7 @@ from girder.api.rest import Resource
 from girder.api.rest import RestException
 from girder.api import access
 from girder.constants import AccessType
+from openbabel import OBMol, OBConversion
 
 class Molecule(Resource):
     def __init__(self):
@@ -18,6 +21,7 @@ class Molecule(Resource):
         self.route('POST', (), self.create)
         self.route('DELETE', (':id',), self.delete)
         self.route('PATCH', (':id',), self.update)
+        self.route('POST', ('conversions', ':output_format'), self.conversions)
 
         self._model = self.model('molecule', 'molecules')
 
@@ -124,6 +128,68 @@ class Molecule(Resource):
             dataType='UpdateMoleculeParams',
             required=True, paramType='body')
             .errorResponse('Molecule not found.', 404))
+
+    @access.user
+    def conversions(self, output_format, params):
+        output_formats = ['cml', 'xyz']
+        input_formats = ['cml', 'xyz', 'pdb']
+
+        if output_format not in output_formats:
+            raise RestException('Output output_format not supported.', code=404)
+
+        body = self.getBodyJson()
+
+        if 'fileId' not in body:
+            raise RestException('Invalid request body.', code=400)
+
+        file_id = body['fileId']
+        file = self.model('file').load(file_id)
+
+        input_format = file['name'].split('.')[-1]
+
+        if input_format not in input_formats:
+            raise RestException('Input format not supported.', code=400)
+
+        if file is None:
+            raise RestException('File not found.', code=404)
+
+
+        contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
+
+        mol = OBMol()
+        conv = OBConversion()
+        conv.SetInFormat(input_format)
+        conv.SetOutFormat(output_format)
+        conv.ReadString(mol, contents.decode())
+        output = conv.WriteString(mol)
+
+        print(output)
+        print(conv.GetOutFormat().GetMIMEType())
+
+        def stream():
+            cherrypy.response.headers['Content-Type'] = conv.GetOutFormat().GetMIMEType()
+            yield output
+
+        return stream
+
+    addModel('ConversionParams', {
+        "id": "ConversionParams",
+        "properties": {
+            "fileId": {"type": "string", "description": "Girder file id to do conversion on"}
+        }
+    })
+    conversions.description = (
+            Description('Update a molecule by id.')
+            .param('format', 'The format to convert to', paramType='path')
+            .param(
+            'body',
+            'Details of molecule data to perform conversion on',
+            dataType='ConversionParams',
+            required=True, paramType='body')
+            .errorResponse('Output format not supported.', 404)
+            .errorResponse('File not found.', 404)
+            .errorResponse('Invalid request body.', 400)
+            .errorResponse('Input format not supported.', code=400))
 
 def load(info):
     info['apiRoot'].molecules = Molecule()
