@@ -72,8 +72,15 @@ class Molecule(Resource):
                 raise RestException('Input format not supported.', code=400)
 
             contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
-            (xyz, _) = openbabel.convert_str(contents.decode(), input_format, 'xyz')
-            (inchi, inchikey) = openbabel.to_inchi(contents.decode(), input_format)
+            data_str = contents.decode()
+            (xyz, _) = openbabel.convert_str(data_str, input_format, 'xyz')
+
+            atom_count = openbabel.atom_count(data_str, input_format)
+
+            if atom_count > 1024:
+                raise RestException('Unable to generate inchi, molecule has more than 1024 atoms .', code=400)
+
+            (inchi, inchikey) = openbabel.to_inchi(data_str, input_format)
 
             if not inchi:
                 raise RestException('Unable to extract inchi', code=400)

@@ -20,3 +20,11 @@ def to_inchi(str_data, in_format):
     inchikey = conv.WriteString(mol).rstrip()
 
     return (inchi, inchikey)
+
+def atom_count(str_data, in_format):
+    mol = OBMol()
+    conv = OBConversion()
+    conv.SetInFormat(in_format)
+    conv.ReadString(mol, str_data)
+
+    return mol.NumAtoms()
