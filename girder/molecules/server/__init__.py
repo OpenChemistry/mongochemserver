@@ -11,9 +11,12 @@ from girder.api.rest import Resource
 from girder.api.rest import RestException
 from girder.api import access
 from girder.constants import AccessType
-from openbabel import OBMol, OBConversion
+from . import openbabel
 
 class Molecule(Resource):
+    output_formats = ['cml', 'xyz']
+    input_formats = ['cml', 'xyz', 'pdb']
+
     def __init__(self):
         self.resourceName = 'molecules'
         self.route('GET', (), self.find)
@@ -56,12 +59,38 @@ class Molecule(Resource):
     @access.user
     def create(self, params):
         body = self.getBodyJson()
-        inchi = body['inchi']
         user = self.getCurrentUser()
-        if 'xyz' in body:
-          self._model.create_xyz(user, body)
+
+        if 'fileId' in body:
+            file_id = body['fileId']
+            file = self.model('file').load(file_id)
+            parts = file['name'].split('.')
+            input_format = parts[-1]
+            name = '.'.join(parts[:-1])
+
+            if input_format not in Molecule.input_formats:
+                raise RestException('Input format not supported.', code=400)
+
+            contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
+            (xyz, _) = openbabel.convert_str(contents.decode(), input_format, 'xyz')
+            (inchi, inchikey) = openbabel.to_inchi(contents.decode(), input_format)
+
+            if not inchi:
+                raise RestException('Unable to extract inchi', code=400)
+
+            self._model.create_xyz(user, {
+                'name': name, # For now
+                'inchi': inchi,
+                'inchikey': inchikey,
+                'xyz': xyz
+            })
+        elif 'xyz' in body:
+            self._model.create_xyz(user, body)
+        elif 'inchi' in body:
+            inchi = body['inchi']
+            self._model.create(user, inchi)
         else:
-          self._model.create(user, inchi)
+            raise RestException('Invalid request', code=400)
 
     addModel('MoleculeParams', {
         "id": "MoleculeParams",
@@ -77,7 +106,8 @@ class Molecule(Resource):
             'body',
             'The molecule to be added to the database.',
             dataType='MoleculeParams',
-            required=True, paramType='body'))
+            required=True, paramType='body')
+        .errorResponse('Input format not supported.', code=400))
 
     @access.user
     def delete(self, id, params):
@@ -131,10 +161,9 @@ class Molecule(Resource):
 
     @access.user
     def conversions(self, output_format, params):
-        output_formats = ['cml', 'xyz']
-        input_formats = ['cml', 'xyz', 'pdb']
 
-        if output_format not in output_formats:
+
+        if output_format not in Molecule.output_formats:
             raise RestException('Output output_format not supported.', code=404)
 
         body = self.getBodyJson()
@@ -147,27 +176,17 @@ class Molecule(Resource):
 
         input_format = file['name'].split('.')[-1]
 
-        if input_format not in input_formats:
+        if input_format not in Molecule.input_formats:
             raise RestException('Input format not supported.', code=400)
 
         if file is None:
             raise RestException('File not found.', code=404)
 
-
         contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
-
-        mol = OBMol()
-        conv = OBConversion()
-        conv.SetInFormat(input_format)
-        conv.SetOutFormat(output_format)
-        conv.ReadString(mol, contents.decode())
-        output = conv.WriteString(mol)
-
-        print(output)
-        print(conv.GetOutFormat().GetMIMEType())
+        (output, mime) = openbabel.convert_str(contents.decode(), input_format, output_format)
 
         def stream():
-            cherrypy.response.headers['Content-Type'] = conv.GetOutFormat().GetMIMEType()
+            cherrypy.response.headers['Content-Type'] = mime
             yield output
 
         return stream
