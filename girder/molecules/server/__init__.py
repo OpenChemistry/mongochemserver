@@ -14,7 +14,7 @@ from girder.constants import AccessType
 from . import openbabel
 
 class Molecule(Resource):
-    output_formats = ['cml', 'xyz']
+    output_formats = ['cml', 'xyz', 'inchikey']
     input_formats = ['cml', 'xyz', 'pdb']
 
     def __init__(self):
@@ -169,7 +169,6 @@ class Molecule(Resource):
     @access.user
     def conversions(self, output_format, params):
 
-
         if output_format not in Molecule.output_formats:
             raise RestException('Output output_format not supported.', code=404)
 
@@ -190,13 +189,23 @@ class Molecule(Resource):
             raise RestException('File not found.', code=404)
 
         contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
-        (output, mime) = openbabel.convert_str(contents.decode(), input_format, output_format)
 
-        def stream():
-            cherrypy.response.headers['Content-Type'] = mime
-            yield output
+        if output_format.startswith('inchi'):
+            (inchi, inchikey) = openbabel.to_inchi(contents.decode(), input_format)
 
-        return stream
+            if output_format == 'inchi':
+                return inchi
+            else:
+                return inchikey
+
+        else:
+            (output, mime) = openbabel.convert_str(contents.decode(), input_format, output_format)
+
+            def stream():
+                cherrypy.response.headers['Content-Type'] = mime
+                yield output
+
+            return stream
 
     addModel('ConversionParams', {
         "id": "ConversionParams",
