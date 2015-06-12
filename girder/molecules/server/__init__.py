@@ -189,9 +189,15 @@ class Molecule(Resource):
             raise RestException('File not found.', code=404)
 
         contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
+        data_str = contents.decode()
 
         if output_format.startswith('inchi'):
-            (inchi, inchikey) = openbabel.to_inchi(contents.decode(), input_format)
+            atom_count = openbabel.atom_count(data_str, input_format)
+
+            if atom_count > 1024:
+                raise RestException('Unable to generate inchi, molecule has more than 1024 atoms .', code=400)
+
+            (inchi, inchikey) = openbabel.to_inchi(data_str, input_format)
 
             if output_format == 'inchi':
                 return inchi
@@ -199,7 +205,7 @@ class Molecule(Resource):
                 return inchikey
 
         else:
-            (output, mime) = openbabel.convert_str(contents.decode(), input_format, output_format)
+            (output, mime) = openbabel.convert_str(data_str, input_format, output_format)
 
             def stream():
                 cherrypy.response.headers['Content-Type'] = mime
