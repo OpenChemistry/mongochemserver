@@ -14,7 +14,7 @@ from girder.constants import AccessType
 from . import openbabel
 
 class Molecule(Resource):
-    output_formats = ['cml', 'xyz', 'inchikey']
+    output_formats = ['cml', 'xyz', 'inchikey', 'sdf']
     input_formats = ['cml', 'xyz', 'pdb']
 
     def __init__(self):
@@ -63,7 +63,7 @@ class Molecule(Resource):
 
         if 'fileId' in body:
             file_id = body['fileId']
-            file = self.model('file').load(file_id)
+            file = self.model('file').load(file_id, user=user)
             parts = file['name'].split('.')
             input_format = parts[-1]
             name = '.'.join(parts[:-1])
@@ -73,7 +73,14 @@ class Molecule(Resource):
 
             contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
             data_str = contents.decode()
-            (xyz, _) = openbabel.convert_str(data_str, input_format, 'xyz')
+
+            # If we have bond information try and preserve it
+            if input_format == 'cml':
+                output_format = 'sdf'
+            else:
+                output_format = 'xyz'
+
+            (output, _) = openbabel.convert_str(data_str, input_format, output_format)
 
             atom_count = openbabel.atom_count(data_str, input_format)
 
@@ -89,9 +96,9 @@ class Molecule(Resource):
                 'name': name, # For now
                 'inchi': inchi,
                 'inchikey': inchikey,
-                'xyz': xyz
+                output_format: output
             })
-        elif 'xyz' in body:
+        elif 'xyz' in body or 'sdf' in body:
             self._model.create_xyz(user, body)
         elif 'inchi' in body:
             inchi = body['inchi']
@@ -168,6 +175,7 @@ class Molecule(Resource):
 
     @access.user
     def conversions(self, output_format, params):
+        user = self.getCurrentUser()
 
         if output_format not in Molecule.output_formats:
             raise RestException('Output output_format not supported.', code=404)
@@ -178,7 +186,8 @@ class Molecule(Resource):
             raise RestException('Invalid request body.', code=400)
 
         file_id = body['fileId']
-        file = self.model('file').load(file_id)
+
+        file = self.model('file').load(file_id, user=user)
 
         input_format = file['name'].split('.')[-1]
 
