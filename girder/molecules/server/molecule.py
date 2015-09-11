@@ -28,8 +28,7 @@ class Molecule(Resource):
 
     def _clean(self, doc):
         del doc['access']
-        doc['id'] = str(doc['_id'])
-        del doc['_id']
+        doc['_id'] = str(doc['_id'])
 
         return doc
 
@@ -90,19 +89,40 @@ class Molecule(Resource):
             if not inchi:
                 raise RestException('Unable to extract inchi', code=400)
 
-            self._model.create_xyz(user, {
+            mol = self._model.create_xyz(user, {
                 'name': name, # For now
                 'inchi': inchi,
                 'inchikey': inchikey,
                 output_format: output
             })
+
         elif 'xyz' in body or 'sdf' in body:
-            self._model.create_xyz(user, body)
+
+            if 'xyz' in body:
+                input_format = 'xyz'
+                data = body['xyz']
+            else:
+                input_format = 'sdf'
+                data = body['sdf']
+
+            (inchi, inchikey) = openbabel.to_inchi(data, input_format)
+
+            mol = {
+                'inchi': inchi,
+                'inchikey': inchikey,
+            }
+
+            if 'name' in body:
+                mol['name'] = body['name']
+
+            mol = self._model.create_xyz(user, body)
         elif 'inchi' in body:
             inchi = body['inchi']
-            self._model.create(user, inchi)
+            mol = self._model.create(user, inchi)
         else:
             raise RestException('Invalid request', code=400)
+
+        return self._clean(mol)
 
     addModel('MoleculeParams', {
         "id": "MoleculeParams",

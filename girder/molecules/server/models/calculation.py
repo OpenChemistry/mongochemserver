@@ -50,10 +50,16 @@ class Calculation(AccessControlledModel):
                         }
                     },
                     'eigenVectors': {
-                        'type': 'object'
+                        'type': 'array',
+                        'items': {
+                            '$ref': '#/definitions/eigenVector'
+                        }
                     },
-                    'frames': {
-                        'type': 'object'
+                    'modeFrames': {
+                        'type': 'array',
+                        'items': {
+                            '$ref': '#/definitions/modeFrame'
+                        }
                     }
                 }
             },
@@ -62,6 +68,26 @@ class Calculation(AccessControlledModel):
             },
             'moleculeId': {
                 'type': 'string'
+            }
+        },
+        'definitions': {
+            'frame': {
+                'type': 'array',
+                'items': {
+                    'type': 'number'
+                }
+            },
+            'modeFrame': {
+                'type': 'array',
+                'items': {
+                    '$ref': '#/definitions/frame'
+                }
+            },
+            'eigenVector': {
+                'type': 'array',
+                'items': {
+                    'type': 'number'
+                }
             }
         }
     }
@@ -95,8 +121,11 @@ class Calculation(AccessControlledModel):
         modes = doc['vibrationalModes']['modes']
         frequencies = doc['vibrationalModes']['frequencies']
         intensities = doc['vibrationalModes']['intensities']
+        eigenVectors = doc['vibrationalModes']['eigenVectors']
+        modeFrames = doc['vibrationalModes']['modeFrames']
 
-        if not len(modes) == len(frequencies) == len(intensities):
+        if not len(modes) == len(frequencies) == len(intensities) \
+            == len(eigenVectors) == len(modeFrames):
             raise ValidationException('Array length must match')
 
         return doc

@@ -7,7 +7,7 @@ from girder.api import access
 from girder.api.rest import Resource
 from girder.api.rest import RestException, getBodyJson, getCurrentUser, \
     loadmodel
-from girder.models.model_base import ModelImporter
+from girder.models.model_base import ModelImporter, ValidationException
 from girder.constants import AccessType
 
 from girder.plugins.molecules.models.calculation import Calculation
@@ -31,10 +31,17 @@ class Calculation(Resource):
         self._model = self.model('calculation', 'molecules')
 
     @access.user
-    @loadmodel(model='calculation', plugin='molecules',
-               level=AccessType.READ)
-    def get_calc_vibrational_modes(self, calculation, params):
-        return calculation['vibrationalModes']
+    def get_calc_vibrational_modes(self, id, params):
+
+        fields = ['vibrationalModes.modes', 'vibrationalModes.intensities',
+                 'vibrationalModes.frequencies', 'access']
+
+        calc =  self._model.load(id, fields=fields, user=getCurrentUser(),
+                                 level=AccessType.READ)
+
+        del calc['access']
+
+        return calc
 
     get_calc_vibrational_modes.description = (
         Description('Get the vibrational modes associated with a calculation')
@@ -44,14 +51,41 @@ class Calculation(Resource):
             dataType='string', required=True, paramType='path'))
 
     @access.user
-    @loadmodel(model='calculation', plugin='molecules', level=AccessType.READ)
-    def get_calc_vibrational_mode(self, calculation, mode, params):
-        frames = calculation.get('vibrationalModes', {}).get('frames', {})
+    def get_calc_vibrational_mode(self, id, mode, params):
 
-        if not frames or mode not in frames:
+        try:
+            mode = int(mode)
+        except ValueError:
+            raise ValidationException('mode number be an integer', 'mode')
+
+        fields = ['vibrationalModes.modes', 'access']
+        calc =  self._model.load(id, fields=fields, user=getCurrentUser(),
+                                 level=AccessType.READ)
+
+        vibrational_modes = calc['vibrationalModes']
+        #frames = vibrational_modes.get('modeFrames')
+        modes = vibrational_modes.get('modes', [])
+
+        index = modes.index(mode)
+        if index < 0:
             raise RestException('No such vibrational mode', 400)
 
-        return frames[mode]
+        # Now select the modeFrames directly this seems to be more efficient
+        # than iterating in Python
+        query = {
+            '_id': calc['_id']
+        }
+
+        projection = {
+            'vibrationalModes.modeFrames': {
+                '$slice': [index-1, 1]
+            }
+        }
+
+        mode_frames = self._model.findOne(query=query, projection=projection)
+
+        return mode_frames['vibrationalModes']['modeFrames'][0]
+
 
     get_calc_vibrational_mode.description = (
         Description('Get a vibrational mode associated with a calculation')
@@ -122,7 +156,9 @@ class Calculation(Resource):
 
         limit = params.get('limit', 50)
 
-        calcs = self._model.find(query)
+        fields = ['vibrationalModes.modes', 'vibrationalModes.intensities',
+                 'vibrationalModes.frequencies', 'access']
+        calcs = self._model.find(query, fields=fields)
         calcs = self._model.filterResultsByPermission(calcs, user,
                         AccessType.READ, limit=int(limit))
 
