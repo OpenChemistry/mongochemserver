@@ -115,7 +115,7 @@ class Molecule(Resource):
             if 'name' in body:
                 mol['name'] = body['name']
 
-            mol = self._model.create_xyz(user, body)
+            mol = self._model.create_xyz(user, mol)
         elif 'inchi' in body:
             inchi = body['inchi']
             mol = self._model.create(user, inchi)
