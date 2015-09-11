@@ -110,6 +110,7 @@ class Molecule(Resource):
             mol = {
                 'inchi': inchi,
                 'inchikey': inchikey,
+                input_format: data
             }
 
             if 'name' in body:
