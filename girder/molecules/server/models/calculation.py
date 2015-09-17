@@ -146,6 +146,9 @@ class Calculation(AccessControlledModel):
             calc['moleculeId'] = moleculeId
 
         self.setUserAccess(calc, user=user, level=AccessType.ADMIN)
+        # For now set as public
+        self.setPublic(calc, True)
+
         return self.save(calc)
 
 

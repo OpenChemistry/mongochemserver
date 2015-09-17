@@ -31,7 +31,7 @@ class Calculation(Resource):
 
         self._model = self.model('calculation', 'molecules')
 
-    @access.user
+    @access.public
     def get_calc_vibrational_modes(self, id, params):
 
         fields = ['vibrationalModes.modes', 'vibrationalModes.intensities',
@@ -51,7 +51,7 @@ class Calculation(Resource):
             'The id of the calculation to get the modes from.',
             dataType='string', required=True, paramType='path'))
 
-    @access.user
+    @access.public
     def get_calc_vibrational_mode(self, id, mode, params):
 
         try:
@@ -99,7 +99,7 @@ class Calculation(Resource):
             'The index of the vibrational model to get.',
             dataType='string', required=True, paramType='path'))
 
-    @access.user
+    @access.public
     @loadmodel(model='calculation', plugin='molecules', level=AccessType.READ)
     def get_calc_sdf(self, calculation, params):
 
@@ -146,7 +146,7 @@ class Calculation(Resource):
             'The calculation data', dataType='CalculationData', required=True,
             paramType='body'))
 
-    @access.user
+    @access.public
     def find_calc(self, params):
         user = getCurrentUser()
 
@@ -158,10 +158,10 @@ class Calculation(Resource):
         limit = params.get('limit', 50)
 
         fields = ['vibrationalModes.modes', 'vibrationalModes.intensities',
-                 'vibrationalModes.frequencies', 'access']
+                 'vibrationalModes.frequencies', 'access', 'public']
         calcs = self._model.find(query, fields=fields)
         calcs = self._model.filterResultsByPermission(calcs, user,
-                        AccessType.READ, limit=int(limit))
+            AccessType.READ, limit=int(limit))
 
         return [self._model.filter(x, user) for x in calcs]
 
