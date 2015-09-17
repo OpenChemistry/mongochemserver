@@ -1,0 +1,1 @@
+girder_client==1.0.2

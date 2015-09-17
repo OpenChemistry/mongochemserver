@@ -128,6 +128,12 @@ class Calculation(AccessControlledModel):
             == len(eigenVectors) == len(modeFrames):
             raise ValidationException('Array length must match')
 
+        # If we have a moleculeId check it valid
+        if 'moleculeId' in doc:
+            mol = self.model('molecule', 'molecules').load(doc['moleculeId'],
+                                                           force=True)
+            doc['moleculeId'] = mol['_id']
+
         return doc
 
     def create(self, user, sdf, vibrational_models, moleculeId=None):
