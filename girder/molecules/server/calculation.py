@@ -1,5 +1,6 @@
 import cherrypy
 from jsonpath_rw import parse
+from bson.objectid import ObjectId
 
 from girder.api.describe import Description
 from girder.api.docs import addModel
@@ -152,7 +153,7 @@ class Calculation(Resource):
         query = { }
 
         if 'moleculeId' in params:
-            query['moleculeId'] = params['moleculeId']
+            query['moleculeId'] = ObjectId(params['moleculeId'])
 
         limit = params.get('limit', 50)
 
