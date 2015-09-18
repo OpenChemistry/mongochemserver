@@ -83,7 +83,7 @@ class Calculation(Resource):
             }
         }
 
-        mode_frames = self._model.collection.find_one(query, projection)
+        mode_frames = self._model.findOne(query, fields=projection)
 
         return mode_frames['vibrationalModes']['modeFrames'][0]
 
