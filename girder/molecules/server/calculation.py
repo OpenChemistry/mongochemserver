@@ -79,7 +79,13 @@ class Calculation(Resource):
 
         projection = {
             'vibrationalModes.modeFrames': {
-                '$slice': [index-1, 1]
+                '$slice': [index, 1]
+            },
+            'vibrationalModes.frequencies': {
+                '$slice': [index, 1]
+            },
+            'vibrationalModes.intensities': {
+                '$slice': [index, 1]
             }
         }
 
