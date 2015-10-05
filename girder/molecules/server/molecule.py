@@ -71,11 +71,8 @@ class Molecule(Resource):
             contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
             data_str = contents.decode()
 
-            # If we have bond information try and preserve it
-            if input_format == 'cml':
-                output_format = 'sdf'
-            else:
-                output_format = 'xyz'
+            # Use the SDF format as it is the one with bonding that 3Dmol uses.
+            output_format = 'sdf'
 
             (output, _) = openbabel.convert_str(data_str, input_format, output_format)
 
