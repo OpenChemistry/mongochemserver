@@ -9,11 +9,12 @@ from girder.api.rest import Resource
 from girder.api.rest import RestException
 from girder.api import access
 from girder.constants import AccessType
+from . import avogadro
 from . import openbabel
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf']
-    input_formats = ['cml', 'xyz', 'pdb']
+    input_formats = ['cml', 'xyz', 'sdf', 'cjson', 'pdb']
 
     def __init__(self):
         self.resourceName = 'molecules'
@@ -71,20 +72,23 @@ class Molecule(Resource):
             contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
             data_str = contents.decode()
 
-            # If we have bond information try and preserve it
-            if input_format == 'cml':
-                output_format = 'sdf'
-            else:
-                output_format = 'xyz'
+            # Use the SDF format as it is the one with bonding that 3Dmol uses.
+            output_format = 'sdf'
 
-            (output, _) = openbabel.convert_str(data_str, input_format, output_format)
+            if output_format == 'pdb':
+                (output, _) = openbabel.convert_str(data_str, input_format, output_format)
+            else:
+                output = avogadro.convert_str(data_str, input_format, output_format)
+
+            cjson = json.loads(avogadro.convert_str(output, 'sdf', 'cjson'))
+            print(cjson)
 
             atom_count = openbabel.atom_count(data_str, input_format)
 
             if atom_count > 1024:
                 raise RestException('Unable to generate inchi, molecule has more than 1024 atoms .', code=400)
 
-            (inchi, inchikey) = openbabel.to_inchi(data_str, input_format)
+            (inchi, inchikey) = openbabel.to_inchi(output, 'sdf')
 
             if not inchi:
                 raise RestException('Unable to extract inchi', code=400)
@@ -93,7 +97,8 @@ class Molecule(Resource):
                 'name': name, # For now
                 'inchi': inchi,
                 'inchikey': inchikey,
-                output_format: output
+                output_format: output,
+                'cjson': cjson
             })
 
         elif 'xyz' in body or 'sdf' in body:
@@ -220,12 +225,20 @@ class Molecule(Resource):
         data_str = contents.decode()
 
         if output_format.startswith('inchi'):
-            atom_count = openbabel.atom_count(data_str, input_format)
+            atom_count = 0
+            if input_format == 'pdb':
+                atom_count = openbabel.atom_count(data_str, input_format)
+            else:
+                atom_count = avogadro.atom_count(data_str, input_format)
 
             if atom_count > 1024:
-                raise RestException('Unable to generate inchi, molecule has more than 1024 atoms .', code=400)
+                raise RestException('Unable to generate InChI, molecule has more than 1024 atoms.', code=400)
 
-            (inchi, inchikey) = openbabel.to_inchi(data_str, input_format)
+            if input_format == 'pdb':
+                (inchi, inchikey) = openbabel.to_inchi(data_str, input_format)
+            else:
+                sdf = avogadro.convert_str(data_str, input_format, 'sdf')
+                (inchi, inchikey) = openbabel.to_inchi(sdf, 'sdf')
 
             if output_format == 'inchi':
                 return inchi
@@ -233,7 +246,12 @@ class Molecule(Resource):
                 return inchikey
 
         else:
-            (output, mime) = openbabel.convert_str(data_str, input_format, output_format)
+            output = ''
+            mime = 'text/plain'
+            if input_format == 'pdb':
+                (output, mime) = openbabel.convert_str(data_str, input_format, output_format)
+            else:
+                output = avogadro.convert_str(data_str, input_format, output_format)
 
             def stream():
                 cherrypy.response.headers['Content-Type'] = mime
