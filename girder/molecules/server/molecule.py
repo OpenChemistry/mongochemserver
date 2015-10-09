@@ -26,6 +26,7 @@ class Molecule(Resource):
         self.route('POST', ('conversions', ':output_format'), self.conversions)
 
         self._model = self.model('molecule', 'molecules')
+        self._calc_model = self.model('calculation', 'molecules')
 
     def _clean(self, doc):
         del doc['access']
@@ -103,6 +104,15 @@ class Molecule(Resource):
                 output_format: output,
                 'cjson': cjson
             })
+
+            if 'vibrations' in cjson:
+                # We have some calculation data, let's add it to the calcs.
+                sdf = output
+                vibrational_modes = cjson['vibrations']
+                moleculeId = mol['_id']
+
+                calc = self._calc_model.create(user, sdf, vibrational_modes,
+                                               moleculeId)
 
         elif 'xyz' in body or 'sdf' in body:
 

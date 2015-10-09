@@ -29,7 +29,7 @@ class Calculation(AccessControlledModel):
             "vibrationalModes": {
                 'type': 'object',
                 'required': ['modes', 'frequencies', 'intensities', 'eigenVectors'],
-                'additionalProperties': False,
+                'additionalProperties': True,
                 'properties': {
                     'modes': {
                         'type': 'array',
@@ -54,19 +54,10 @@ class Calculation(AccessControlledModel):
                         'items': {
                             '$ref': '#/definitions/eigenVector'
                         }
-                    },
-                    'modeFrames': {
-                        'type': 'array',
-                        'items': {
-                            '$ref': '#/definitions/modeFrame'
-                        }
                     }
                 }
             },
             'sdf': {
-                'type': 'string'
-            },
-            'moleculeId': {
                 'type': 'string'
             }
         },
@@ -122,10 +113,9 @@ class Calculation(AccessControlledModel):
         frequencies = doc['vibrationalModes']['frequencies']
         intensities = doc['vibrationalModes']['intensities']
         eigenVectors = doc['vibrationalModes']['eigenVectors']
-        modeFrames = doc['vibrationalModes']['modeFrames']
 
         if not len(modes) == len(frequencies) == len(intensities) \
-            == len(eigenVectors) == len(modeFrames):
+            == len(eigenVectors):
             raise ValidationException('Array length must match')
 
         # If we have a moleculeId check it valid
