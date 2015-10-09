@@ -111,8 +111,9 @@ class Molecule(Resource):
                 vibrational_modes = cjson['vibrations']
                 moleculeId = mol['_id']
 
-                calc = self._calc_model.create(user, sdf, vibrational_modes,
-                                               moleculeId)
+                #calc = self._calc_model.create(user, sdf, vibrational_modes,
+                #                               moleculeId)
+                calc2 = self._calc_model.create_cjson(user, cjson, moleculeId)
 
         elif 'xyz' in body or 'sdf' in body:
 
