@@ -14,7 +14,7 @@ from . import openbabel
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf']
-    input_formats = ['cml', 'xyz', 'sdf', 'cjson', 'pdb']
+    input_formats = ['cml', 'xyz', 'sdf', 'cjson', 'json', 'log', 'nwchem', 'pdb']
 
     def __init__(self):
         self.resourceName = 'molecules'
@@ -26,6 +26,7 @@ class Molecule(Resource):
         self.route('POST', ('conversions', ':output_format'), self.conversions)
 
         self._model = self.model('molecule', 'molecules')
+        self._calc_model = self.model('calculation', 'molecules')
 
     def _clean(self, doc):
         del doc['access']
@@ -75,13 +76,19 @@ class Molecule(Resource):
             # Use the SDF format as it is the one with bonding that 3Dmol uses.
             output_format = 'sdf'
 
-            if output_format == 'pdb':
+            if input_format == 'pdb':
                 (output, _) = openbabel.convert_str(data_str, input_format, output_format)
             else:
                 output = avogadro.convert_str(data_str, input_format, output_format)
 
-            cjson = json.loads(avogadro.convert_str(output, 'sdf', 'cjson'))
-            print(cjson)
+            cjson = []
+            if input_format == 'cjson':
+                cjson = json.loads(data_str)
+            elif input_format == 'pdb':
+                cjson = json.loads(avogadro.convert_str(output, 'sdf', 'cjson'))
+            else:
+                cjson = json.loads(avogadro.convert_str(data_str, input_format,
+                                                        'cjson'))
 
             atom_count = openbabel.atom_count(data_str, input_format)
 
@@ -100,6 +107,16 @@ class Molecule(Resource):
                 output_format: output,
                 'cjson': cjson
             })
+
+            if 'vibrations' in cjson:
+                # We have some calculation data, let's add it to the calcs.
+                sdf = output
+                vibrational_modes = cjson['vibrations']
+                moleculeId = mol['_id']
+
+                #calc = self._calc_model.create(user, sdf, vibrational_modes,
+                #                               moleculeId)
+                calc2 = self._calc_model.create_cjson(user, cjson, moleculeId)
 
         elif 'xyz' in body or 'sdf' in body:
 

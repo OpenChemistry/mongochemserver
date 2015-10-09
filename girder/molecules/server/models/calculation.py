@@ -29,7 +29,7 @@ class Calculation(AccessControlledModel):
             "vibrationalModes": {
                 'type': 'object',
                 'required': ['modes', 'frequencies', 'intensities', 'eigenVectors'],
-                'additionalProperties': False,
+                'additionalProperties': True,
                 'properties': {
                     'modes': {
                         'type': 'array',
@@ -54,19 +54,10 @@ class Calculation(AccessControlledModel):
                         'items': {
                             '$ref': '#/definitions/eigenVector'
                         }
-                    },
-                    'modeFrames': {
-                        'type': 'array',
-                        'items': {
-                            '$ref': '#/definitions/modeFrame'
-                        }
                     }
                 }
             },
             'sdf': {
-                'type': 'string'
-            },
-            'moleculeId': {
                 'type': 'string'
             }
         },
@@ -111,22 +102,22 @@ class Calculation(AccessControlledModel):
         return calc
 
     def validate(self, doc):
-        try:
-            validate(doc, Calculation.schema)
+        if 'vibrationalModes' in doc:
+            try:
+                validate(doc, Calculation.schema)
 
-        except ValidationError as ex:
-            raise ValidationException(ex.message)
+            except ValidationError as ex:
+                raise ValidationException(ex.message)
 
-        # Make sure arrays are same length
-        modes = doc['vibrationalModes']['modes']
-        frequencies = doc['vibrationalModes']['frequencies']
-        intensities = doc['vibrationalModes']['intensities']
-        eigenVectors = doc['vibrationalModes']['eigenVectors']
-        modeFrames = doc['vibrationalModes']['modeFrames']
+            # Make sure arrays are same length
+            modes = doc['vibrationalModes']['modes']
+            frequencies = doc['vibrationalModes']['frequencies']
+            intensities = doc['vibrationalModes']['intensities']
+            eigenVectors = doc['vibrationalModes']['eigenVectors']
 
-        if not len(modes) == len(frequencies) == len(intensities) \
-            == len(eigenVectors) == len(modeFrames):
-            raise ValidationException('Array length must match')
+            if not len(modes) == len(frequencies) == len(intensities) \
+                == len(eigenVectors):
+                raise ValidationException('Array length must match')
 
         # If we have a moleculeId check it valid
         if 'moleculeId' in doc:
@@ -151,4 +142,17 @@ class Calculation(AccessControlledModel):
 
         return self.save(calc)
 
+    def create_cjson(self, user, cjson, moleculeId=None):
+        calc = {
+            'cjson': cjson,
+            'vibrationalModes': cjson['vibrations'],
+            'sdf': 'Left intentionally blank...'
+        }
+        if moleculeId:
+            calc['moleculeId'] = moleculeId
 
+        self.setUserAccess(calc, user=user, level=AccessType.ADMIN)
+        # For now set as public
+        self.setPublic(calc, True)
+
+        return self.save(calc)

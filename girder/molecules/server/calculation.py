@@ -28,6 +28,8 @@ class Calculation(Resource):
             self.get_calc_vibrational_mode)
         self.route('GET', (':id', 'sdf'),
             self.get_calc_sdf)
+        self.route('GET', (':id', 'cjson'),
+            self.get_calc_cjson)
 
         self._model = self.model('calculation', 'molecules')
 
@@ -117,6 +119,18 @@ class Calculation(Resource):
 
     get_calc_sdf.description = (
         Description('Get the molecular structure of a give calculation in SDF format')
+        .param(
+            'id',
+            'The id of the calculation to return the structure for.',
+            dataType='string', required=True, paramType='path'))
+
+    @access.public
+    @loadmodel(model='calculation', plugin='molecules', level=AccessType.READ)
+    def get_calc_cjson(self, calculation, params):
+        return calculation['cjson']
+
+    get_calc_cjson.description = (
+        Description('Get the molecular structure of a give calculation in CJSON format')
         .param(
             'id',
             'The id of the calculation to return the structure for.',
