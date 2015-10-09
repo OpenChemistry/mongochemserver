@@ -76,7 +76,7 @@ class Molecule(Resource):
             # Use the SDF format as it is the one with bonding that 3Dmol uses.
             output_format = 'sdf'
 
-            if output_format == 'pdb':
+            if input_format == 'pdb':
                 (output, _) = openbabel.convert_str(data_str, input_format, output_format)
             else:
                 output = avogadro.convert_str(data_str, input_format, output_format)
@@ -84,8 +84,11 @@ class Molecule(Resource):
             cjson = []
             if input_format == 'cjson':
                 cjson = json.loads(data_str)
-            else:
+            elif input_format == 'pdb':
                 cjson = json.loads(avogadro.convert_str(output, 'sdf', 'cjson'))
+            else:
+                cjson = json.loads(avogadro.convert_str(data_str, input_format,
+                                                        'cjson'))
 
             atom_count = openbabel.atom_count(data_str, input_format)
 
