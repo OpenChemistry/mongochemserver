@@ -14,7 +14,7 @@ from . import openbabel
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf']
-    input_formats = ['cml', 'xyz', 'sdf', 'cjson', 'pdb']
+    input_formats = ['cml', 'xyz', 'sdf', 'cjson', 'json', 'log', 'nwchem', 'pdb']
 
     def __init__(self):
         self.resourceName = 'molecules'
@@ -80,8 +80,11 @@ class Molecule(Resource):
             else:
                 output = avogadro.convert_str(data_str, input_format, output_format)
 
-            cjson = json.loads(avogadro.convert_str(output, 'sdf', 'cjson'))
-            print(cjson)
+            cjson = []
+            if input_format == 'cjson':
+                cjson = json.loads(data_str)
+            else:
+                cjson = json.loads(avogadro.convert_str(output, 'sdf', 'cjson'))
 
             atom_count = openbabel.atom_count(data_str, input_format)
 
