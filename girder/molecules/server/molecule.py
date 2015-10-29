@@ -83,7 +83,10 @@ class Molecule(Resource):
 
             # Get some basic molecular properties we want to add to the database.
             props = avogadro.molecule_properties(data_str, input_format)
-            print (props)
+            pieces = props['spacedFormula'].strip().split(' ')
+            atomCounts = {}
+            for i in range(0, int(len(pieces) / 2)):
+                atomCounts[pieces[2 * i ]] = int(pieces[2 * i + 1])
 
             cjson = []
             if input_format == 'cjson':
@@ -110,9 +113,8 @@ class Molecule(Resource):
                 'inchikey': inchikey,
                 output_format: output,
                 'cjson': cjson,
-                'mass': props['mass'],
-                'formula': props['formula'],
-                'atomCount': props['atomCount']
+                'properties': props,
+                'atomCounts': atomCounts
             })
 
             if 'vibrations' in cjson:

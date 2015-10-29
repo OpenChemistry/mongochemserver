@@ -20,8 +20,9 @@ def molecule_properties(str_data, in_format):
     conv.readString(mol, str_data, in_format)
     properties = {
         'atomCount': mol.atomCount(),
+        'heavyAtomCount': mol.atomCount() - mol.atomCount(1),
         'mass': mol.mass(),
-        'formula': mol.formula('', 1),
-        'spacedFormula': mol.formula(' ', 0)
+        'spacedFormula': mol.formula(' ', 0),
+        'formula': mol.formula('', 1)
         }
     return properties
