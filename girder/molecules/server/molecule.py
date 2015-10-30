@@ -6,20 +6,27 @@ import functools
 from girder.api.describe import Description
 from girder.api.docs import addModel
 from girder.api.rest import Resource
-from girder.api.rest import RestException
+from girder.api.rest import RestException, loadmodel
 from girder.api import access
 from girder.constants import AccessType
 from . import avogadro
 from . import openbabel
 
 class Molecule(Resource):
-    output_formats = ['cml', 'xyz', 'inchikey', 'sdf']
+    output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
     input_formats = ['cml', 'xyz', 'sdf', 'cjson', 'json', 'log', 'nwchem', 'pdb']
+    mime_types = {
+        'cml': 'chemical/x-cml',
+        'xyz': 'chemical/x-xyz',
+        'sdf': 'chemical/x-mdl-sdfile',
+        'cjson': 'application/json'
+    }
 
     def __init__(self):
         self.resourceName = 'molecules'
         self.route('GET', (), self.find)
         self.route('GET', ('inchikey', ':inchikey'), self.find_inchikey)
+        self.route('GET', (':id', ':output_format'), self.get_format)
         self.route('POST', (), self.create)
         self.route('DELETE', (':id',), self.delete)
         self.route('PATCH', (':id',), self.update)
@@ -303,3 +310,29 @@ class Molecule(Resource):
             .errorResponse('File not found.', 404)
             .errorResponse('Invalid request body.', 400)
             .errorResponse('Input format not supported.', code=400))
+
+    @access.public
+    def get_format(self, id, output_format, params):
+        # For now will for force load ( i.e. ignore access control )
+        # This will change when we have access controls.
+        molecule = self._model.load(id, force=True)
+
+        if output_format not in Molecule.output_formats:
+            raise RestException('Format not supported.', code=400)
+
+        data = json.dumps(molecule['cjson'])
+        if output_format != 'cjson':
+            data = avogadro.convert_str(data, 'cjson', output_format)
+
+        def stream():
+            cherrypy.response.headers['Content-Type'] = Molecule.mime_types[output_format]
+            yield data
+
+        return stream
+
+    get_format.description = (
+            Description('Get molecule in particular format.')
+            .param('id', 'The id of the molecule', paramType='path')
+            .param('output_format', 'The format to convert to', paramType='path')
+            .errorResponse('Output format not supported.', 400))
+
