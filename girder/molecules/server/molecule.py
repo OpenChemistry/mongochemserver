@@ -11,6 +11,7 @@ from girder.api import access
 from girder.constants import AccessType
 from . import avogadro
 from . import openbabel
+from . import chemspider
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
@@ -115,7 +116,7 @@ class Molecule(Resource):
                 raise RestException('Unable to extract inchi', code=400)
 
             mol = self._model.create_xyz(user, {
-                'name': name, # For now
+                'name': chemspider.find_common_name(inchikey, props['formula']),
                 'inchi': inchi,
                 'inchikey': inchikey,
                 output_format: output,
