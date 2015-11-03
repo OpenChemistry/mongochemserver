@@ -142,7 +142,7 @@ class Calculation(AccessControlledModel):
 
         return self.save(calc)
 
-    def create_cjson(self, user, cjson, moleculeId=None):
+    def create_cjson(self, user, cjson, moleculeId = None, fileId = None):
         calc = {
             'cjson': cjson,
             'vibrationalModes': cjson['vibrations'],
@@ -150,6 +150,8 @@ class Calculation(AccessControlledModel):
         }
         if moleculeId:
             calc['moleculeId'] = moleculeId
+        if fileId:
+            calc['fileId'] = moleculeId
 
         self.setUserAccess(calc, user=user, level=AccessType.ADMIN)
         # For now set as public
