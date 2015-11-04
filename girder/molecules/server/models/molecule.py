@@ -14,8 +14,16 @@ class Molecule(AccessControlledModel):
     def validate(self, doc):
         return doc
 
-    def findmol(self):
-        cursor = self.find()
+    def findmol(self, search = None):
+        query = {}
+        if search:
+            if 'name' in search:
+                query['name'] = { '$regex': '^' + search['name'], '$options': 'i' }
+            if 'inchi' in search:
+                query['inchi'] = search['inchi']
+            if 'inchikey' in search:
+                query['inchikey'] = search['inchikey']
+        cursor = self.find(query)
         mols = list()
         for mol in cursor:
             molecule = { 'id': mol['_id'], 'inchikey': mol['inchikey'],

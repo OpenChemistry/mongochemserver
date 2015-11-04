@@ -44,10 +44,14 @@ class Molecule(Resource):
 
     @access.public
     def find(self, params):
-        return self._model.findmol()
+        return self._model.findmol(params)
     find.description = (
             Description('Find a molecule.')
+            .param('name', 'The name of the molecule', paramType='query',
+                   required=False)
             .param('inchi', 'The InChI of the molecule', paramType='query',
+                   required=False)
+            .param('inchikey', 'The InChI key of the molecule', paramType='query',
                    required=False)
             .errorResponse())
 
