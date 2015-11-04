@@ -26,3 +26,26 @@ def molecule_properties(str_data, in_format):
         'formula': mol.formula('', 1)
         }
     return properties
+
+# We expect JSON input here, using the NWChem format
+def calculation_properties(json_data):
+    properties = {}
+    if not 'simulation' in json_data:
+        return properties
+    calcs = json_data['simulation']['calculations']
+    if not isinstance(calcs, list) or len(calcs) == 0:
+        return properties
+    firstCalc = calcs[0]
+    if 'calculationSetup' in firstCalc:
+        setup = firstCalc['calculationSetup']
+        properties['theory'] = setup['waveFunctionTheory']
+        properties['type'] = setup['waveFunctionType']
+        properties['type'] = setup['waveFunctionType']
+    if 'simulationEnvironment' in json_data['simulation']:
+        env = json_data['simulation']['simulationEnvironment']
+        properties['code'] = env['programRun']
+        properties['codeVersion'] = env['programVersion']
+        properties['processorCount'] = env['processorCount']
+        properties['runDate'] = env['runDate']
+
+    return properties

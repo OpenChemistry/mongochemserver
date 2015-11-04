@@ -91,7 +91,7 @@ class Calculation(AccessControlledModel):
         self.ensureIndices(['moleculeId'])
 
         self.exposeFields(level=AccessType.READ, fields=(
-            '_id', 'moleculeId', 'sdf', 'vibrationalModes'))
+            '_id', 'moleculeId', 'sdf', 'vibrationalModes', 'properties'))
 
     def filter(self, calc, user):
         calc = super(Calculation, self).filter(doc=calc, user=user)
@@ -142,10 +142,11 @@ class Calculation(AccessControlledModel):
 
         return self.save(calc)
 
-    def create_cjson(self, user, cjson, moleculeId = None, fileId = None):
+    def create_cjson(self, user, cjson, props, moleculeId = None, fileId = None):
         calc = {
             'cjson': cjson,
             'vibrationalModes': cjson['vibrations'],
+            'properties': props,
             'sdf': 'Left intentionally blank...'
         }
         if moleculeId:

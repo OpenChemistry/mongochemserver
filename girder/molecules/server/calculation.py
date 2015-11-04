@@ -178,7 +178,7 @@ class Calculation(Resource):
         limit = params.get('limit', 50)
 
         fields = ['vibrationalModes.modes', 'vibrationalModes.intensities',
-                 'vibrationalModes.frequencies', 'access', 'public']
+                 'vibrationalModes.frequencies', 'properties', 'fileId', 'access', 'public']
         calcs = self._model.find(query, fields=fields)
         calcs = self._model.filterResultsByPermission(calcs, user,
             AccessType.READ, limit=int(limit))

@@ -145,8 +145,13 @@ class Molecule(Resource):
 
                 #calc = self._calc_model.create(user, sdf, vibrational_modes,
                 #                               moleculeId)
-                calc2 = self._calc_model.create_cjson(user, cjson, moleculeId,
-                                                      file_id)
+                calcProps = {}
+                if input_format == 'json':
+                    jsonInput = json.loads(data_str)
+                    calcProps = avogadro.calculation_properties(jsonInput)
+
+                calc2 = self._calc_model.create_cjson(user, cjson, calcProps,
+                                                      moleculeId, file_id)
 
         elif 'xyz' in body or 'sdf' in body:
 
