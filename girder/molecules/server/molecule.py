@@ -44,10 +44,14 @@ class Molecule(Resource):
 
     @access.public
     def find(self, params):
-        return self._model.findmol()
+        return self._model.findmol(params)
     find.description = (
             Description('Find a molecule.')
+            .param('name', 'The name of the molecule', paramType='query',
+                   required=False)
             .param('inchi', 'The InChI of the molecule', paramType='query',
+                   required=False)
+            .param('inchikey', 'The InChI key of the molecule', paramType='query',
                    required=False)
             .errorResponse())
 
@@ -115,15 +119,21 @@ class Molecule(Resource):
             if not inchi:
                 raise RestException('Unable to extract inchi', code=400)
 
-            mol = self._model.create_xyz(user, {
-                'name': chemspider.find_common_name(inchikey, props['formula']),
-                'inchi': inchi,
-                'inchikey': inchikey,
-                output_format: output,
-                'cjson': cjson,
-                'properties': props,
-                'atomCounts': atomCounts
-            })
+            # Check if the molecule exists, only create it if it does.
+            molExists = self._model.find_inchikey(inchikey)
+            mol = {}
+            if molExists:
+                mol = molExists
+            else:
+                mol = self._model.create_xyz(user, {
+                    'name': chemspider.find_common_name(inchikey, props['formula']),
+                    'inchi': inchi,
+                    'inchikey': inchikey,
+                    output_format: output,
+                    'cjson': cjson,
+                    'properties': props,
+                    'atomCounts': atomCounts
+                })
 
             if 'vibrations' in cjson:
                 # We have some calculation data, let's add it to the calcs.
