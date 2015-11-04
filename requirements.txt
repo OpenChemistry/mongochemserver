@@ -1,4 +1,5 @@
 openbabel==1.8.2
 jsonschema==2.5.1
 jsonpath-rw==1.4.0
+chemspipy==1.0.4
 
