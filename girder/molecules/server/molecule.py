@@ -12,6 +12,7 @@ from girder.constants import AccessType
 from . import avogadro
 from . import openbabel
 from . import chemspider
+from . import query
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
@@ -28,6 +29,7 @@ class Molecule(Resource):
         self.route('GET', (), self.find)
         self.route('GET', ('inchikey', ':inchikey'), self.find_inchikey)
         self.route('GET', (':id', ':output_format'), self.get_format)
+        self.route('GET', ('search',), self.search)
         self.route('POST', (), self.create)
         self.route('DELETE', (':id',), self.delete)
         self.route('PATCH', (':id',), self.update)
@@ -348,3 +350,24 @@ class Molecule(Resource):
             .param('output_format', 'The format to convert to', paramType='path')
             .errorResponse('Output format not supported.', 400))
 
+    def search(self, params):
+
+        self.requireParams('q', params)
+
+        query_string = params['q']
+        try:
+            mongo_query = query.to_mongo_query(query_string)
+        except query.InvalidQuery:
+            raise RestException('Invalid query', 400)
+
+        mols = []
+        for mol in self._model.find(query=mongo_query, fields = ['_id', 'inchikey', 'name']):
+            mol['id'] = mol['_id']
+            del mol['_id']
+            mols.append(mol)
+
+        return mols
+
+    search.description = (
+            Description('Search for molecules using a query string')
+            .param('q', 'The query string to use for this search', paramType='query'))
