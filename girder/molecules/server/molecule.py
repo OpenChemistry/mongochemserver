@@ -355,6 +355,7 @@ class Molecule(Resource):
             .param('output_format', 'The format to convert to', paramType='path')
             .errorResponse('Output format not supported.', 400))
 
+    @access.public
     def search(self, params):
 
         self.requireParams('q', params)
