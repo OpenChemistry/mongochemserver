@@ -97,12 +97,15 @@ class StringEquals(Comparison):
         #    value = value.replace('InChI=', '')
 
         value = value.strip()
-        if '*' in value:
-            value = value.replace('*', '.*')
-            value = value.replace('(', '\(')
-            value = value.replace('[', '\[')
-            value = value.replace('+', '\+')
-            value = re.compile('^%s$' % value)
+
+        # For now treat everything as a regex so we can support case insensitive
+        # matching. We should really store everything in lowercase so that we
+        # can do direct match with out regex as this is more efficient.
+        value = value.replace('*', '.*')
+        value = value.replace('(', '\(')
+        value = value.replace('[', '\[')
+        value = value.replace('+', '\+')
+        value = re.compile('^%s$' % value, flags=re.IGNORECASE)
 
         return {self.args[0]: value}
 
