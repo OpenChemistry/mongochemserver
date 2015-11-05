@@ -118,6 +118,9 @@ class BooleanOp(Operator):
 
         op_args = []
         for arg in self.args:
+            if isinstance(arg, str):
+                raise ParseException('Invalid type')
+
             op_args.append(arg.query())
 
         q[self._op_map[self.op]] = op_args
