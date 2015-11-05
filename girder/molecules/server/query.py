@@ -96,6 +96,7 @@ class StringEquals(Comparison):
         #if self.args[0] == 'inchi':
         #    value = value.replace('InChI=', '')
 
+        value = value.strip()
         if '*' in value:
             value = value.replace('*', '.*')
             value = value.replace('(', '\(')
@@ -117,6 +118,9 @@ class BooleanOp(Operator):
 
         op_args = []
         for arg in self.args:
+            if isinstance(arg, str):
+                raise ParseException('Invalid type')
+
             op_args.append(arg.query())
 
         q[self._op_map[self.op]] = op_args
@@ -219,21 +223,21 @@ def to_mongo_query(query):
 
     try:
         result = boolean_expression.parseString(query, parseAll=True)
+
+        if len(result) != 1:
+            raise InvalidQuery(query)
+
+        if not isinstance(result[0], Operator):
+            raise InvalidQuery(query)
+
+        q = result[0].query()
+
+        for (key, value) in _key_map.items():
+            print(key)
+            _replace_key(q, key, value)
+
+        print(q)
+
+        return q
     except ParseException:
         raise InvalidQuery(query)
-
-    if len(result) != 1:
-        raise InvalidQuery(query)
-
-    if not isinstance(result[0], Operator):
-        raise InvalidQuery(query)
-
-    q = result[0].query()
-
-    for (key, value) in _key_map.items():
-        print(key)
-        _replace_key(q, key, value)
-
-    print(q)
-
-    return q
