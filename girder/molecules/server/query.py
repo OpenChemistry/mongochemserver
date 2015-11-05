@@ -223,21 +223,21 @@ def to_mongo_query(query):
 
     try:
         result = boolean_expression.parseString(query, parseAll=True)
+
+        if len(result) != 1:
+            raise InvalidQuery(query)
+
+        if not isinstance(result[0], Operator):
+            raise InvalidQuery(query)
+
+        q = result[0].query()
+
+        for (key, value) in _key_map.items():
+            print(key)
+            _replace_key(q, key, value)
+
+        print(q)
+
+        return q
     except ParseException:
         raise InvalidQuery(query)
-
-    if len(result) != 1:
-        raise InvalidQuery(query)
-
-    if not isinstance(result[0], Operator):
-        raise InvalidQuery(query)
-
-    q = result[0].query()
-
-    for (key, value) in _key_map.items():
-        print(key)
-        _replace_key(q, key, value)
-
-    print(q)
-
-    return q
