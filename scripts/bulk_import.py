@@ -21,6 +21,9 @@ def import_calc(config):
         client.token = config.token
 
         me = client.get('/user/me')
+        if not me:
+            print('Error: Girder token invalid, please verify')
+            return
 
         folderParams = {
             'parentId': me['_id'],
