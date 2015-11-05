@@ -96,6 +96,7 @@ class StringEquals(Comparison):
         #if self.args[0] == 'inchi':
         #    value = value.replace('InChI=', '')
 
+        value = value.strip()
         if '*' in value:
             value = value.replace('*', '.*')
             value = value.replace('(', '\(')
