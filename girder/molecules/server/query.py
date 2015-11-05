@@ -156,7 +156,7 @@ class Or(BooleanOp):
 # Define the syntax of the query language
 integer = Word(nums).setParseAction(lambda t: int(t[0]))
 real = Combine(Word(nums) + "." + Word(nums)).setParseAction(lambda t: float(t[0]))
-numeric_field = oneOf('mass atomCount')
+numeric_field = oneOf('mass atomCount heavyAtomCount')
 string_field = oneOf('name formula inchi inchikey smiles')
 smiles_field = oneOf('smiles')
 string = Word(string.ascii_letters+string.digits+'=/-+*[](), .')
@@ -214,6 +214,7 @@ def _replace_key(d, key, new_key):
 _key_map = {
         'mass': 'properties.mass',
         'atomCount': 'properties.atomCount',
+        'heavyAtomCount': 'properties.heavyAtomCount',
         'formula': 'properties.formula'
 }
 
