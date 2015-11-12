@@ -2,6 +2,7 @@ import cherrypy
 import json
 import os
 import functools
+import requests
 
 from girder.api.describe import Description
 from girder.api.docs import addModel
@@ -9,10 +10,12 @@ from girder.api.rest import Resource
 from girder.api.rest import RestException, loadmodel
 from girder.api import access
 from girder.constants import AccessType
+from girder.constants import TerminalColor
 from . import avogadro
 from . import openbabel
 from . import chemspider
 from . import query
+from . import semantic
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
@@ -136,6 +139,12 @@ class Molecule(Resource):
                     'properties': props,
                     'atomCounts': atomCounts
                 })
+
+                # Upload the molecule to virtuoso
+                try:
+                    semantic.upload_molecule(mol)
+                except requests.ConnectionError:
+                    print(TerminalColor.warning('WARNING: Couldn\'t connect to virtuoso.'))
 
             if 'vibrations' in cjson:
                 # We have some calculation data, let's add it to the calcs.
