@@ -4,9 +4,10 @@ from rdflib.namespace import RDF, OWL, NamespaceManager
 
 
 cheminf = Namespace('http://semanticscience.org/resource/')
-mongochem = Namespace('http://openchemistry.kitware.com/api/v1/molecules/')
 
-def create_molecule_graph(mol):
+
+def create_molecule_graph(uri_base, mol):
+    mongochem = Namespace('%s/api/v1/molecules/' % uri_base)
     g = Graph()
     inchi = mol['inchi']
     name = mol['name']

@@ -11,6 +11,7 @@ def validateSettings(event):
     if event.info['key'] == PluginSettings.VIRTUOSO_BASE_URL or \
        event.info['key'] == PluginSettings.VIRTUOSO_RDF_UPLOAD_PATH or \
        event.info['key'] == PluginSettings.VIRTUOSO_USER or \
+       event.info['key'] == PluginSettings.SEMANTIC_URI_BASE or \
        event.info['key'] == PluginSettings.VIRTUOSO_PASSWORD:
         event.preventDefault().stopPropagation()
 

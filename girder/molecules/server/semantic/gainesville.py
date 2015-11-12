@@ -7,13 +7,15 @@ import json
 from jsonpath_rw import parse
 from . import element
 
-mongochem = Namespace('http://openchemistry.kitware.com/api/v1/molecules/')
 gc = Namespace('http://purl.org/gc/#')
 pt = Namespace('http://www.daml.org/2003/01/periodictable/PeriodicTable#')
 
-def create_molecule_graph(mol):
+def create_molecule_graph(uri_base, mol):
     id = mol['_id']
     g = Graph()
+
+    uri = '%s/api/v1/molecules/' % uri_base
+    mongochem = Namespace(uri)
 
     molecule = URIRef(mongochem[id])
 
@@ -35,7 +37,8 @@ def create_molecule_graph(mol):
     index = 0
     atoms = {}
     for a in atomic_numbers:
-        atom = URIRef('http://openchemistry.kitware.com/api/v1/molecules/%s/atoms/%d'  % (id, index))
+        uri = '%s/api/v1/molecules/%s/atoms/%d'  % (uri_base, id, index)
+        atom = URIRef(uri)
         atoms[index] = atom
         g.add((atom, RDF.type, gc.Atom))
         g.add((atom, gc.isElement, pt.term(element.symbols[a])))
@@ -76,7 +79,8 @@ def create_molecule_graph(mol):
         elif order == 4:
             bond_type = gc.term('Quadruple')
 
-        bond = URIRef('http://openchemistry.kitware.com/api/v1/molecules/%s/bonds/a%d-a%d'  % (id, from_atom, to_atom))
+        uri = '%s/api/v1/molecules/%s/bonds/a%d-a%d'  % (uri_base, id, from_atom, to_atom)
+        bond = URIRef(uri)
 
         g.add((bond, RDF.type, bond_type))
         g.add((atoms[from_atom], gc.hasBond, bond))
