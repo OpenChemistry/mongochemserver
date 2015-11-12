@@ -1,4 +1,5 @@
 import cherrypy
+import functools
 from jsonpath_rw import parse
 from bson.objectid import ObjectId
 
@@ -13,6 +14,7 @@ from girder.constants import AccessType
 
 from girder.plugins.molecules.models.calculation import Calculation
 
+from . import avogadro
 
 class Calculation(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf']
@@ -30,6 +32,8 @@ class Calculation(Resource):
             self.get_calc_sdf)
         self.route('GET', (':id', 'cjson'),
             self.get_calc_cjson)
+        self.route('GET', (':id', 'cube', ':mo'),
+            self.get_calc_cube)
 
         self._model = self.model('calculation', 'molecules')
 
@@ -134,6 +138,45 @@ class Calculation(Resource):
         .param(
             'id',
             'The id of the calculation to return the structure for.',
+            dataType='string', required=True, paramType='path'))
+
+    @access.public
+    def get_calc_cube(self, id, mo, params):
+        try:
+            mo = int(mo)
+        except ValueError:
+            raise ValidationException('mo number be an integer', 'mode')
+
+        fields = ['cjson', 'access', 'fileId']
+
+        # Ignoring access control on file/data for now, all public.
+        calc =  self._model.load(id, fields=fields, force=True)
+
+        file_id = calc['fileId']
+        file = self.model('file').load(file_id, force=True)
+        parts = file['name'].split('.')
+        input_format = parts[-1]
+        name = '.'.join(parts[:-1])
+
+        contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
+        data_str = contents.decode()
+
+        # This is where the cube gets calculated, should be cached in future.
+        cjson = avogadro.calculate_mo(data_str, mo)
+
+        del calc['access']
+
+        return cjson
+
+    get_calc_cube.description = (
+        Description('Get the cube for the supplied MO of the calculation in CJSON format')
+        .param(
+            'id',
+            'The id of the calculation to return the structure for.',
+            dataType='string', required=True, paramType='path')
+        .param(
+            'mo',
+            'The molecular orbital to get the cube for.',
             dataType='string', required=True, paramType='path'))
 
     @access.user
