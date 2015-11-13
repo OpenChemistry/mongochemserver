@@ -42,6 +42,11 @@ class Molecule(Resource):
         del doc['access']
         del doc['sdf']
         doc['_id'] = str(doc['_id'])
+        if 'cjson' in doc:
+            if 'basisSet' in doc['cjson']:
+                del doc['cjson']['basisSet']
+            if 'vibrations' in doc['cjson']:
+                del doc['cjson']['vibrations']
 
         return doc
 
