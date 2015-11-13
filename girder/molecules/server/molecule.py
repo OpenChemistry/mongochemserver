@@ -157,14 +157,11 @@ class Molecule(Resource):
                 except requests.ConnectionError:
                     print(TerminalColor.warning('WARNING: Couldn\'t connect to virtuoso.'))
 
-            if 'vibrations' in cjson:
+            if 'vibrations' in cjson or 'basisSet' in cjson:
                 # We have some calculation data, let's add it to the calcs.
                 sdf = output
-                vibrational_modes = cjson['vibrations']
                 moleculeId = mol['_id']
 
-                #calc = self._calc_model.create(user, sdf, vibrational_modes,
-                #                               moleculeId)
                 calcProps = {}
                 if input_format == 'json':
                     jsonInput = json.loads(data_str)
