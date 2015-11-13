@@ -17,14 +17,14 @@ class Calculation(AccessControlledModel):
             '<mode>': [[3n]]
         }
       },
-      'sdf': '...'
+      'cjson': '...'
     }
     '''
 
     schema =  {
         '$schema': 'http://json-schema.org/draft-04/schema#',
         'type': 'object',
-        'required': ['vibrationalModes', 'sdf'],
+        'required': ['vibrationalModes'],
         'properties': {
             "vibrationalModes": {
                 'type': 'object',
@@ -56,9 +56,6 @@ class Calculation(AccessControlledModel):
                         }
                     }
                 }
-            },
-            'sdf': {
-                'type': 'string'
             }
         },
         'definitions': {
@@ -91,7 +88,7 @@ class Calculation(AccessControlledModel):
         self.ensureIndices(['moleculeId'])
 
         self.exposeFields(level=AccessType.READ, fields=(
-            '_id', 'moleculeId', 'fileId', 'sdf', 'vibrationalModes', 'properties'))
+            '_id', 'moleculeId', 'fileId', 'vibrationalModes', 'properties'))
 
     def filter(self, calc, user):
         calc = super(Calculation, self).filter(doc=calc, user=user)
@@ -145,10 +142,10 @@ class Calculation(AccessControlledModel):
     def create_cjson(self, user, cjson, props, moleculeId = None, fileId = None):
         calc = {
             'cjson': cjson,
-            'vibrationalModes': cjson['vibrations'],
-            'properties': props,
-            'sdf': 'Left intentionally blank...'
+            'properties': props
         }
+        if 'vibrations' in cjson:
+            calc['vibrationalModes'] = cjson['vibrations']
         if moleculeId:
             calc['moleculeId'] = moleculeId
         if fileId:
