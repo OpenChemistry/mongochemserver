@@ -40,6 +40,7 @@ class Molecule(Resource):
 
     def _clean(self, doc):
         del doc['access']
+        del doc['sdf']
         doc['_id'] = str(doc['_id'])
 
         return doc
@@ -127,12 +128,17 @@ class Molecule(Resource):
             if molExists:
                 mol = molExists
             else:
+                # Whitelist parts of the CJSON that we store at the top level.
+                cjsonmol = {}
+                cjsonmol['atoms'] = cjson['atoms']
+                cjsonmol['bonds'] = cjson['bonds']
+                cjsonmol['chemical json'] = cjson['chemical json']
                 mol = self._model.create_xyz(user, {
                     'name': chemspider.find_common_name(inchikey, props['formula']),
                     'inchi': inchi,
                     'inchikey': inchikey,
                     output_format: output,
-                    'cjson': cjson,
+                    'cjson': cjsonmol,
                     'properties': props,
                     'atomCounts': atomCounts
                 })
