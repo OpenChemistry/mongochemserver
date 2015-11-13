@@ -91,7 +91,7 @@ class Calculation(AccessControlledModel):
         self.ensureIndices(['moleculeId'])
 
         self.exposeFields(level=AccessType.READ, fields=(
-            '_id', 'moleculeId', 'sdf', 'vibrationalModes', 'properties'))
+            '_id', 'moleculeId', 'fileId', 'sdf', 'vibrationalModes', 'properties'))
 
     def filter(self, calc, user):
         calc = super(Calculation, self).filter(doc=calc, user=user)
@@ -152,7 +152,7 @@ class Calculation(AccessControlledModel):
         if moleculeId:
             calc['moleculeId'] = moleculeId
         if fileId:
-            calc['fileId'] = moleculeId
+            calc['fileId'] = fileId
 
         self.setUserAccess(calc, user=user, level=AccessType.ADMIN)
         # For now set as public

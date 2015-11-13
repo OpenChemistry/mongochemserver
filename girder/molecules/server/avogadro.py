@@ -1,4 +1,5 @@
-from avogadro2 import Molecule, FileFormatManager
+from avogadro2 import *
+import json
 
 def convert_str(str_data, in_format, out_format):
     mol = Molecule()
@@ -49,3 +50,16 @@ def calculation_properties(json_data):
         properties['runDate'] = env['runDate']
 
     return properties
+
+# This is far from ideal as it is a CPU intensive task blocking the main thread.
+def calculate_mo(json_str, mo):
+    mol = Molecule()
+    conv = FileFormatManager()
+    conv.readString(mol, json_str, 'json')
+    cube = mol.addCube()
+    # Hard wiring spacing/padding for now, this could be exposed in future too.
+    cube.setLimits(mol, 0.3, 4)
+    gaussian = GaussianSetTools(mol)
+    gaussian.calculateMolecularOrbital(cube, mo)
+
+    return json.loads(conv.writeString(mol, "cjson"))
