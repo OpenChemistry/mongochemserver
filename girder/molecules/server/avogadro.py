@@ -49,6 +49,17 @@ def calculation_properties(json_data):
         properties['processorCount'] = env['processorCount']
         properties['runDate'] = env['runDate']
 
+    calcTypes = {
+        'energyCalculation': 'energy',
+        'geometryOptimization': 'optimization',
+        'vibrationalModes': 'vibrational',
+        'molecularProperties': 'properties' }
+    calculationTypes = []
+    for calc in calcs:
+        if 'calculationType' in calc:
+            calculationTypes.append(calcTypes[calc['calculationType']])
+    properties['calculationTypes'] = calculationTypes
+
     return properties
 
 # This is far from ideal as it is a CPU intensive task blocking the main thread.
