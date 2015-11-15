@@ -217,6 +217,8 @@ class Calculation(Resource):
 
         if 'moleculeId' in params:
             query['moleculeId'] = ObjectId(params['moleculeId'])
+        if 'calculationType' in params:
+            query['properties.calculationTypes'] = params['calculationType']
 
         limit = params.get('limit', 50)
 
@@ -232,7 +234,11 @@ class Calculation(Resource):
         Description('Search for particular calculation')
         .param(
             'moleculeId',
-            'The moleculeId the calcualtions should be associated with',
+            'The moleculeId the calculations should be associated with',
+            dataType='string', paramType='query', required=False)
+        .param(
+            'calculationType',
+            'The type of calculations being searched for',
             dataType='string', paramType='query', required=False)
         .param(
             'limit',
