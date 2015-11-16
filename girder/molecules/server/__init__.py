@@ -2,6 +2,7 @@
 
 from .molecule import Molecule
 from .calculation import Calculation
+from .experiment import Experiment
 from girder import events
 from girder.models.model_base import ValidationException
 from .constants import PluginSettings
@@ -19,4 +20,5 @@ def validateSettings(event):
 def load(info):
     info['apiRoot'].molecules = Molecule()
     info['apiRoot'].calculations = Calculation()
+    info['apiRoot'].experiments = Experiment()
     events.bind('model.setting.validate', 'molecules', validateSettings)
