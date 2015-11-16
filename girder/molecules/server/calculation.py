@@ -267,8 +267,6 @@ class Calculation(Resource):
             query['moleculeId'] = ObjectId(params['moleculeId'])
 
         calcs = self._model.find(query, fields=fields)
-        calcs = self._model.filterResultsByPermission(calcs, getCurrentUser(),
-            AccessType.READ, limit=100)
 
         allTypes = []
         for types in calcs:
