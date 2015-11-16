@@ -87,9 +87,18 @@ def calculate_mo(json_str, mo):
     mol = Molecule()
     conv = FileFormatManager()
     conv.readString(mol, json_str, 'json')
+    # Do some scaling of our spacing based on the size of the molecule.
+    atomCount = mol.atomCount()
+    spacing = 0.30
+    if atomCount > 50:
+        spacing = 0.5
+    elif atomCount > 30:
+        spacing = 0.4
+    elif atomCount > 10:
+        spacing = 0.33
     cube = mol.addCube()
     # Hard wiring spacing/padding for now, this could be exposed in future too.
-    cube.setLimits(mol, 0.3, 4)
+    cube.setLimits(mol, spacing, 4)
     gaussian = GaussianSetTools(mol)
     gaussian.calculateMolecularOrbital(cube, mo)
 
