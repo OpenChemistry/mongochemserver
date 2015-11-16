@@ -24,7 +24,7 @@ class Calculation(AccessControlledModel):
     schema =  {
         '$schema': 'http://json-schema.org/draft-04/schema#',
         'type': 'object',
-        'required': ['vibrationalModes'],
+        'required': ['cjson'],
         'properties': {
             "vibrationalModes": {
                 'type': 'object',
@@ -88,7 +88,7 @@ class Calculation(AccessControlledModel):
         self.ensureIndices(['moleculeId'])
 
         self.exposeFields(level=AccessType.READ, fields=(
-            '_id', 'moleculeId', 'fileId', 'vibrationalModes', 'properties'))
+            '_id', 'moleculeId', 'fileId', 'properties'))
 
     def filter(self, calc, user):
         calc = super(Calculation, self).filter(doc=calc, user=user)
@@ -144,8 +144,6 @@ class Calculation(AccessControlledModel):
             'cjson': cjson,
             'properties': props
         }
-        if 'vibrations' in cjson:
-            calc['vibrationalModes'] = cjson['vibrations']
         if moleculeId:
             calc['moleculeId'] = moleculeId
         if fileId:

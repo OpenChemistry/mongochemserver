@@ -24,6 +24,7 @@ class Calculation(Resource):
         self.resourceName = 'calculations'
         self.route('POST', (), self.create_calc)
         self.route('GET', (), self.find_calc)
+        self.route('GET', ('types',), self.find_calc_types)
         self.route('GET', (':id', 'vibrationalmodes'),
             self.get_calc_vibrational_modes)
         self.route('GET', (':id', 'vibrationalmodes', ':mode'),
@@ -217,6 +218,8 @@ class Calculation(Resource):
 
         if 'moleculeId' in params:
             query['moleculeId'] = ObjectId(params['moleculeId'])
+        if 'calculationType' in params:
+            query['properties.calculationTypes'] = params['calculationType']
 
         limit = params.get('limit', 50)
 
@@ -232,9 +235,41 @@ class Calculation(Resource):
         Description('Search for particular calculation')
         .param(
             'moleculeId',
-            'The moleculeId the calcualtions should be associated with',
+            'The moleculeId the calculations should be associated with',
+            dataType='string', paramType='query', required=False)
+        .param(
+            'calculationType',
+            'The type of calculations being searched for',
             dataType='string', paramType='query', required=False)
         .param(
             'limit',
             'The max number of calculations to return',
              dataType='integer', paramType='query', default=50, required=False))
+
+    @access.public
+    def find_calc_types(self, params):
+        fields = ['access', 'properties.calculationTypes']
+
+        query = { }
+        if 'moleculeId' in params:
+            query['moleculeId'] = ObjectId(params['moleculeId'])
+
+        calcs = self._model.find(query, fields=fields)
+        calcs = self._model.filterResultsByPermission(calcs, getCurrentUser(),
+            AccessType.READ, limit=100)
+
+        allTypes = []
+        for types in calcs:
+            allTypes.extend(types['properties']['calculationTypes'])
+
+        typeSet = set(allTypes)
+
+        return typeSet
+
+    find_calc_types.description = (
+        Description('Get the calculation types available for the molecule')
+        .param(
+            'moleculeId',
+            'The id of the molecule we are finding types for.',
+            dataType='string', required=True, paramType='query'))
+

@@ -37,11 +37,31 @@ def calculation_properties(json_data):
     if not isinstance(calcs, list) or len(calcs) == 0:
         return properties
     firstCalc = calcs[0]
+    waveFunctionTypes = {
+        'Density Functional Theory': 'DFT',
+        'Hartree-Fock': 'HF' }
     if 'calculationSetup' in firstCalc:
         setup = firstCalc['calculationSetup']
-        properties['theory'] = setup['waveFunctionTheory']
+        # Use a lookup, probably needs to be extended to cover all types...
+        properties['theory'] = waveFunctionTypes[setup['waveFunctionTheory']]
         properties['type'] = setup['waveFunctionType']
-        properties['type'] = setup['waveFunctionType']
+
+        calcName = properties['theory'] + ' (' + properties['type']
+        if 'exchangeCorrelationFunctional' in setup:
+            for piece in setup['exchangeCorrelationFunctional']:
+                if 'xcName' in piece:
+                     properties['functional'] = piece['xcName']
+                     calcName += ' - ' + properties['functional']
+        calcName += ')'
+        properties['friendlyName'] = calcName
+
+        if 'molecularCharge' in setup:
+            properties['charge'] = setup['molecularCharge']
+        if 'numberOfElectrons' in setup:
+            properties['electronCount'] = setup['numberOfElectrons']
+        if 'molecularSpinMultiplicity' in setup:
+            properties['spin'] = setup['molecularSpinMultiplicity']
+
     if 'simulationEnvironment' in json_data['simulation']:
         env = json_data['simulation']['simulationEnvironment']
         properties['code'] = env['programRun']
