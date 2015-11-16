@@ -3,6 +3,7 @@ import json
 import os
 import functools
 import requests
+from jsonpath_rw import parse
 
 from girder.api.describe import Description
 from girder.api.docs import addModel
@@ -16,6 +17,7 @@ from . import openbabel
 from . import chemspider
 from . import query
 from . import semantic
+
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
@@ -78,6 +80,40 @@ class Molecule(Resource):
             .errorResponse()
            .errorResponse('Molecule not found.', 404))
 
+    def _process_experimental(self, doc):
+        facility_used = parse('experiment.experimentalEnvironment.facilityUsed').find(doc)[0].value
+        experiments = parse('experiment.experiments').find(doc)[0].value
+
+        experiment_model = self.model('experimental', 'molecules')
+
+        experiments_list = []
+        for experiment in experiments:
+            spectrum_type = experiment['spectrumType']
+            experimental_technique = experiment['experimentalTechnique']
+            id = experiment['id']
+            molecular_formula = experiment['molecularFormula']
+            instenisty_units = parse('measuredSpectrum.unitsY').find(experiment)[0].value
+            frequency_units = parse('measuredSpectrum.unitsX').find(experiment)[0].value
+            data_points = parse('measuredSpectrum.dataPoints').find(experiment)[0].value
+            frequencies = data_points[::2]
+            intensities = data_points[1::2]
+            measured_spectrum = {
+                'frequencies': {
+                    'units': frequency_units,
+                    'values': frequencies
+                },
+                'intensities': {
+                    'units': instenisty_units,
+                    'values': intensities
+                }
+            }
+
+            experiments_list.append(experiment_model.create(
+                facility_used, spectrum_type, experimental_technique, id,
+                molecular_formula, measured_spectrum))
+
+        return experiments_list
+
     @access.user
     def create(self, params):
         body = self.getBodyJson()
@@ -95,6 +131,12 @@ class Molecule(Resource):
 
             contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
             data_str = contents.decode()
+
+            # For now piggy backing experimental results upload here!
+            # This should be refactored ...
+            json_data = json.loads(data_str)
+            if 'experiment' in json_data:
+                return self._process_experimental(json_data)
 
             # Use the SDF format as it is the one with bonding that 3Dmol uses.
             output_format = 'sdf'

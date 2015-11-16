@@ -274,7 +274,7 @@ class Calculation(Resource):
 
         typeSet = set(allTypes)
 
-        return typeSet
+        return list(typeSet)
 
     find_calc_types.description = (
         Description('Get the calculation types available for the molecule')
