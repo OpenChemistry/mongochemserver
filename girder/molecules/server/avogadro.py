@@ -55,9 +55,12 @@ def calculation_properties(json_data):
         calcName += ')'
         properties['friendlyName'] = calcName
 
-        properties['charge'] = setup['molecularCharge']
-        properties['electronCount'] = setup['numberOfElectrons']
-        properties['spin'] = setup['molecularSpinMultiplicity']
+        if 'molecularCharge' in setup:
+            properties['charge'] = setup['molecularCharge']
+        if 'numberOfElectrons' in setup:
+            properties['electronCount'] = setup['numberOfElectrons']
+        if 'molecularSpinMultiplicity' in setup:
+            properties['spin'] = setup['molecularSpinMultiplicity']
 
     if 'simulationEnvironment' in json_data['simulation']:
         env = json_data['simulation']['simulationEnvironment']
