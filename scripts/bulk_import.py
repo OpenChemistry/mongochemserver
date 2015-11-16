@@ -49,8 +49,11 @@ def import_calc(config):
 
             mol = client.sendRestRequest('POST', 'molecules', data=json.dumps(body))
 
-            config.moleculeId = mol['_id']
-            print('Molecule ID: ' + mol['_id'])
+            if mol and '_id' in mol:
+                config.moleculeId = mol['_id']
+                print('Molecule ID: ' + mol['_id'])
+            else:
+                print(mol)
 
     except HttpError as error:
         print(error.responseText, file=sys.stderr)
