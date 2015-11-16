@@ -91,7 +91,7 @@ class Experimental(AccessControlledModel):
 
         self.exposeFields(level=AccessType.READ, fields=(
             'spectrumType', 'experimentalTechnique', 'id', '_id',
-                     'molecularFormula', 'measuredSpectrum'))
+                     'molecularFormula', 'measuredSpectrum', 'name'))
 
     def filter(self, calc, user):
         calc = super(Experimental, self).filter(doc=calc, user=user)

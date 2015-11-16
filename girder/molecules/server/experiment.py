@@ -21,11 +21,11 @@ class Experiment(Resource):
     @access.public
     def find_experiment(self, params):
         user = getCurrentUser()
-        self.requireParams(['molecularFormula'],  params)
 
-        query = {
-            'molecularFormula': params['molecularFormula']
-        }
+        query = { }
+        if 'molecularFormula' in params:
+            query['molecularFormula'] = params['molecularFormula']
+
         limit = int(params.get('limit', 50))
         experiments = self._model.find(query, limit=limit)
 
@@ -37,7 +37,7 @@ class Experiment(Resource):
         .param(
             'molecularFormula',
             'The molecular formula to search for experiments.',
-            dataType='string', required=True, paramType='query')
+            dataType='string', required=False, paramType='query')
         .param(
             'limit',
             'The max number of experiments to return',
