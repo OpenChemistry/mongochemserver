@@ -37,6 +37,7 @@ class Calculation(Resource):
             self.get_calc_cube)
 
         self._model = self.model('calculation', 'molecules')
+        self._cube_model = self.model('cubecache', 'molecules')
 
     @access.public
     def get_calc_vibrational_modes(self, id, params):
@@ -148,6 +149,12 @@ class Calculation(Resource):
         except ValueError:
             raise ValidationException('mo number be an integer', 'mode')
 
+        cached = self._cube_model.find_mo(id, mo)
+
+        # If we have a cached cube file use that.
+        if cached:
+            return cached['cjson']
+
         fields = ['cjson', 'access', 'fileId']
 
         # Ignoring access control on file/data for now, all public.
@@ -165,7 +172,12 @@ class Calculation(Resource):
         # This is where the cube gets calculated, should be cached in future.
         cjson = avogadro.calculate_mo(data_str, mo)
 
-        del calc['access']
+        # Remove the vibrational mode data from the cube - big, not needed here.
+        if 'vibrations' in cjson:
+            del cjson['vibrations']
+
+        # Cache this cube for the next time, they can take a while to generate.
+        self._cube_model.create(getCurrentUser(), id, mo, cjson)
 
         return cjson
 
