@@ -33,14 +33,13 @@ class Cubecache(AccessControlledModel):
 
         return doc
 
-    def create(self, user, calcId, mo, cjson):
+    def create(self, calcId, mo, cjson):
         cache = {
             'calculationId': calcId,
             'mo': mo,
             'cjson': cjson
         }
 
-        self.setUserAccess(cache, user=user, level=AccessType.ADMIN)
         # For now set as public
         self.setPublic(cache, True)
 
