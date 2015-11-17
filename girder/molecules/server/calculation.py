@@ -177,7 +177,7 @@ class Calculation(Resource):
             del cjson['vibrations']
 
         # Cache this cube for the next time, they can take a while to generate.
-        self._cube_model.create(getCurrentUser(), id, mo, cjson)
+        self._cube_model.create(id, mo, cjson)
 
         return cjson
 
