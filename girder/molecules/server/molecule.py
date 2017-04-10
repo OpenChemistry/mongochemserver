@@ -242,7 +242,7 @@ class Molecule(Resource):
 
         return self._clean(mol)
 
-    addModel('MoleculeParams', {
+    addModel('Molecule', 'MoleculeParams', {
         "id": "MoleculeParams",
         "required": ["name", "inchi"],
         "properties": {
@@ -293,7 +293,7 @@ class Molecule(Resource):
         mol = self._model.update(mol)
 
         return self._clean(mol)
-    addModel('UpdateMoleculeParams', {
+    addModel('Molecule', 'UpdateMoleculeParams', {
         "id": "UpdateMoleculeParams",
         "properties": {
             "logs": {"type": "array", "description": "List of Girder file ids"}
@@ -371,7 +371,7 @@ class Molecule(Resource):
 
             return stream
 
-    addModel('ConversionParams', {
+    addModel('Molecule', 'ConversionParams', {
         "id": "ConversionParams",
         "properties": {
             "fileId": {"type": "string", "description": "Girder file id to do conversion on"}

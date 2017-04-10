@@ -214,7 +214,7 @@ class Calculation(Resource):
     # Try and reuse schema for documentation, this only partially works!
     calc_schema = Calculation.schema.copy()
     calc_schema['id'] = 'CalculationData'
-    addModel('CalculationData', calc_schema)
+    addModel('Calculation', 'CalculationData', calc_schema)
 
     create_calc.description = (
         Description('Get the molecular structure of a give calculation in SDF format')
