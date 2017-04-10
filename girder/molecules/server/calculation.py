@@ -271,7 +271,10 @@ class Calculation(Resource):
 
         allTypes = []
         for types in calcs:
-            allTypes.extend(types['properties']['calculationTypes'])
+            calc_types = parse('properties.calculationTypes').find(types)
+            if calc_types:
+                calc_types = calc_types[0].value
+                allTypes.extend(calc_types)
 
         typeSet = set(allTypes)
 
