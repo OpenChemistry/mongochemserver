@@ -13,6 +13,7 @@ from girder.plugins.molecules.models.experimental import Experimental
 class Experiment(Resource):
 
     def __init__(self):
+        super(Experiment, self).__init__()
         self.resourceName = 'experiments'
         self.route('GET', (), self.find_experiment)
 

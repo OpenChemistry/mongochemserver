@@ -21,6 +21,7 @@ class Calculation(Resource):
     input_formats = ['cml', 'xyz', 'pdb']
 
     def __init__(self):
+        super(Calculation, self).__init__()
         self.resourceName = 'calculations'
         self.route('POST', (), self.create_calc)
         self.route('GET', (), self.find_calc)

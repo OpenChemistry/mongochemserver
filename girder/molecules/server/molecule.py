@@ -30,6 +30,7 @@ class Molecule(Resource):
     }
 
     def __init__(self):
+        super(Molecule, self).__init__()
         self.resourceName = 'molecules'
         self.route('GET', (), self.find)
         self.route('GET', ('inchikey', ':inchikey'), self.find_inchikey)
