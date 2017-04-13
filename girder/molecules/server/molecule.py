@@ -30,6 +30,7 @@ class Molecule(Resource):
     }
 
     def __init__(self):
+        super(Molecule, self).__init__()
         self.resourceName = 'molecules'
         self.route('GET', (), self.find)
         self.route('GET', ('inchikey', ':inchikey'), self.find_inchikey)
@@ -241,7 +242,7 @@ class Molecule(Resource):
 
         return self._clean(mol)
 
-    addModel('MoleculeParams', {
+    addModel('Molecule', 'MoleculeParams', {
         "id": "MoleculeParams",
         "required": ["name", "inchi"],
         "properties": {
@@ -292,7 +293,7 @@ class Molecule(Resource):
         mol = self._model.update(mol)
 
         return self._clean(mol)
-    addModel('UpdateMoleculeParams', {
+    addModel('Molecule', 'UpdateMoleculeParams', {
         "id": "UpdateMoleculeParams",
         "properties": {
             "logs": {"type": "array", "description": "List of Girder file ids"}
@@ -370,7 +371,7 @@ class Molecule(Resource):
 
             return stream
 
-    addModel('ConversionParams', {
+    addModel('Molecule', 'ConversionParams', {
         "id": "ConversionParams",
         "properties": {
             "fileId": {"type": "string", "description": "Girder file id to do conversion on"}

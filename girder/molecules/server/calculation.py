@@ -21,6 +21,7 @@ class Calculation(Resource):
     input_formats = ['cml', 'xyz', 'pdb']
 
     def __init__(self):
+        super(Calculation, self).__init__()
         self.resourceName = 'calculations'
         self.route('POST', (), self.create_calc)
         self.route('GET', (), self.find_calc)
@@ -213,7 +214,7 @@ class Calculation(Resource):
     # Try and reuse schema for documentation, this only partially works!
     calc_schema = Calculation.schema.copy()
     calc_schema['id'] = 'CalculationData'
-    addModel('CalculationData', calc_schema)
+    addModel('Calculation', 'CalculationData', calc_schema)
 
     create_calc.description = (
         Description('Get the molecular structure of a give calculation in SDF format')
@@ -270,7 +271,10 @@ class Calculation(Resource):
 
         allTypes = []
         for types in calcs:
-            allTypes.extend(types['properties']['calculationTypes'])
+            calc_types = parse('properties.calculationTypes').find(types)
+            if calc_types:
+                calc_types = calc_types[0].value
+                allTypes.extend(calc_types)
 
         typeSet = set(allTypes)
 
