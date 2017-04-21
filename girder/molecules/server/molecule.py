@@ -8,7 +8,7 @@ from jsonpath_rw import parse
 from girder.api.describe import Description
 from girder.api.docs import addModel
 from girder.api.rest import Resource
-from girder.api.rest import RestException, loadmodel
+from girder.api.rest import RestException, loadmodel, getCurrentUser
 from girder.api import access
 from girder.constants import AccessType
 from girder.constants import TerminalColor
@@ -35,6 +35,7 @@ class Molecule(Resource):
         self.route('GET', (), self.find)
         self.route('GET', ('inchikey', ':inchikey'), self.find_inchikey)
         self.route('GET', (':id', ':output_format'), self.get_format)
+        self.route('GET', (':id', ), self.find_id)
         self.route('GET', ('search',), self.search)
         self.route('POST', (), self.create)
         self.route('DELETE', (':id',), self.delete)
@@ -80,6 +81,14 @@ class Molecule(Resource):
             .param('inchi', 'The InChI key of the molecule', paramType='path')
             .errorResponse()
            .errorResponse('Molecule not found.', 404))
+
+    @access.public
+    def find_id(self, id, params):
+        mol = self._model.load(id, level=AccessType.READ, user=getCurrentUser())
+        if not mol:
+            raise RestException('Molecule not found.', code=404)
+        return self._clean(mol)
+
 
     def _process_experimental(self, doc):
         facility_used = parse('experiment.experimentalEnvironment.facilityUsed').find(doc)[0].value
