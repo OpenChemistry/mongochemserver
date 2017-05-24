@@ -18,7 +18,7 @@ def import_calc(config):
 
         client = GirderClient(host=config.host, port=target_port,
                               scheme=target_scheme, apiRoot=target_apiroot)
-        client.token = config.token
+        client.authenticate(apiKey=config.apiKey)
 
         me = client.get('/user/me')
         if not me:
@@ -32,9 +32,8 @@ def import_calc(config):
         }
 
         # Get the private folder id first
-        folder = client.listResource('folder', folderParams)
-
-        folder = client.listFolder(me['_id'], 'user', 'Private')
+        folder = next(client.listResource('folder', folderParams))
+        folder = next(client.listFolder(me['_id'], 'user', 'Private'))
 
         for file_name in config.datafile:
             print ('\nUploading ' + file_name)
@@ -42,7 +41,7 @@ def import_calc(config):
             with open(file_name, 'r') as fp:
                 fileNameBase = os.path.basename(file_name)
                 size = os.path.getsize(file_name)
-                file_id = client.uploadFile(folder[0]['_id'], fp, fileNameBase,
+                file_id = client.uploadFile(folder['_id'], fp, fileNameBase,
                                             size, 'folder')
 
             body = { 'fileId': file_id['_id'] }
@@ -65,7 +64,7 @@ if __name__ ==  '__main__':
     parser.add_argument('--port', help='Girder port', required=False)
     parser.add_argument('--scheme', help='Transport, http or https', required=False)
     parser.add_argument('--apiroot', help='API root for target', required=False)
-    parser.add_argument('--token', help='Girder auth token', required=True)
+    parser.add_argument('--apiKey', help='Girder API key', required=True)
     parser.add_argument('--datafile', help='Path to data file', nargs='*', required=False)
     parser.add_argument('--modes', help='JSON file contain modes', required=False)
     parser.add_argument('--moleculeId', help='The molecule to associate this calculation with', required=False)
