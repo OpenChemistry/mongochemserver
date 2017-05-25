@@ -232,7 +232,9 @@ class Calculation(Resource):
         if 'moleculeId' in params:
             query['moleculeId'] = ObjectId(params['moleculeId'])
         if 'calculationType' in params:
-            query['properties.calculationTypes'] = params['calculationType']
+            query['properties.calculationTypes'] = {
+                '$all': [params['calculationType']]
+            }
 
         limit = params.get('limit', 50)
 
@@ -252,7 +254,7 @@ class Calculation(Resource):
             dataType='string', paramType='query', required=False)
         .param(
             'calculationType',
-            'The type of calculations being searched for',
+            'The type of calculation being searched for',
             dataType='string', paramType='query', required=False)
         .param(
             'limit',
