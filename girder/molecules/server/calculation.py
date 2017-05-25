@@ -43,15 +43,15 @@ class Calculation(Resource):
     @access.public
     def get_calc_vibrational_modes(self, id, params):
 
-        fields = ['cjson.modes', 'cjson.intensities',
-                 'cjson.frequencies', 'access']
+        fields = ['cjson..vibrations.modes', 'cjson.vibrations.intensities',
+                 'cjson.vibrations.frequencies', 'access']
 
         calc =  self._model.load(id, fields=fields, user=getCurrentUser(),
                                  level=AccessType.READ)
 
         del calc['access']
 
-        return calc
+        return calc['cjson']['vibrations']
 
     get_calc_vibrational_modes.description = (
         Description('Get the vibrational modes associated with a calculation')
@@ -68,7 +68,7 @@ class Calculation(Resource):
         except ValueError:
             raise ValidationException('mode number be an integer', 'mode')
 
-        fields = ['cjson.modes', 'access']
+        fields = ['cjson.vibrations.modes', 'access']
         calc =  self._model.load(id, fields=fields, user=getCurrentUser(),
                                  level=AccessType.READ)
 
