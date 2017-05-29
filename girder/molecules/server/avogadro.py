@@ -76,17 +76,27 @@ def calculation_properties(json_data):
         'vibrationalModes': 'vibrational',
         'molecularProperties': 'properties' }
     calculationTypes = []
-    total_energies = {}
+    calculations = []
     for calc in calcs:
         if 'calculationType' in calc:
             calculationTypes.append(calcTypes[calc['calculationType']])
+            calc_obj = {
+                'type': calcTypes[calc['calculationType']]
+            }
             total_energy = parse('calculationResults.totalEnergy').find(calc)
             if total_energy:
-                total_energies[calcTypes[calc['calculationType']]] = \
-                    total_energy[0].value
+                calc_obj['totalEnergy'] = total_energy[0].value
+
+            zero_point_energy = \
+                parse('calculationResults.zeroPointEnergyCorrection').find(calc)
+            if zero_point_energy:
+                calc_obj['zeroPointEnergyCorrection'] = \
+                    zero_point_energy[0].value
+
+            calculations.append(calc_obj)
 
     properties['calculationTypes'] = calculationTypes
-    properties['totalEnergies'] = total_energies
+    properties['calculations'] = calculations
 
     return properties
 
