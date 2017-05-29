@@ -128,7 +128,7 @@ class Molecule(Resource):
     def create(self, params):
         body = self.getBodyJson()
         user = self.getCurrentUser()
-
+        public = body.get('public', False)
         if 'fileId' in body:
             file_id = body['fileId']
             file = self.model('file').load(file_id, user=user)
@@ -201,7 +201,7 @@ class Molecule(Resource):
                     'cjson': cjsonmol,
                     'properties': props,
                     'atomCounts': atomCounts
-                })
+                }, public)
 
                 # Upload the molecule to virtuoso
                 try:
@@ -220,7 +220,7 @@ class Molecule(Resource):
                     calcProps = avogadro.calculation_properties(jsonInput)
 
                 calc2 = self._calc_model.create_cjson(user, cjson, calcProps,
-                                                      moleculeId, file_id)
+                                                      moleculeId, file_id, public)
 
         elif 'xyz' in body or 'sdf' in body:
 
@@ -242,10 +242,10 @@ class Molecule(Resource):
             if 'name' in body:
                 mol['name'] = body['name']
 
-            mol = self._model.create_xyz(user, mol)
+            mol = self._model.create_xyz(user, mol, public)
         elif 'inchi' in body:
             inchi = body['inchi']
-            mol = self._model.create(user, inchi)
+            mol = self._model.create(user, inchi, public)
         else:
             raise RestException('Invalid request', code=400)
 

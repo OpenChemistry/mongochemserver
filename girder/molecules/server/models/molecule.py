@@ -41,14 +41,18 @@ class Molecule(AccessControlledModel):
         mol = self.findOne(query)
         return mol
 
-    def create(self, user, inchi):
+    def create(self, user, inchi, public=False):
         mol = { 'inchi': inchi }
         self.setUserAccess(mol, user=user, level=AccessType.ADMIN)
+        if public:
+            self.setPublic(mol, True)
         self.save(mol)
         return mol
 
-    def create_xyz(self, user, mol):
+    def create_xyz(self, user, mol, public=False):
         self.setUserAccess(mol, user=user, level=AccessType.ADMIN)
+        if public:
+            self.setPublic(mol, True)
         self.save(mol)
         return mol
 

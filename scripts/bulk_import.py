@@ -44,7 +44,13 @@ def import_calc(config):
                 file_id = client.uploadFile(folder['_id'], fp, fileNameBase,
                                             size, 'folder')
 
-            body = { 'fileId': file_id['_id'] }
+            body = {
+                'fileId': file_id['_id']
+            }
+
+            if config.public:
+                body['public'] = True
+
 
             mol = client.sendRestRequest('POST', 'molecules', data=json.dumps(body))
 
@@ -68,6 +74,7 @@ if __name__ ==  '__main__':
     parser.add_argument('--datafile', help='Path to data file', nargs='*', required=False)
     parser.add_argument('--modes', help='JSON file contain modes', required=False)
     parser.add_argument('--moleculeId', help='The molecule to associate this calculation with', required=False)
+    parser.add_argument('--public', help='Mark the calculation as public', required=False, action='store_true')
 
     config = parser.parse_args()
     import_calc(config)
