@@ -43,15 +43,15 @@ class Calculation(Resource):
     @access.public
     def get_calc_vibrational_modes(self, id, params):
 
-        fields = ['vibrationalModes.modes', 'vibrationalModes.intensities',
-                 'vibrationalModes.frequencies', 'access']
+        fields = ['cjson..vibrations.modes', 'cjson.vibrations.intensities',
+                 'cjson.vibrations.frequencies', 'access']
 
         calc =  self._model.load(id, fields=fields, user=getCurrentUser(),
                                  level=AccessType.READ)
 
         del calc['access']
 
-        return calc
+        return calc['cjson']['vibrations']
 
     get_calc_vibrational_modes.description = (
         Description('Get the vibrational modes associated with a calculation')
@@ -68,11 +68,11 @@ class Calculation(Resource):
         except ValueError:
             raise ValidationException('mode number be an integer', 'mode')
 
-        fields = ['vibrationalModes.modes', 'access']
+        fields = ['cjson.vibrations.modes', 'access']
         calc =  self._model.load(id, fields=fields, user=getCurrentUser(),
                                  level=AccessType.READ)
 
-        vibrational_modes = calc['vibrationalModes']
+        vibrational_modes = calc['cjson.vibrations']
         #frames = vibrational_modes.get('modeFrames')
         modes = vibrational_modes.get('modes', [])
 
@@ -87,20 +87,20 @@ class Calculation(Resource):
         }
 
         projection = {
-            'vibrationalModes.modeFrames': {
+            'cjson.vibrations.frequencies': {
                 '$slice': [index, 1]
             },
-            'vibrationalModes.frequencies': {
+            'cjson.vibrations.intensities': {
                 '$slice': [index, 1]
             },
-            'vibrationalModes.intensities': {
+            'cjson.vibrations.eigenVectors': {
                 '$slice': [index, 1]
             }
         }
 
-        mode_frames = self._model.findOne(query, fields=projection)
+        mode = self._model.findOne(query, fields=projection)
 
-        return mode_frames['vibrationalModes']['modeFrames'][0]
+        return mode
 
 
     get_calc_vibrational_mode.description = (
@@ -196,14 +196,14 @@ class Calculation(Resource):
     @access.user
     def create_calc(self, params):
         body = getBodyJson()
-        self.requireParams(['sdf', 'vibrationalModes'],  body)
+        self.requireParams(['cjson'],  body)
         user = getCurrentUser()
 
-        sdf = body['sdf']
-        vibrational_modes = body['vibrationalModes']
+        cjson = body['cjson']
+        props = body.get('properties', {})
         moleculeId = body.get('moleculeId', None)
 
-        calc = self._model.create(user, sdf, vibrational_modes, moleculeId)
+        calc = self._model.create_cjson(user, cjson, props, moleculeId)
 
         cherrypy.response.status = 201
         cherrypy.response.headers['Location'] \
@@ -232,12 +232,14 @@ class Calculation(Resource):
         if 'moleculeId' in params:
             query['moleculeId'] = ObjectId(params['moleculeId'])
         if 'calculationType' in params:
-            query['properties.calculationTypes'] = params['calculationType']
+            query['properties.calculationTypes'] = {
+                '$all': [params['calculationType']]
+            }
 
         limit = params.get('limit', 50)
 
-        fields = ['vibrationalModes.modes', 'vibrationalModes.intensities',
-                 'vibrationalModes.frequencies', 'properties', 'fileId', 'access', 'public']
+        fields = ['cjson.vibrations.modes', 'cjson.vibrations.intensities',
+                 'cjson.vibrations.frequencies', 'properties', 'fileId', 'access', 'public']
         calcs = self._model.find(query, fields=fields)
         calcs = self._model.filterResultsByPermission(calcs, user,
             AccessType.READ, limit=int(limit))
@@ -252,7 +254,7 @@ class Calculation(Resource):
             dataType='string', paramType='query', required=False)
         .param(
             'calculationType',
-            'The type of calculations being searched for',
+            'The type of calculation being searched for',
             dataType='string', paramType='query', required=False)
         .param(
             'limit',
