@@ -8,7 +8,7 @@ from jsonpath_rw import parse
 from girder.api.describe import Description
 from girder.api.docs import addModel
 from girder.api.rest import Resource
-from girder.api.rest import RestException, loadmodel
+from girder.api.rest import RestException, loadmodel, getCurrentUser
 from girder.api import access
 from girder.constants import AccessType
 from girder.constants import TerminalColor
@@ -35,6 +35,7 @@ class Molecule(Resource):
         self.route('GET', (), self.find)
         self.route('GET', ('inchikey', ':inchikey'), self.find_inchikey)
         self.route('GET', (':id', ':output_format'), self.get_format)
+        self.route('GET', (':id', ), self.find_id)
         self.route('GET', ('search',), self.search)
         self.route('POST', (), self.create)
         self.route('DELETE', (':id',), self.delete)
@@ -81,6 +82,14 @@ class Molecule(Resource):
             .errorResponse()
            .errorResponse('Molecule not found.', 404))
 
+    @access.public
+    def find_id(self, id, params):
+        mol = self._model.load(id, level=AccessType.READ, user=getCurrentUser())
+        if not mol:
+            raise RestException('Molecule not found.', code=404)
+        return self._clean(mol)
+
+
     def _process_experimental(self, doc):
         facility_used = parse('experiment.experimentalEnvironment.facilityUsed').find(doc)[0].value
         experiments = parse('experiment.experiments').find(doc)[0].value
@@ -119,7 +128,7 @@ class Molecule(Resource):
     def create(self, params):
         body = self.getBodyJson()
         user = self.getCurrentUser()
-
+        public = body.get('public', False)
         if 'fileId' in body:
             file_id = body['fileId']
             file = self.model('file').load(file_id, user=user)
@@ -192,7 +201,7 @@ class Molecule(Resource):
                     'cjson': cjsonmol,
                     'properties': props,
                     'atomCounts': atomCounts
-                })
+                }, public)
 
                 # Upload the molecule to virtuoso
                 try:
@@ -211,7 +220,7 @@ class Molecule(Resource):
                     calcProps = avogadro.calculation_properties(jsonInput)
 
                 calc2 = self._calc_model.create_cjson(user, cjson, calcProps,
-                                                      moleculeId, file_id)
+                                                      moleculeId, file_id, public)
 
         elif 'xyz' in body or 'sdf' in body:
 
@@ -233,10 +242,10 @@ class Molecule(Resource):
             if 'name' in body:
                 mol['name'] = body['name']
 
-            mol = self._model.create_xyz(user, mol)
+            mol = self._model.create_xyz(user, mol, public)
         elif 'inchi' in body:
             inchi = body['inchi']
-            mol = self._model.create(user, inchi)
+            mol = self._model.create(user, inchi, public)
         else:
             raise RestException('Invalid request', code=400)
 
