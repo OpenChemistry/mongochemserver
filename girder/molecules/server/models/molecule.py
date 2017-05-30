@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import re
+
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.constants import AccessType
 
@@ -7,6 +9,7 @@ class Molecule(AccessControlledModel):
 
     def __init__(self):
         super(Molecule, self).__init__()
+        self.ensureIndex('properties.formula')
 
     def initialize(self):
         self.name = 'molecules'
@@ -40,6 +43,17 @@ class Molecule(AccessControlledModel):
         query = { 'inchikey': inchikey }
         mol = self.findOne(query)
         return mol
+
+    def find_formula(self, formula, user):
+        formula_regx = re.compile('^%s$' % formula, re.IGNORECASE)
+        query = {
+            'properties.formula': formula_regx
+        }
+        mols = self.find(query)
+
+        return self.filterResultsByPermission(mols, user, level=AccessType.READ)
+
+
 
     def create(self, user, inchi, public=False):
         mol = { 'inchi': inchi }
