@@ -427,22 +427,31 @@ class Molecule(Resource):
     @access.public
     def search(self, params):
 
-        self.requireParams('q', params)
+        query_string = params.get('q')
+        formula = params.get('formula')
+        if query_string is None and formula is None:
+            raise RestException('Either \'q\' or \'formula\' is required.')
 
-        query_string = params['q']
-        try:
-            mongo_query = query.to_mongo_query(query_string)
-        except query.InvalidQuery:
-            raise RestException('Invalid query', 400)
 
-        mols = []
-        for mol in self._model.find(query=mongo_query, fields = ['_id', 'inchikey', 'name']):
-            mol['id'] = mol['_id']
-            del mol['_id']
-            mols.append(mol)
+        if query_string is not None:
+            try:
+                mongo_query = query.to_mongo_query(query_string)
+            except query.InvalidQuery:
+                raise RestException('Invalid query', 400)
 
-        return mols
+            mols = []
+            for mol in self._model.find(query=mongo_query, fields = ['_id', 'inchikey', 'name']):
+                mol['id'] = mol['_id']
+                del mol['_id']
+                mols.append(mol)
+
+            return mols
+
+        else:
+            # Search using formula
+            return list(self._model.find_formula(formula, getCurrentUser()))
 
     search.description = (
-            Description('Search for molecules using a query string')
-            .param('q', 'The query string to use for this search', paramType='query'))
+            Description('Search for molecules using a query string or formula')
+            .param('q', 'The query string to use for this search', paramType='query', required=False)
+            .param('formula', 'The formula to search for', paramType='query', required=False))

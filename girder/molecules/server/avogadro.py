@@ -1,5 +1,6 @@
 from avogadro2 import *
 import json
+from jsonpath_rw import parse
 
 def convert_str(str_data, in_format, out_format):
     mol = Molecule()
@@ -75,10 +76,27 @@ def calculation_properties(json_data):
         'vibrationalModes': 'vibrational',
         'molecularProperties': 'properties' }
     calculationTypes = []
+    calculations = []
     for calc in calcs:
         if 'calculationType' in calc:
             calculationTypes.append(calcTypes[calc['calculationType']])
+            calc_obj = {
+                'type': calcTypes[calc['calculationType']]
+            }
+            total_energy = parse('calculationResults.totalEnergy').find(calc)
+            if total_energy:
+                calc_obj['totalEnergy'] = total_energy[0].value
+
+            zero_point_energy = \
+                parse('calculationResults.zeroPointEnergyCorrection').find(calc)
+            if zero_point_energy:
+                calc_obj['zeroPointEnergyCorrection'] = \
+                    zero_point_energy[0].value
+
+            calculations.append(calc_obj)
+
     properties['calculationTypes'] = calculationTypes
+    properties['calculations'] = calculations
 
     return properties
 
