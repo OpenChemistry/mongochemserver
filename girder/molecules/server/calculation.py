@@ -150,7 +150,24 @@ class Calculation(Resource):
         try:
             mo = int(mo)
         except ValueError:
-            raise ValidationException('mo number be an integer', 'mode')
+
+            # Check for homo lumo
+            mo = mo.lower()
+            if mo in ['homo', 'lumo']:
+                cal = self._model.load(id, fields=['cjson'], force=True)
+                electron_count = parse('cjson.basisSet.electronCount').find(cal)
+                if electron_count:
+                    electron_count = electron_count[0].value
+                else:
+                    raise RestException('Unable to access electronCount', 400)
+
+                if mo == 'homo':
+                    mo = int(electron_count / 2)
+                elif mo == 'lumo':
+                    mo = int(electron_count / 2 + 1)
+            else:
+                raise ValidationException('mo number be an integer or \'homo\'/\'lumo\'', 'mode')
+
 
         cached = self._cube_model.find_mo(id, mo)
 
