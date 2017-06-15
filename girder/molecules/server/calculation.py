@@ -36,6 +36,8 @@ class Calculation(Resource):
             self.get_calc_cjson)
         self.route('GET', (':id', 'cube', ':mo'),
             self.get_calc_cube)
+        self.route('GET', (':id',),
+            self.find_id)
 
         self._model = self.model('calculation', 'molecules')
         self._cube_model = self.model('cubecache', 'molecules')
@@ -260,6 +262,13 @@ class Calculation(Resource):
             'limit',
             'The max number of calculations to return',
              dataType='integer', paramType='query', default=50, required=False))
+
+    @access.public
+    def find_id(self, id, params):
+        cal = self._model.load(id, level=AccessType.READ, user=getCurrentUser())
+        if not cal:
+            raise RestException('Calculation not found.', code=404)
+        return cal
 
     @access.public
     def find_calc_types(self, params):
