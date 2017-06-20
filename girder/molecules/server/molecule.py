@@ -472,7 +472,10 @@ class Molecule(Resource):
                     'inchikey': inchikey,
                     'origin': 'cactus'
                 }
-                mol = self._model.create_xyz(getCurrentUser(), mol, public=True)
+
+                user = getCurrentUser()
+                if user is not None:
+                    mol = self._model.create_xyz(getCurrentUser(), mol, public=True)
 
             return [mol]
 
