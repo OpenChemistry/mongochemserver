@@ -429,9 +429,9 @@ class Molecule(Resource):
 
         query_string = params.get('q')
         formula = params.get('formula')
-        if query_string is None and formula is None:
-            raise RestException('Either \'q\' or \'formula\' is required.')
-
+        cactus = params.get('cactus')
+        if query_string is None and formula is None and cactus is None:
+            raise RestException('Either \'q\', \'formula\' or \'cactus\' is required.')
 
         if query_string is not None:
             try:
@@ -447,11 +447,38 @@ class Molecule(Resource):
 
             return mols
 
-        else:
+        elif formula:
             # Search using formula
             return list(self._model.find_formula(formula, getCurrentUser()))
+        elif cactus:
+            r = requests.get('https://cactus.nci.nih.gov/chemical/structure/%s/sdf' % cactus)
+
+            if r.status_code == 404:
+                return []
+            else:
+                r.raise_for_status()
+
+            (inchi, inchikey) = openbabel.to_inchi(r.content.decode('utf8'), 'sdf')
+
+            # See if we already have a molecule
+            mol = self._model.find_inchikey(inchikey)
+
+            # Create new molecule
+            if mol is None:
+
+                cjson_str = avogadro.convert_str(r.content, 'sdf', 'cjson')
+                mol = {
+                    'cjson': json.loads(cjson_str),
+                    'inchikey': inchikey,
+                    'origin': 'cactus'
+                }
+                mol = self._model.create_xyz(getCurrentUser(), mol, public=True)
+
+            return [mol]
+
 
     search.description = (
             Description('Search for molecules using a query string or formula')
             .param('q', 'The query string to use for this search', paramType='query', required=False)
-            .param('formula', 'The formula to search for', paramType='query', required=False))
+            .param('formula', 'The formula to search for', paramType='query', required=False)
+            .param('cactus', 'The identifier to pass to cactus', paramType='query', required=False))
