@@ -221,8 +221,9 @@ class Calculation(Resource):
         cjson = body['cjson']
         props = body.get('properties', {})
         moleculeId = body.get('moleculeId', None)
+        public = body.get('public', False)
 
-        calc = self._model.create_cjson(user, cjson, props, moleculeId)
+        calc = self._model.create_cjson(user, cjson, props, moleculeId, public=public)
 
         cherrypy.response.status = 201
         cherrypy.response.headers['Location'] \
