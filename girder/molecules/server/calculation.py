@@ -3,7 +3,7 @@ import functools
 from jsonpath_rw import parse
 from bson.objectid import ObjectId
 
-from girder.api.describe import Description
+from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
 from girder.api import access
 from girder.api.rest import Resource
@@ -38,6 +38,8 @@ class Calculation(Resource):
             self.get_calc_cube)
         self.route('GET', (':id',),
             self.find_id)
+        self.route('PUT', (':id', 'properties'),
+            self.update_properties)
 
         self._model = self.model('calculation', 'molecules')
         self._cube_model = self.model('cubecache', 'molecules')
@@ -316,3 +318,19 @@ class Calculation(Resource):
             'The id of the molecule we are finding types for.',
             dataType='string', required=True, paramType='query'))
 
+    @access.token
+    @autoDescribeRoute(
+        Description('Update the calculation properties.')
+        .notes('Override the exist properties')
+        .modelParam('id', 'The ID of the calculation.', model='calculation',
+                    plugin='molecules', level=AccessType.ADMIN)
+        .param('body', 'The new set of properties', paramType='body')
+        .errorResponse('ID was invalid.')
+        .errorResponse('Write access was denied for the calculation.', 403)
+    )
+    def update_properties(self, calculation, params):
+        props = getBodyJson()
+        calculation['properties'] = props
+        calculation = self._model.save(calculation)
+
+        return calculation
