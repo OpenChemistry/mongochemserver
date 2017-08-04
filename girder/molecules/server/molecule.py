@@ -131,6 +131,7 @@ class Molecule(Resource):
         public = body.get('public', False)
         if 'fileId' in body:
             file_id = body['fileId']
+            calc_id = body.get('calculationId')
             file = self.model('file').load(file_id, user=user)
             parts = file['name'].split('.')
             input_format = parts[-1]
@@ -213,14 +214,27 @@ class Molecule(Resource):
                 # We have some calculation data, let's add it to the calcs.
                 sdf = output
                 moleculeId = mol['_id']
-
                 calcProps = {}
+
+                if calc_id is not None:
+                    calc = self._calc_model.load(calc_id, user=user, level=AccessType.ADMIN)
+                    calcProps = calc['properties']
+                    # The calculation is no longer pending
+                    if 'pending' in calcProps:
+                        del calcProps['pending']
+
                 if input_format == 'json':
                     jsonInput = json.loads(data_str)
-                    calcProps = avogadro.calculation_properties(jsonInput)
+                    calcProps.update(avogadro.calculation_properties(jsonInput))
 
-                calc2 = self._calc_model.create_cjson(user, cjson, calcProps,
-                                                      moleculeId, file_id, public)
+                if calc_id is not None:
+                    calc['properties'] = calcProps
+                    calc['cjson'] = cjson
+                    calc['fileId'] = file_id
+                    self._calc_model.save(calc)
+                else:
+                    self._calc_model.create_cjson(user, cjson, calcProps,
+                                                  moleculeId, file_id, public)
 
         elif 'xyz' in body or 'sdf' in body:
 
