@@ -220,7 +220,8 @@ class Molecule(Resource):
                     calc = self._calc_model.load(calc_id, user=user, level=AccessType.ADMIN)
                     calcProps = calc['properties']
                     # The calculation is no longer pending
-                    del calcProps['pending']
+                    if 'pending' in calcProps:
+                        del calcProps['pending']
 
                 if input_format == 'json':
                     jsonInput = json.loads(data_str)
