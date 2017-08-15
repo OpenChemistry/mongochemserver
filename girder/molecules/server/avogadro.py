@@ -44,7 +44,7 @@ def calculation_properties(json_data):
     if 'calculationSetup' in firstCalc:
         setup = firstCalc['calculationSetup']
         # Use a lookup, probably needs to be extended to cover all types...
-        properties['theory'] = waveFunctionTypes[setup['waveFunctionTheory']]
+        properties['theory'] = waveFunctionTypes[setup['waveFunctionTheory']].lower()
         properties['type'] = setup['waveFunctionType']
 
         calcName = properties['theory'] + ' (' + properties['type']
