@@ -45,7 +45,11 @@ class Calculation(AccessControlledModel):
 
     def initialize(self):
         self.name = 'calculations'
-        self.ensureIndices(['moleculeId'])
+        self.ensureIndices([
+            'moleculeId', 'calculationType', 'properties.functional',
+            'properties.theory', 'properties.basisSet.name', 'pending',
+            'theoryPriority'
+        ])
 
         self.exposeFields(level=AccessType.READ, fields=(
             '_id', 'moleculeId', 'fileId', 'properties'))
