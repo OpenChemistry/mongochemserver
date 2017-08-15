@@ -47,7 +47,8 @@ class Molecule(Resource):
 
     def _clean(self, doc):
         del doc['access']
-        del doc['sdf']
+        if 'sdf' in doc:
+            del doc['sdf']
         doc['_id'] = str(doc['_id'])
         if 'cjson' in doc:
             if 'basisSet' in doc['cjson']:
