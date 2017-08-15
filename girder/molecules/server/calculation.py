@@ -2,6 +2,7 @@ import cherrypy
 import functools
 from jsonpath_rw import parse
 from bson.objectid import ObjectId
+import json
 
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
@@ -11,10 +12,14 @@ from girder.api.rest import RestException, getBodyJson, getCurrentUser, \
     loadmodel
 from girder.models.model_base import ModelImporter, ValidationException
 from girder.constants import AccessType
-
+from girder.utility import toBool
 from girder.plugins.molecules.models.calculation import Calculation
 
+
 from . import avogadro
+from .molecule import Molecule
+import pymongo
+
 
 class Calculation(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf']
@@ -275,19 +280,59 @@ class Calculation(Resource):
         if 'moleculeId' in params:
             query['moleculeId'] = ObjectId(params['moleculeId'])
         if 'calculationType' in params:
+            calculation_type = params['calculationType']
+            if not isinstance(calculation_type, list):
+                calculation_type = [calculation_type]
+
             query['properties.calculationTypes'] = {
-                '$all': [params['calculationType']]
+                '$all': calculation_type
             }
+
+        if 'functional' in params:
+            query['properties.functional'] = params.get('functional').lower()
+
+        if 'theory' in params:
+            query['properties.theory'] = params.get('theory').lower()
+
+        if 'basis' in params:
+            query['properties.basisSet.name'] = params.get('basis').lower()
+
+        if 'pending' in params:
+            pending = toBool(params['pending'])
+            query['properties.pending'] = pending
+            # The absence of the field mean the calculation is not pending ...
+            if not pending:
+                query['properties.pending'] = {
+                    '$ne': True
+                }
 
         limit = params.get('limit', 50)
 
         fields = ['cjson.vibrations.modes', 'cjson.vibrations.intensities',
                  'cjson.vibrations.frequencies', 'properties', 'fileId', 'access', 'public']
-        calcs = self._model.find(query, fields=fields)
+        sort = None
+        sort_by_theory = toBool(params.get('sortByTheory', False))
+        if sort_by_theory:
+            sort = [('properties.theoryPriority', pymongo.ASCENDING)]
+            # Exclude calculations that don't have a theoryPriority,
+            # otherwise they will appear first in the list.
+            query['properties.theoryPriority'] = { '$exists': True }
+
+        calcs = self._model.find(query, fields=fields, sort=sort)
         calcs = self._model.filterResultsByPermission(calcs, user,
             AccessType.READ, limit=int(limit))
+        calcs = [self._model.filter(x, user) for x in calcs]
 
-        return [self._model.filter(x, user) for x in calcs]
+        not_sortable = []
+        if sort_by_theory and len(calcs) < int(limit):
+            # Now select any calculations without theoryPriority
+            query['properties.theoryPriority'] = { '$exists': False }
+            not_sortable = self._model.find(query, fields=fields)
+            not_sortable = self._model.filterResultsByPermission(not_sortable, user,
+            AccessType.READ, limit=int(limit) - len(calcs))
+            not_sortable = [self._model.filter(x, user) for x in not_sortable]
+
+        return calcs + not_sortable
 
     find_calc.description = (
         Description('Search for particular calculation')
@@ -297,12 +342,33 @@ class Calculation(Resource):
             dataType='string', paramType='query', required=False)
         .param(
             'calculationType',
-            'The type of calculation being searched for',
+            'The type or types of calculation being searched for',
             dataType='string', paramType='query', required=False)
+        .param(
+            'basis',
+            'The basis set used for the calculations.',
+             dataType='string', paramType='query', required=False)
+        .param(
+            'functional',
+            'The functional used for the calculations.',
+             dataType='string', paramType='query', required=False)
+        .param(
+            'theory',
+            'The theory used for the calculations.',
+             dataType='string', paramType='query', required=False)
+        .param(
+            'pending',
+            'Whether the calculation is currently running.',
+             dataType='boolean', paramType='query', required=False)
         .param(
             'limit',
             'The max number of calculations to return',
-             dataType='integer', paramType='query', default=50, required=False))
+             dataType='integer', paramType='query', default=50, required=False)
+        .param(
+            'sortByTheory',
+            'Sort the result by theory "priority", "best" first.',
+             dataType='boolean', paramType='query', default=False, required=False))
+
 
     @access.public
     def find_id(self, id, params):

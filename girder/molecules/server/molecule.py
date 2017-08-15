@@ -17,7 +17,7 @@ from . import openbabel
 from . import chemspider
 from . import query
 from . import semantic
-
+from . import constants
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
@@ -227,6 +227,28 @@ class Molecule(Resource):
                 if input_format == 'json':
                     jsonInput = json.loads(data_str)
                     calcProps.update(avogadro.calculation_properties(jsonInput))
+
+                # Use basisSet from cjson if we don't already have one.
+                if 'basisSet' in cjson and 'basisSet' not in calcProps:
+                    calcProps['basisSet'] = cjson['basisSet']
+
+                # Use functional from cjson properties if we don't already have
+                # one.
+                functional = parse('properties.functional').find(cjson)
+                if functional and 'functional' not in calcProps:
+                    calcProps['functional'] = functional[0].value
+
+                # Add theory priority to 'sort' calculations
+                theory = calcProps.get('theory')
+                functional = calcProps.get('functional')
+                if theory in constants.theory_priority:
+                    priority = constants.theory_priority[theory]
+                    # If we have functional use this to lookup the specific
+                    # priority.
+                    if isinstance(priority, dict) and functional is not None:
+                        priority = priority[functional]
+
+                    calcProps['theoryPriority'] = priority
 
                 if calc_id is not None:
                     calc['properties'] = calcProps
