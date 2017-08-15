@@ -34,6 +34,8 @@ class Calculation(Resource):
             self.get_calc_sdf)
         self.route('GET', (':id', 'cjson'),
             self.get_calc_cjson)
+        self.route('GET', (':id', 'xyz'),
+            self.get_calc_xyz)
         self.route('GET', (':id', 'cube', ':mo'),
             self.get_calc_cube)
         self.route('GET', (':id',),
@@ -142,6 +144,25 @@ class Calculation(Resource):
 
     get_calc_cjson.description = (
         Description('Get the molecular structure of a give calculation in CJSON format')
+        .param(
+            'id',
+            'The id of the calculation to return the structure for.',
+            dataType='string', required=True, paramType='path'))
+
+    @access.public
+    @loadmodel(model='calculation', plugin='molecules', level=AccessType.READ)
+    def get_calc_xyz(self, calculation, params):
+        data = json.dumps(calculation['cjson'])
+        data = avogadro.convert_str(data, 'cjson', 'xyz')
+
+        def stream():
+            cherrypy.response.headers['Content-Type'] = Molecule.mime_types['xyz']
+            yield data
+
+        return stream
+
+    get_calc_xyz.description = (
+        Description('Get the molecular structure of a give calculation in XYZ format')
         .param(
             'id',
             'The id of the calculation to return the structure for.',
