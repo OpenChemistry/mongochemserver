@@ -17,7 +17,7 @@ from . import openbabel
 from . import chemspider
 from . import query
 from . import semantic
-
+from . import constants
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
@@ -47,7 +47,8 @@ class Molecule(Resource):
 
     def _clean(self, doc):
         del doc['access']
-        del doc['sdf']
+        if 'sdf' in doc:
+            del doc['sdf']
         doc['_id'] = str(doc['_id'])
         if 'cjson' in doc:
             if 'basisSet' in doc['cjson']:
@@ -214,26 +215,46 @@ class Molecule(Resource):
                 # We have some calculation data, let's add it to the calcs.
                 sdf = output
                 moleculeId = mol['_id']
-                calcProps = {}
+                calc_props = {}
 
                 if calc_id is not None:
                     calc = self._calc_model.load(calc_id, user=user, level=AccessType.ADMIN)
-                    calcProps = calc['properties']
+                    calc_props = calc['properties']
                     # The calculation is no longer pending
-                    if 'pending' in calcProps:
-                        del calcProps['pending']
+                    if 'pending' in calc_props:
+                        del calc_props['pending']
 
                 if input_format == 'json':
                     jsonInput = json.loads(data_str)
-                    calcProps.update(avogadro.calculation_properties(jsonInput))
+                    # Don't override existing properties
+                    new_calc_props = avogadro.calculation_properties(jsonInput)
+                    new_calc_props.update(calc_props)
+                    calc_props = new_calc_props
+
+                # Use basisSet from cjson if we don't already have one.
+                if 'basisSet' in cjson and 'basisSet' not in calc_props:
+                    calc_props['basisSet'] = cjson['basisSet']
+
+                # Use functional from cjson properties if we don't already have
+                # one.
+                functional = parse('properties.functional').find(cjson)
+                if functional and 'functional' not in calc_props:
+                    calc_props['functional'] = functional[0].value
+
+                # Add theory priority to 'sort' calculations
+                theory = calc_props.get('theory')
+                functional = calc_props.get('functional')
+                if theory in constants.theory_priority:
+                    priority = constants.theory_priority[theory]
+                    calc_props['theoryPriority'] = priority
 
                 if calc_id is not None:
-                    calc['properties'] = calcProps
+                    calc['properties'] = calc_props
                     calc['cjson'] = cjson
                     calc['fileId'] = file_id
                     self._calc_model.save(calc)
                 else:
-                    self._calc_model.create_cjson(user, cjson, calcProps,
+                    self._calc_model.create_cjson(user, cjson, calc_props,
                                                   moleculeId, file_id, public)
 
         elif 'xyz' in body or 'sdf' in body:
