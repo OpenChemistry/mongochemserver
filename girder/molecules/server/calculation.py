@@ -313,7 +313,7 @@ class Calculation(Resource):
         sort = None
         sort_by_theory = toBool(params.get('sortByTheory', False))
         if sort_by_theory:
-            sort = [('properties.theoryPriority', pymongo.ASCENDING)]
+            sort = [('properties.theoryPriority', pymongo.DESCENDING)]
             # Exclude calculations that don't have a theoryPriority,
             # otherwise they will appear first in the list.
             query['properties.theoryPriority'] = { '$exists': True }

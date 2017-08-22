@@ -246,11 +246,6 @@ class Molecule(Resource):
                 functional = calc_props.get('functional')
                 if theory in constants.theory_priority:
                     priority = constants.theory_priority[theory]
-                    # If we have functional use this to lookup the specific
-                    # priority.
-                    if isinstance(priority, dict) and functional is not None:
-                        priority = priority[functional]
-
                     calc_props['theoryPriority'] = priority
 
                 if calc_id is not None:

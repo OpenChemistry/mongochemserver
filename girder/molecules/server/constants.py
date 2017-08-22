@@ -10,9 +10,7 @@ theory_priority = {
     'mp7': 20, # (semi-empirical)
     'rhf': 30, # (hartree fock, etc)
     'scf': 30, # (hartree fock, etc)
-    'dft': {
-        'b3lyp': 40
-    },
+    'dft': 40,
     'mp2': 100,
     'ccsd': 200 # (coupled cluster)
 }
