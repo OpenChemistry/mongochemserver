@@ -214,8 +214,8 @@ class Calculation(Resource):
         input_format = parts[-1]
         name = '.'.join(parts[:-1])
 
-        contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
-        data_str = contents.decode()
+        with self.model('file').open(file) as fp:
+            data_str = fp.read().decode()
 
         # This is where the cube gets calculated, should be cached in future.
         cjson = avogadro.calculate_mo(data_str, mo)
