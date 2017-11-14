@@ -7,6 +7,8 @@ from girder.models.folder import Folder
 from girder.models.upload import Upload
 from girder.utility.path import lookUpPath
 
+from .rest import Notebook
+
 
 def createNotebooks(event):
     user = event.info
@@ -41,4 +43,6 @@ def createNotebooks(event):
 
 def load(info):
     events.bind('model.user.save.created', 'notebooks', createNotebooks)
+
+    info['apiRoot'].notebooks = Notebook()
 

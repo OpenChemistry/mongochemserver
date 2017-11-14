@@ -81,3 +81,17 @@ class Molecule(AccessControlledModel):
         self.save(mol)
 
         return mol
+
+    def add_notebooks(self, mol, notebooks):
+        query = {
+            '_id': mol['_id']
+        }
+
+        update = {
+            '$addToSet': {
+                'notebooks': {
+                    '$each': notebooks
+                }
+            }
+        }
+        super(Molecule, self).update(query, update)
