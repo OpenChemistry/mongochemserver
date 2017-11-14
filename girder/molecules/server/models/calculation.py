@@ -47,7 +47,7 @@ class Calculation(AccessControlledModel):
         self.name = 'calculations'
         self.ensureIndices([
             'moleculeId', 'calculationType', 'properties.functional',
-            'properties.theory', 'properties.basisSet.name', 'pending',
+            'properties.theory', 'properties.basisSet.name', 'properties.pending',
             'theoryPriority'
         ])
 

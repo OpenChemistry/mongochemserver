@@ -5,7 +5,7 @@ import functools
 import requests
 from jsonpath_rw import parse
 
-from girder.api.describe import Description
+from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
 from girder.api.rest import Resource
 from girder.api.rest import RestException, loadmodel, getCurrentUser
@@ -18,6 +18,7 @@ from . import chemspider
 from . import query
 from . import semantic
 from . import constants
+from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
@@ -40,6 +41,7 @@ class Molecule(Resource):
         self.route('POST', (), self.create)
         self.route('DELETE', (':id',), self.delete)
         self.route('PATCH', (':id',), self.update)
+        self.route('PATCH', (':id', 'notebooks'), self.add_notebooks)
         self.route('POST', ('conversions', ':output_format'), self.conversions)
 
         self._model = self.model('molecule', 'molecules')
@@ -330,6 +332,7 @@ class Molecule(Resource):
 
         body = self.getBodyJson()
 
+        # TODO this should be refactored to use $addToSet
         if 'logs' in body:
             logs = mol.setdefault('logs', [])
             logs += body['logs']
@@ -352,6 +355,21 @@ class Molecule(Resource):
             dataType='UpdateMoleculeParams',
             required=True, paramType='body')
             .errorResponse('Molecule not found.', 404))
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Add notebooks ( file ids ) to molecule.')
+        .modelParam('id', 'The molecule id',
+                    model=MoleculeModel, destName='molecule',
+                    force=True, paramType='path')
+        .jsonParam('notebooks', 'List of notesbooks', required=True, paramType='body')
+    )
+    def add_notebooks(self, molecule, notebooks):
+        print(molecule)
+        notebooks = notebooks.get('notebooks')
+        print(notebooks)
+        if notebooks is not None:
+            MoleculeModel().add_notebooks(molecule, notebooks)
 
     @access.user
     def conversions(self, output_format, params):
