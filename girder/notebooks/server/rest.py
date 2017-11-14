@@ -23,7 +23,6 @@ class Notebook(Resource):
         .errorResponse('ID was invalid.')
     )
     def as_html(self, file):
-        print(file)
         with File().open(file) as fp:
             notebook = nbformat.reads(fp.read().decode(), as_version=4)
 
@@ -37,6 +36,3 @@ class Notebook(Resource):
             yield body
 
         return stream
-
-
-

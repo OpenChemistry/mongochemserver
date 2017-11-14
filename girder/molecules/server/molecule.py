@@ -365,9 +365,7 @@ class Molecule(Resource):
         .jsonParam('notebooks', 'List of notesbooks', required=True, paramType='body')
     )
     def add_notebooks(self, molecule, notebooks):
-        print(molecule)
         notebooks = notebooks.get('notebooks')
-        print(notebooks)
         if notebooks is not None:
             MoleculeModel().add_notebooks(molecule, notebooks)
 
