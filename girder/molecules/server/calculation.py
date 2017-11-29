@@ -13,8 +13,7 @@ from girder.api.rest import RestException, getBodyJson, getCurrentUser, \
 from girder.models.model_base import ModelImporter, ValidationException
 from girder.constants import AccessType
 from girder.utility import toBool
-from girder.plugins.molecules.models.calculation import Calculation
-
+from girder.plugins.molecules.models.calculation import Calculation as CalculationModel
 
 from . import avogadro
 from .molecule import Molecule
@@ -47,6 +46,8 @@ class Calculation(Resource):
             self.find_id)
         self.route('PUT', (':id', 'properties'),
             self.update_properties)
+        self.route('PATCH', (':id', 'notebooks'), self.add_notebooks)
+
 
         self._model = self.model('calculation', 'molecules')
         self._cube_model = self.model('cubecache', 'molecules')
@@ -250,8 +251,10 @@ class Calculation(Resource):
         props = body.get('properties', {})
         moleculeId = body.get('moleculeId', None)
         public = body.get('public', False)
+        notebooks = body.get('notebooks', [])
 
-        calc = self._model.create_cjson(user, cjson, props, moleculeId, public=public)
+        calc = self._model.create_cjson(user, cjson, props, moleculeId,
+                                        notebooks=notebooks, public=public)
 
         cherrypy.response.status = 201
         cherrypy.response.headers['Location'] \
@@ -260,7 +263,7 @@ class Calculation(Resource):
         return self._model.filter(calc, user)
 
     # Try and reuse schema for documentation, this only partially works!
-    calc_schema = Calculation.schema.copy()
+    calc_schema = CalculationModel.schema.copy()
     calc_schema['id'] = 'CalculationData'
     addModel('Calculation', 'CalculationData', calc_schema)
 
@@ -376,6 +379,12 @@ class Calculation(Resource):
         if not cal:
             raise RestException('Calculation not found.', code=404)
         return cal
+    find_id.description = (
+        Description('Get the calculation by id')
+        .param(
+            'id',
+            'The id of calculatino.',
+            dataType='string', required=True, paramType='path'))
 
     @access.public
     def find_calc_types(self, params):
@@ -421,3 +430,16 @@ class Calculation(Resource):
         calculation = self._model.save(calculation)
 
         return calculation
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Add notebooks ( file ids ) to molecule.')
+        .modelParam('id', 'The calculation id',
+                    model=CalculationModel, destName='calculation',
+                    force=True, paramType='path')
+        .jsonParam('notebooks', 'List of notebooks', required=True, paramType='body')
+    )
+    def add_notebooks(self, calculation, notebooks):
+        notebooks = notebooks.get('notebooks')
+        if notebooks is not None:
+            CalculationModel().add_notebooks(calculation, notebooks)

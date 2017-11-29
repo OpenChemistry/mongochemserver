@@ -52,7 +52,7 @@ class Calculation(AccessControlledModel):
         ])
 
         self.exposeFields(level=AccessType.READ, fields=(
-            '_id', 'moleculeId', 'fileId', 'properties'))
+            '_id', 'moleculeId', 'fileId', 'properties', 'notebooks'))
 
     def filter(self, calc, user):
         calc = super(Calculation, self).filter(doc=calc, user=user)
@@ -77,10 +77,12 @@ class Calculation(AccessControlledModel):
 
         return doc
 
-    def create_cjson(self, user, cjson, props, moleculeId = None, fileId = None, public=False):
+    def create_cjson(self, user, cjson, props, moleculeId = None, fileId = None,
+                     public=False, notebooks=[]):
         calc = {
             'cjson': cjson,
-            'properties': props
+            'properties': props,
+            'notebooks': notebooks
         }
         if moleculeId:
             calc['moleculeId'] = moleculeId
@@ -92,3 +94,17 @@ class Calculation(AccessControlledModel):
             self.setPublic(calc, True)
 
         return self.save(calc)
+
+    def add_notebooks(self, calc, notebooks):
+        query = {
+            '_id': calc['_id']
+        }
+
+        update = {
+            '$addToSet': {
+                'notebooks': {
+                    '$each': notebooks
+                }
+            }
+        }
+        super(Calculation, self).update(query, update)

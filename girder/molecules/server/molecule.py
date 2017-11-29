@@ -362,7 +362,7 @@ class Molecule(Resource):
         .modelParam('id', 'The molecule id',
                     model=MoleculeModel, destName='molecule',
                     force=True, paramType='path')
-        .jsonParam('notebooks', 'List of notesbooks', required=True, paramType='body')
+        .jsonParam('notebooks', 'List of notebooks', required=True, paramType='body')
     )
     def add_notebooks(self, molecule, notebooks):
         notebooks = notebooks.get('notebooks')
