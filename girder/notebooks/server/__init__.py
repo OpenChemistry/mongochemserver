@@ -20,13 +20,13 @@ def createNotebooks(event):
     oc_folder = folder_model.createFolder(private_folder, 'oc',
                                           parentType='folder',
                                           creator=user,
-                                          public=False,
+                                          public=True,
                                           reuseExisting=True)
 
     notebook_folder = folder_model.createFolder(oc_folder, 'notebooks',
                                                 parentType='folder',
                                                 creator=user,
-                                                public=False,
+                                                public=True,
                                                 reuseExisting=True)
 
     notebooks_dir = os.path.join(os.path.dirname(__file__), 'notebooks')
