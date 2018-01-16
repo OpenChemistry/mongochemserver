@@ -502,7 +502,9 @@ class Molecule(Resource):
             # Search using formula
             return list(self._model.find_formula(formula, getCurrentUser()))
         elif cactus:
-            r = requests.get('https://cactus.nci.nih.gov/chemical/structure/%s/sdf' % cactus)
+            # Disable cert verification for now
+            # TODO Ensure we have the right root certs so this just works.
+            r = requests.get('https://cactus.nci.nih.gov/chemical/structure/%s/sdf' % cactus, verify=False)
 
             if r.status_code == 404:
                 return []
