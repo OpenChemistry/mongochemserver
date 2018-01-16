@@ -188,7 +188,12 @@ class Calculation(Resource):
                 if electron_count:
                     electron_count = electron_count[0].value
                 else:
-                    raise RestException('Unable to access electronCount', 400)
+                    # Look here as well.
+                    electron_count = parse('properties.electronCount').find(cal)
+                    if electron_count:
+                        electron_count = electron_count[0].value
+                    else:
+                        raise RestException('Unable to access electronCount', 400)
 
                 if mo == 'homo':
                     mo = int(electron_count / 2)
