@@ -183,7 +183,7 @@ class Calculation(Resource):
             # Check for homo lumo
             mo = mo.lower()
             if mo in ['homo', 'lumo']:
-                cal = self._model.load(id, fields=['cjson'], force=True)
+                cal = self._model.load(id, force=True)
                 electron_count = parse('cjson.basisSet.electronCount').find(cal)
                 if electron_count:
                     electron_count = electron_count[0].value
