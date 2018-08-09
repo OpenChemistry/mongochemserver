@@ -29,8 +29,8 @@ class Molecule(AccessControlledModel):
         cursor = self.find(query)
         mols = list()
         for mol in cursor:
-            molecule = { 'id': mol['_id'], 'inchikey': mol['inchikey'],
-                         'name': mol['name']}
+            molecule = { 'id': mol['_id'], 'inchikey': mol.get('inchikey'),
+                         'name': mol.get('name')}
             mols.append(molecule)
         return mols
 
