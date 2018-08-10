@@ -1,0 +1,21 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: openchemistry/mongochemserver:latest
+        environment:
+          - CIRCLE_BRANCH: ${CIRCLE_BRANCH}
+          - CIRCLE_BUILD_NUM: ${CIRCLE_BUILD_NUM}
+      - image: mongo:latest
+    working_directory: /mongochemserver
+    steps:
+      - checkout
+      - run:
+          name: Run pytest
+          command: 'pytest ./girder/molecules/plugin_tests/'
+
+workflows:
+  version: 2
+  ci:
+    jobs:
+      - build

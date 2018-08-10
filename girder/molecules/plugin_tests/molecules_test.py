@@ -33,11 +33,11 @@ def test_create_molecule(server, user):
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
     with open(dir_path + '/data/ethane.xyz', 'r') as rf:
-        xyzData = rf.read()
+        xyz_data = rf.read()
 
     body = {
       'name': 'ethane',
-      'xyz': xyzData
+      'xyz': xyz_data
     }
 
     r = server.request('/molecules', method='POST', type='application/json',

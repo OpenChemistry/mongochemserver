@@ -29,10 +29,10 @@ def molecule(user):
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
     with open(dir_path + '/data/ethane.xyz', 'r') as rf:
-        xyzData = rf.read()
+        xyz_data = rf.read()
 
     input_format = 'xyz'
-    data = xyzData
+    data = xyz_data
     name = 'ethane'
 
     (inchi, inchikey) = openbabel.to_inchi(data, input_format)
