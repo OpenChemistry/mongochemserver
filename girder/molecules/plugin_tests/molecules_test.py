@@ -120,3 +120,31 @@ def test_get_molecule(server, molecule, user):
     assert mol.get('id') == _id
     assert mol.get('inchikey') == inchikey
     assert mol.get('name') == name
+
+@pytest.mark.plugin('molecules')
+def test_get_molecule_inchikey(server, molecule, user):
+
+    # The molecule will have been created by the fixture
+    assert '_id' in molecule
+    assert 'inchi' in molecule
+    assert 'inchikey' in molecule
+
+    # This one is not essential, but we set it ourselves
+    assert 'name' in molecule
+
+    _id = molecule['_id']
+    inchi = molecule['inchi']
+    inchikey = molecule['inchikey']
+    name = molecule['name']
+
+    # Find the molecule by its inchikey
+    r = server.request('/molecules/inchikey/%s' % inchikey, method='GET',
+                       user=user)
+    assertStatusOk(r)
+
+    mol = r.json
+
+    assert mol.get('_id') == _id
+    assert mol.get('inchi') == inchi
+    assert mol.get('inchikey') == inchikey
+    assert mol.get('name') == name
