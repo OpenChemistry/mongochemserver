@@ -26,6 +26,7 @@ from pytest_girder.assertions import assertStatusOk, assertStatus
 from . import calculation
 from . import molecule
 
+
 @pytest.mark.plugin('molecules')
 def test_create_calc(server, molecule, user):
     from girder.plugins.molecules.models.calculation import Calculation
@@ -72,6 +73,7 @@ def test_create_calc(server, molecule, user):
     assert str(calc2['_id']) == calc_id
     assert str(calc2['moleculeId']) == molecule_id
 
+
 @pytest.mark.plugin('molecules')
 def test_get_calc(server, molecule, calculation, user):
 
@@ -81,7 +83,7 @@ def test_get_calc(server, molecule, calculation, user):
     calc_molecule_id = str(calculation['moleculeId'])
 
     # Find it by molecule id
-    params = { 'moleculeId': calc_molecule_id }
+    params = {'moleculeId': calc_molecule_id}
     r = server.request('/calculations', method='GET', params=params, user=user)
     assertStatusOk(r)
 
@@ -101,3 +103,65 @@ def test_get_calc(server, molecule, calculation, user):
 
     assert '_id' in calc
     assert str(calc['_id']) == calc_id
+
+
+@pytest.mark.plugin('molecules')
+def test_put_properties(server, molecule, calculation, user):
+    from girder.plugins.molecules.models.calculation import Calculation
+    from girder.constants import AccessType
+
+    assert '_id' in calculation
+    assert 'moleculeId' in calculation
+    assert 'properties' in calculation
+    calc_id = str(calculation['_id'])
+    calc_molecule_id = str(calculation['moleculeId'])
+    calc_properties = calculation['properties']
+
+    # We put these properties in ourselves
+    assert 'molecular mass' in calc_properties
+    assert 'boiling point' in calc_properties
+    assert 'melting point' in calc_properties
+
+    # Make sure these have the right values
+    assert pytest.approx(calc_properties['molecular mass'], 1.e-4) == 30.0690
+    assert calc_properties['melting point'] == -172
+    assert calc_properties['boiling point'] == -88
+
+    # Replace these properties with some new properties
+    new_properties = {
+        'critical temperature': 32.2,
+        'critical pressure': 49.0
+    }
+    r = server.request('/calculations/%s/properties' % calc_id, method='PUT',
+                       body=json.dumps(new_properties), user=user,
+                       type='application/json')
+    assertStatusOk(r)
+
+    # Grab the new calculation
+    updated_calc = Calculation().load(calc_id, level=AccessType.READ, user=user)
+
+    # It should have an _id and a molecule id, and it should match
+    assert '_id' in updated_calc
+    assert 'moleculeId' in updated_calc
+    assert 'properties' in updated_calc
+
+    assert str(updated_calc['_id']) == calc_id
+    assert str(updated_calc['moleculeId']) == calc_molecule_id
+
+    # Make sure the old properties are no longer here
+    updated_calc_properties = updated_calc['properties']
+    assert 'molecular mass' not in updated_calc_properties
+    assert 'boiling point' not in updated_calc_properties
+    assert 'melting point' not in updated_calc_properties
+
+    # The new properties should be here, though
+    assert 'critical temperature' in updated_calc_properties
+    assert 'critical pressure' in updated_calc_properties
+
+    # Make sure these are correct also
+    assert pytest.approx(
+        updated_calc_properties['critical temperature'],
+        1.e-1) == new_properties['critical temperature']
+    assert pytest.approx(
+        updated_calc_properties['critical pressure'],
+        1.e-1) == new_properties['critical pressure']
