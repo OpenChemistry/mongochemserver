@@ -25,6 +25,7 @@ from pytest_girder.assertions import assertStatusOk
 
 from . import molecule
 
+
 @pytest.mark.plugin('molecules')
 def test_create_molecule(server, user):
     from girder.plugins.molecules.models.molecule import Molecule
@@ -36,8 +37,8 @@ def test_create_molecule(server, user):
         xyz_data = rf.read()
 
     body = {
-      'name': 'ethane',
-      'xyz': xyz_data
+        'name': 'ethane',
+        'xyz': xyz_data
     }
 
     r = server.request('/molecules', method='POST', type='application/json',
@@ -66,6 +67,7 @@ def test_create_molecule(server, user):
     r = server.request('/molecules/%s' % id, method='DELETE', user=user)
     assertStatusOk(r)
 
+
 @pytest.mark.plugin('molecules')
 def test_get_molecule(server, molecule, user):
 
@@ -83,7 +85,7 @@ def test_get_molecule(server, molecule, user):
     name = molecule['name']
 
     # Find the molecule by name
-    params = { 'name': name }
+    params = {'name': name}
     r = server.request('/molecules', method='GET', params=params, user=user)
     assertStatusOk(r)
 
@@ -96,7 +98,7 @@ def test_get_molecule(server, molecule, user):
     assert mol.get('name') == name
 
     # Find the molecule by inchi
-    params = { 'inchi': inchi }
+    params = {'inchi': inchi}
     r = server.request('/molecules', method='GET', params=params, user=user)
     assertStatusOk(r)
 
@@ -109,7 +111,7 @@ def test_get_molecule(server, molecule, user):
     assert mol.get('name') == name
 
     # Find the molecule by inchikey
-    params = { 'inchikey': inchikey }
+    params = {'inchikey': inchikey}
     r = server.request('/molecules', method='GET', params=params, user=user)
     assertStatusOk(r)
 
@@ -120,6 +122,7 @@ def test_get_molecule(server, molecule, user):
     assert mol.get('id') == _id
     assert mol.get('inchikey') == inchikey
     assert mol.get('name') == name
+
 
 @pytest.mark.plugin('molecules')
 def test_get_molecule_inchikey(server, molecule, user):
@@ -148,3 +151,43 @@ def test_get_molecule_inchikey(server, molecule, user):
     assert mol.get('inchi') == inchi
     assert mol.get('inchikey') == inchikey
     assert mol.get('name') == name
+
+
+@pytest.mark.plugin('molecules')
+def test_search_molecule_formula(server, molecule, user):
+
+    # The molecule will have been created by the fixture
+    assert '_id' in molecule
+    assert 'inchi' in molecule
+    assert 'inchikey' in molecule
+    assert 'properties' in molecule
+    assert 'formula' in molecule['properties']
+
+    # This one is not essential, but we set it ourselves
+    assert 'name' in molecule
+
+    _id = molecule['_id']
+    inchi = molecule['inchi']
+    inchikey = molecule['inchikey']
+    name = molecule['name']
+    formula = molecule['properties']['formula']
+
+    ethane_formula = 'C2H6'
+    assert formula == ethane_formula
+
+    # Find the molecule by its formula. Formula here is C2H6.
+    params = {'formula': ethane_formula}
+    r = server.request('/molecules/search', method='GET', user=user,
+                       params=params)
+    assertStatusOk(r)
+
+    # Should just be one
+    assert len(r.json) == 1
+    mol = r.json[0]
+
+    # Everything should match
+    assert mol.get('_id') == _id
+    assert mol.get('inchi') == inchi
+    assert mol.get('inchikey') == inchikey
+    assert mol.get('name') == name
+    assert mol.get('properties').get('formula') == ethane_formula
