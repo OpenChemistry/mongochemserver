@@ -20,9 +20,9 @@
 import pytest
 import os
 
-# Our method for creating a molecule
 @pytest.fixture
 def molecule(user):
+    """Our method for creating a molecule within girder."""
     from girder.plugins.molecules.models.molecule import Molecule
     from girder.plugins.molecules import openbabel
 
@@ -36,11 +36,15 @@ def molecule(user):
     name = 'ethane'
 
     (inchi, inchikey) = openbabel.to_inchi(data, input_format)
+    formula = openbabel.get_formula(data, input_format)
+
+    properties = {'formula': formula}
 
     mol = {
         'inchi': inchi,
         'inchikey': inchikey,
-        'name': name
+        'name': name,
+        'properties': properties
     }
 
     mol = Molecule().create_xyz(user, mol, public=False)
@@ -54,9 +58,9 @@ def molecule(user):
     # Delete mol
     Molecule().remove(mol)
 
-# Our method for creating a calculation
 @pytest.fixture
 def calculation(user, molecule):
+    """Our method for creating a calculation within girder."""
     from girder.plugins.molecules.models.calculation import Calculation
 
     assert '_id' in molecule
