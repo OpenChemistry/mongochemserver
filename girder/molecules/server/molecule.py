@@ -288,7 +288,7 @@ class Molecule(Resource):
             mol = self._model.create_xyz(user, mol, public)
         elif 'inchi' in body:
             inchi = body['inchi']
-            mol = self._model.create(user, inchi, public)
+            mol = self._model.create(user, inchi, public=public)
         else:
             raise RestException('Invalid request', code=400)
 
