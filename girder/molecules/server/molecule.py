@@ -81,7 +81,7 @@ class Molecule(Resource):
         return self._clean(mol)
     find_inchikey.description = (
             Description('Find a molecule by InChI key.')
-            .param('inchi', 'The InChI key of the molecule', paramType='path')
+            .param('inchikey', 'The InChI key of the molecule', paramType='path')
             .errorResponse()
            .errorResponse('Molecule not found.', 404))
 
