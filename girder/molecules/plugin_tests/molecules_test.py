@@ -23,11 +23,12 @@ import pytest
 
 from pytest_girder.assertions import assertStatusOk, assertStatus
 
+from . import make_girder_file
 from . import molecule
 
 
 @pytest.mark.plugin('molecules')
-def test_create_molecule(server, user):
+def test_create_molecule_xyz(server, user):
     from girder.plugins.molecules.models.molecule import Molecule
     from girder.constants import AccessType
 
