@@ -165,3 +165,37 @@ def test_put_properties(server, molecule, calculation, user):
     assert pytest.approx(
         updated_calc_properties['critical pressure'],
         1.e-1) == new_properties['critical pressure']
+
+
+@pytest.mark.plugin('molecules')
+def test_get_cjson(server, calculation, user):
+
+    assert '_id' in calculation
+    assert 'moleculeId' in calculation
+    calc_id = str(calculation['_id'])
+    calc_molecule_id = str(calculation['moleculeId'])
+
+    # Get the cjson for the calculation
+    r = server.request(
+        '/calculations/%s/cjson' %
+        calc_id, method='GET', user=user)
+    assertStatusOk(r)
+
+    cjson = json.loads(r.json)
+
+    # Should have all the needed cjson components
+    assert 'atoms' in cjson
+    assert 'coords' in cjson['atoms']
+    assert '3d' in cjson['atoms']['coords']
+    assert len(cjson['atoms']['coords']['3d']) == 24  # 3 * 8 atoms = 24
+
+    assert 'elements' in cjson['atoms']
+    assert 'number' in cjson['atoms']['elements']
+    assert cjson['atoms']['elements']['number'].count(1) == 6
+    assert cjson['atoms']['elements']['number'].count(6) == 2
+    assert len(cjson['atoms']['elements']['number']) == 8
+
+    assert 'bonds' in cjson
+    assert 'connections' in cjson['bonds']
+    assert 'order' in cjson['bonds']
+    assert len(cjson['bonds']['order']) == 7
