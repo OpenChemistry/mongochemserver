@@ -69,6 +69,106 @@ def test_create_molecule(server, user):
 
 
 @pytest.mark.plugin('molecules')
+def test_create_molecule_file_id(server, user, fsAssetstore, make_girder_file):
+    from girder.plugins.molecules.models.molecule import Molecule
+    from girder.constants import AccessType
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    test_file = 'ethane.xyz'
+    with open(dir_path + '/data/' + test_file, 'r') as rf:
+        girder_file = make_girder_file(fsAssetstore, user, test_file,
+                                       contents=rf.read().encode('utf-8'))
+
+    assert '_id' in girder_file
+    file_id = str(girder_file['_id'])
+
+    body = {
+        'fileId': file_id,
+    }
+
+    r = server.request('/molecules', method='POST', type='application/json',
+                       body=json.dumps(body), user=user)
+    assertStatusOk(r)
+
+    mol = r.json
+    assert '_id' in mol
+    assert 'inchi' in mol
+    assert 'inchikey' in mol
+    assert 'properties' in mol
+    assert 'formula' in mol['properties']
+    assert mol['properties']['formula'] == 'C2H6'
+
+    # Double check and make sure it exists
+    id = mol['_id']
+    mol2 = Molecule().load(id, level=AccessType.READ, user=user)
+
+    assert '_id' in mol2
+    assert 'inchi' in mol2
+    assert 'inchikey' in mol2
+    assert 'properties' in mol
+    assert 'formula' in mol['properties']
+    assert mol['properties']['formula'] == 'C2H6'
+
+    # id, inchi, and inchikey should match
+    assert str(mol['_id']) == str(mol2['_id'])
+    assert mol['inchi'] == mol2['inchi']
+    assert mol['inchikey'] == mol2['inchikey']
+
+    # Delete the molecule
+    r = server.request('/molecules/%s' % id, method='DELETE', user=user)
+    assertStatusOk(r)
+
+
+@pytest.mark.plugin('molecules')
+def test_create_molecule_inchi(server, user):
+    from girder.plugins.molecules.models.molecule import Molecule
+    from girder.constants import AccessType
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    with open(dir_path + '/data/butanol.inchi', 'r') as rf:
+        inchi_data = rf.read()
+
+    body = {
+        'name': 'butanol',
+        'inchi': inchi_data
+    }
+
+    r = server.request('/molecules', method='POST', type='application/json',
+                       body=json.dumps(body), user=user)
+    assertStatusOk(r)
+
+    mol = r.json
+    assert '_id' in mol
+    assert 'inchi' in mol
+    assert 'inchikey' in mol
+    assert 'properties' in mol
+    assert 'formula' in mol['properties']
+    assert mol['properties']['formula'] == 'C4H10O'
+
+    # Double check and make sure it exists
+    id = mol['_id']
+    mol2 = Molecule().load(id, level=AccessType.READ, user=user)
+
+    assert '_id' in mol2
+    assert 'inchi' in mol2
+    assert 'inchikey' in mol2
+    assert 'properties' in mol
+    assert 'formula' in mol['properties']
+    assert mol['properties']['formula'] == 'C4H10O'
+
+    # id, inchi, and inchikey should match
+    assert str(mol['_id']) == str(mol2['_id'])
+    assert mol['inchi'] == mol2['inchi']
+    assert mol['inchikey'] == mol2['inchikey']
+
+    # Delete the molecule
+    r = server.request('/molecules/%s' % id, method='DELETE', user=user)
+    assertStatusOk(r)
+
+
+@pytest.mark.plugin('molecules')
 def test_get_molecule(server, molecule, user):
 
     # The molecule will have been created by the fixture
