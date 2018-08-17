@@ -45,8 +45,8 @@ COPY girder.local.conf /girder/girder/conf/girder.local.cfg
 RUN git clone https://github.com/OpenChemistry/mongochemserver.git /mongochemserver && \
   pip install --no-cache-dir -r /mongochemserver/requirements.txt && \
   pip install --no-cache-dir -r /mongochemserver/requirements-dev.txt && \
-  girder-install plugin /mongochemserver/girder/molecules && \
-  girder-install plugin /mongochemserver/girder/notebooks
+  girder-install plugin -s /mongochemserver/girder/molecules && \
+  girder-install plugin -s /mongochemserver/girder/notebooks
 
 # We need to install girder_pytest...
 RUN git clone https://github.com/girder/girder.git /girder_local && \

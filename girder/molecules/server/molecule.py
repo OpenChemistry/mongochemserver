@@ -81,7 +81,7 @@ class Molecule(Resource):
         return self._clean(mol)
     find_inchikey.description = (
             Description('Find a molecule by InChI key.')
-            .param('inchi', 'The InChI key of the molecule', paramType='path')
+            .param('inchikey', 'The InChI key of the molecule', paramType='path')
             .errorResponse()
            .errorResponse('Molecule not found.', 404))
 
@@ -269,11 +269,17 @@ class Molecule(Resource):
                 data = body['sdf']
 
             (inchi, inchikey) = openbabel.to_inchi(data, input_format)
+            formula = openbabel.get_formula(data, input_format)
+
+            properties = {
+              'formula': formula
+            }
 
             mol = {
                 'inchi': inchi,
                 'inchikey': inchikey,
-                input_format: data
+                input_format: data,
+                'properties': properties
             }
 
             if 'name' in body:
@@ -282,7 +288,8 @@ class Molecule(Resource):
             mol = self._model.create_xyz(user, mol, public)
         elif 'inchi' in body:
             inchi = body['inchi']
-            mol = self._model.create(user, inchi, public)
+            formula = openbabel.get_formula(inchi, 'inchi')
+            mol = self._model.create(user, inchi, formula, public=public)
         else:
             raise RestException('Invalid request', code=400)
 
@@ -536,5 +543,5 @@ class Molecule(Resource):
     search.description = (
             Description('Search for molecules using a query string or formula')
             .param('q', 'The query string to use for this search', paramType='query', required=False)
-            .param('formula', 'The formula to search for', paramType='query', required=False)
+            .param('formula', 'The formula (using the "Hill Order") to search for', paramType='query', required=False)
             .param('cactus', 'The identifier to pass to cactus', paramType='query', required=False))
