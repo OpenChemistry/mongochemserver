@@ -58,6 +58,8 @@ class Molecule(AccessControlledModel):
     def create(self, user, inchi, formula=None, public=False):
         mol = { 'inchi': inchi }
         if formula:
+            if 'properties' not in mol:
+                mol['properties'] = {}
             mol['properties']['formula'] = formula
         self.setUserAccess(mol, user=user, level=AccessType.ADMIN)
         if public:

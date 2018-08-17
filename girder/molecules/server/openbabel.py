@@ -39,6 +39,9 @@ def atom_count(str_data, in_format):
     return mol.NumAtoms()
 
 def get_formula(str_data, in_format):
+    # Inchi must start with 'InChI='
+    if in_format == 'inchi' and not str_data.startswith('InChI='):
+        str_data = 'InChI=' + str_data
     # Get the molecule using the "Hill Order" - i. e., C first, then H,
     # and then alphabetical.
     mol = OBMol()
