@@ -288,7 +288,8 @@ class Molecule(Resource):
             mol = self._model.create_xyz(user, mol, public)
         elif 'inchi' in body:
             inchi = body['inchi']
-            mol = self._model.create(user, inchi, public=public)
+            formula = openbabel.get_formula(inchi, 'inchi')
+            mol = self._model.create(user, inchi, formula, public=public)
         else:
             raise RestException('Invalid request', code=400)
 
