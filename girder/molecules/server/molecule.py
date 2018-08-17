@@ -127,11 +127,89 @@ class Molecule(Resource):
 
         return experiments_list
 
+
+    def _create_molecule(self, data_str, input_format, body, user, public):
+
+        # Only perform the following check if we are using nwchem format
+        if input_format == 'nwchem':
+            # For now piggy backing experimental results upload here!
+            # This should be refactored ...
+            json_data = json.loads(data_str)
+            if 'experiment' in json_data:
+                return self._process_experimental(json_data)
+
+        # Use the SDF format as it is the one with bonding that 3Dmol uses.
+        sdf_format = 'sdf'
+
+        if input_format == 'pdb':
+            (sdf_data, _) = openbabel.convert_str(data_str, input_format, sdf_format)
+        elif input_format == 'inchi':
+            (sdf_data, _) = openbabel.from_inchi(data_str, sdf_format)
+        else:
+            sdf_data = avogadro.convert_str(data_str, input_format, sdf_format)
+
+        atom_count = openbabel.atom_count(sdf_data, sdf_format)
+
+        if atom_count > 1024:
+            raise RestException('Unable to generate inchi, molecule has more than 1024 atoms .', code=400)
+
+        (inchi, inchikey) = openbabel.to_inchi(sdf_data, sdf_format)
+
+        if not inchi:
+            raise RestException('Unable to extract inchi', code=400)
+
+        # Check if the molecule exists, only create it if it does.
+        molExists = self._model.find_inchikey(inchikey)
+        mol = {}
+        if molExists:
+            mol = molExists
+        else:
+            # Get some basic molecular properties we want to add to the
+            # database.
+            props = avogadro.molecule_properties(sdf_data, sdf_format)
+            pieces = props['spacedFormula'].strip().split(' ')
+            atomCounts = {}
+            for i in range(0, int(len(pieces) / 2)):
+                atomCounts[pieces[2 * i ]] = int(pieces[2 * i + 1])
+
+            cjson = {}
+            if input_format == 'cjson':
+                cjson = json.loads(data_str)
+            else:
+                cjson = json.loads(avogadro.convert_str(sdf_data, sdf_format,
+                                                        'cjson'))
+
+            # Whitelist parts of the CJSON that we store at the top level.
+            cjsonmol = {}
+            cjsonmol['atoms'] = cjson['atoms']
+            cjsonmol['bonds'] = cjson['bonds']
+            cjsonmol['chemical json'] = cjson['chemical json']
+            mol_dict = {
+                'name': chemspider.find_common_name(inchikey, props['formula']),
+                'inchi': inchi,
+                'inchikey': inchikey,
+                sdf_format: sdf_data,
+                'cjson': cjsonmol,
+                'properties': props,
+                'atomCounts': atomCounts
+            }
+            mol = self._model.create_xyz(user, mol_dict, public)
+
+            # Upload the molecule to virtuoso
+            try:
+                semantic.upload_molecule(mol)
+            except requests.ConnectionError:
+                print(TerminalColor.warning('WARNING: Couldn\'t connect to virtuoso.'))
+
+        return mol
+
+
     @access.user
     def create(self, params):
         body = self.getBodyJson()
         user = self.getCurrentUser()
         public = body.get('public', False)
+        mol = None
         if 'fileId' in body:
             file_id = body['fileId']
             calc_id = body.get('calculationId')
@@ -146,78 +224,12 @@ class Molecule(Resource):
             contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
             data_str = contents.decode()
 
-            # Only perform the following check if we are using nwchem format
-            if input_format == 'nwchem':
-                # For now piggy backing experimental results upload here!
-                # This should be refactored ...
-                json_data = json.loads(data_str)
-                if 'experiment' in json_data:
-                    return self._process_experimental(json_data)
+            mol = self._create_molecule(data_str, input_format, body, user, public)
 
-            # Use the SDF format as it is the one with bonding that 3Dmol uses.
-            output_format = 'sdf'
-
-            if input_format == 'pdb':
-                (output, _) = openbabel.convert_str(data_str, input_format, output_format)
-            else:
-                output = avogadro.convert_str(data_str, input_format, output_format)
-
-            # Get some basic molecular properties we want to add to the database.
-            props = avogadro.molecule_properties(data_str, input_format)
-            pieces = props['spacedFormula'].strip().split(' ')
-            atomCounts = {}
-            for i in range(0, int(len(pieces) / 2)):
-                atomCounts[pieces[2 * i ]] = int(pieces[2 * i + 1])
-
-            cjson = []
-            if input_format == 'cjson':
-                cjson = json.loads(data_str)
-            elif input_format == 'pdb':
-                cjson = json.loads(avogadro.convert_str(output, 'sdf', 'cjson'))
-            else:
-                cjson = json.loads(avogadro.convert_str(data_str, input_format,
-                                                        'cjson'))
-
-            atom_count = openbabel.atom_count(data_str, input_format)
-
-            if atom_count > 1024:
-                raise RestException('Unable to generate inchi, molecule has more than 1024 atoms .', code=400)
-
-            (inchi, inchikey) = openbabel.to_inchi(output, 'sdf')
-
-            if not inchi:
-                raise RestException('Unable to extract inchi', code=400)
-
-            # Check if the molecule exists, only create it if it does.
-            molExists = self._model.find_inchikey(inchikey)
-            mol = {}
-            if molExists:
-                mol = molExists
-            else:
-                # Whitelist parts of the CJSON that we store at the top level.
-                cjsonmol = {}
-                cjsonmol['atoms'] = cjson['atoms']
-                cjsonmol['bonds'] = cjson['bonds']
-                cjsonmol['chemical json'] = cjson['chemical json']
-                mol = self._model.create_xyz(user, {
-                    'name': chemspider.find_common_name(inchikey, props['formula']),
-                    'inchi': inchi,
-                    'inchikey': inchikey,
-                    output_format: output,
-                    'cjson': cjsonmol,
-                    'properties': props,
-                    'atomCounts': atomCounts
-                }, public)
-
-                # Upload the molecule to virtuoso
-                try:
-                    semantic.upload_molecule(mol)
-                except requests.ConnectionError:
-                    print(TerminalColor.warning('WARNING: Couldn\'t connect to virtuoso.'))
+            cjson = mol.get('cjson')
 
             if 'vibrations' in cjson or 'basisSet' in cjson:
                 # We have some calculation data, let's add it to the calcs.
-                sdf = output
                 moleculeId = mol['_id']
                 calc_props = {}
 
@@ -261,38 +273,22 @@ class Molecule(Resource):
                     self._calc_model.create_cjson(user, cjson, calc_props,
                                                   moleculeId, file_id, public)
 
-        elif 'xyz' in body or 'sdf' in body:
-
-            if 'xyz' in body:
-                input_format = 'xyz'
-                data = body['xyz']
-            else:
-                input_format = 'sdf'
-                data = body['sdf']
-
-            (inchi, inchikey) = openbabel.to_inchi(data, input_format)
-            formula = openbabel.get_formula(data, input_format)
-
-            properties = {
-              'formula': formula
-            }
-
-            mol = {
-                'inchi': inchi,
-                'inchikey': inchikey,
-                input_format: data,
-                'properties': properties
-            }
-
-            if 'name' in body:
-                mol['name'] = body['name']
-
-            mol = self._model.create_xyz(user, mol, public)
         elif 'inchi' in body:
-            inchi = body['inchi']
-            formula = openbabel.get_formula(inchi, 'inchi')
-            mol = self._model.create(user, inchi, formula, public=public)
-        else:
+            input_format = 'inchi'
+            data = body['inchi']
+            if not data.startswith('InChI='):
+                data = 'InChI=' + data
+
+            mol = self._create_molecule(data, input_format, body, user, public)
+
+        for key in body:
+            if key in Molecule.input_formats:
+                input_format = key
+                data = body[input_format]
+                mol = self._create_molecule(data, input_format, body, user, public)
+                break
+
+        if not mol:
             raise RestException('Invalid request', code=400)
 
         return self._clean(mol)
