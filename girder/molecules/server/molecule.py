@@ -17,7 +17,6 @@ from . import openbabel
 from . import chemspider
 from . import query
 from . import semantic
-from . import constants
 from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
 
 class Molecule(Resource):
@@ -225,53 +224,6 @@ class Molecule(Resource):
             data_str = contents.decode()
 
             mol = self._create_molecule(data_str, input_format, body, user, public)
-
-            cjson = mol.get('cjson')
-
-            if 'vibrations' in cjson or 'basisSet' in cjson:
-                # We have some calculation data, let's add it to the calcs.
-                moleculeId = mol['_id']
-                calc_props = {}
-
-                if calc_id is not None:
-                    calc = self._calc_model.load(calc_id, user=user, level=AccessType.ADMIN)
-                    calc_props = calc['properties']
-                    # The calculation is no longer pending
-                    if 'pending' in calc_props:
-                        del calc_props['pending']
-
-                if input_format == 'json':
-                    jsonInput = json.loads(data_str)
-                    # Don't override existing properties
-                    new_calc_props = avogadro.calculation_properties(jsonInput)
-                    new_calc_props.update(calc_props)
-                    calc_props = new_calc_props
-
-                # Use basisSet from cjson if we don't already have one.
-                if 'basisSet' in cjson and 'basisSet' not in calc_props:
-                    calc_props['basisSet'] = cjson['basisSet']
-
-                # Use functional from cjson properties if we don't already have
-                # one.
-                functional = parse('properties.functional').find(cjson)
-                if functional and 'functional' not in calc_props:
-                    calc_props['functional'] = functional[0].value
-
-                # Add theory priority to 'sort' calculations
-                theory = calc_props.get('theory')
-                functional = calc_props.get('functional')
-                if theory in constants.theory_priority:
-                    priority = constants.theory_priority[theory]
-                    calc_props['theoryPriority'] = priority
-
-                if calc_id is not None:
-                    calc['properties'] = calc_props
-                    calc['cjson'] = cjson
-                    calc['fileId'] = file_id
-                    self._calc_model.save(calc)
-                else:
-                    self._calc_model.create_cjson(user, cjson, calc_props,
-                                                  moleculeId, file_id, public)
 
         elif 'inchi' in body:
             input_format = 'inchi'

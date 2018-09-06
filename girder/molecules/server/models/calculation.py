@@ -1,7 +1,10 @@
 from jsonschema import validate, ValidationError
+from jsonpath_rw import parse
 
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.constants import AccessType
+
+from .. import constants
 
 class Calculation(AccessControlledModel):
     '''
@@ -81,13 +84,35 @@ class Calculation(AccessControlledModel):
                      public=False, notebooks=[]):
         calc = {
             'cjson': cjson,
-            'properties': props,
             'notebooks': notebooks
         }
         if moleculeId:
             calc['moleculeId'] = moleculeId
         if fileId:
             calc['fileId'] = fileId
+
+        if 'vibrations' in cjson or 'basisSet' in cjson:
+            # The calculation is no longer pending
+            if 'pending' in props:
+                del props['pending']
+
+            # Use basisSet from cjson if we don't already have one.
+            if 'basisSet' in cjson and 'basisSet' not in props:
+                props['basisSet'] = cjson['basisSet']
+
+            # Use functional from cjson properties if we don't already have
+            # one.
+            functional = parse('properties.functional').find(cjson)
+            if functional and 'functional' not in props:
+                props['functional'] = functional[0].value
+
+            # Add theory priority to 'sort' calculations
+            theory = props.get('theory')
+            if theory in constants.theory_priority:
+                priority = constants.theory_priority[theory]
+                props['theoryPriority'] = priority
+
+        calc['properties'] = props
 
         self.setUserAccess(calc, user=user, level=AccessType.ADMIN)
         if public:
