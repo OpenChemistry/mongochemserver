@@ -146,13 +146,11 @@ class Molecule(Resource):
             contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
             data_str = contents.decode()
 
-            # Only perform the following check if we are using nwchem format
-            if input_format == 'nwchem':
-                # For now piggy backing experimental results upload here!
-                # This should be refactored ...
-                json_data = json.loads(data_str)
-                if 'experiment' in json_data:
-                    return self._process_experimental(json_data)
+            # For now piggy backing experimental results upload here!
+            # This should be refactored ...
+            json_data = json.loads(data_str)
+            if 'experiment' in json_data:
+                return self._process_experimental(json_data)
 
             # Use the SDF format as it is the one with bonding that 3Dmol uses.
             output_format = 'sdf'
