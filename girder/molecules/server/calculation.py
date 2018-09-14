@@ -333,7 +333,7 @@ class Calculation(Resource):
         .jsonParam('body', 'The calculation details', required=True, paramType='body')
     )
     def ingest_calc(self, calculation, body):
-        self.requireParams(['calculationId', 'fileId'], body)
+        self.requireParams(['fileId'], body)
 
         file = File().load(body['fileId'], user=getCurrentUser())
         with File().open(file) as f:

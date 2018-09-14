@@ -231,7 +231,6 @@ def test_ingest_nwchem_pending(server, molecule, user, make_girder_file, fsAsset
 
     # Now we can test the ingest
     body = {
-        'calculationId': str(calculation['_id']),
         'fileId': str(file['_id']),
         'public': True
     }
