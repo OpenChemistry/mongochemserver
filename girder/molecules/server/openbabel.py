@@ -1,5 +1,7 @@
 from openbabel import OBMol, OBConversion
 
+import pybel
+
 def convert_str(str_data, in_format, out_format):
     mol = OBMol()
     conv = OBConversion()
@@ -29,6 +31,19 @@ def to_inchi(str_data, in_format):
     inchikey = conv.WriteString(mol).rstrip()
 
     return (inchi, inchikey)
+
+def from_inchi(str_data, out_format):
+    obMol = OBMol()
+    conv = OBConversion()
+    conv.SetInFormat('inchi')
+    conv.SetOutFormat(out_format)
+    conv.ReadString(obMol, str_data)
+
+    # Generate 3D coordinates for the inchi
+    mol = pybel.Molecule(obMol)
+    mol.make3D()
+
+    return (conv.WriteString(obMol), conv.GetOutFormat().GetMIMEType())
 
 def atom_count(str_data, in_format):
     mol = OBMol()

@@ -11,11 +11,14 @@ from girder.api.rest import Resource
 from girder.api.rest import RestException, getBodyJson, getCurrentUser, \
     loadmodel
 from girder.models.model_base import ModelImporter, ValidationException
-from girder.constants import AccessType
+from girder.models.file import File
+from girder.constants import AccessType, TokenScope
 from girder.utility import toBool
 from girder.plugins.molecules.models.calculation import Calculation as CalculationModel
+from girder.plugins.molecules.utilities.molecules import create_molecule
 
 from . import avogadro
+from . import constants
 from .molecule import Molecule
 import pymongo
 
@@ -28,6 +31,7 @@ class Calculation(Resource):
         super(Calculation, self).__init__()
         self.resourceName = 'calculations'
         self.route('POST', (), self.create_calc)
+        self.route('PUT', (':id', ), self.ingest_calc)
         self.route('GET', (), self.find_calc)
         self.route('GET', ('types',), self.find_calc_types)
         self.route('GET', (':id', 'vibrationalmodes'),
@@ -249,23 +253,42 @@ class Calculation(Resource):
     @access.user
     def create_calc(self, params):
         body = getBodyJson()
-        self.requireParams(['cjson'],  body)
+        if 'cjson' not in  body and 'fileId' not in body:
+            raise RestException('Either cjson or fileId is required.')
+
         user = getCurrentUser()
 
-        cjson = body['cjson']
+        cjson = body.get('cjson')
         props = body.get('properties', {})
-        moleculeId = body.get('moleculeId', None)
+        molecule_id = body.get('moleculeId', None)
         public = body.get('public', False)
         notebooks = body.get('notebooks', [])
+        file_id = None
 
-        calc = self._model.create_cjson(user, cjson, props, moleculeId,
-                                        notebooks=notebooks, public=public)
+        if 'fileId' in body:
+            file = File().load(body['fileId'], user=getCurrentUser())
+            file_id = file['_id']
+            with File().open(file) as f:
+                calc_data = f.read().decode()
+                cjson = avogadro.convert_str(calc_data, 'json', 'cjson')
+                cjson = json.loads(cjson)
+
+            if 'vibrations' in cjson or 'basisSet' in cjson:
+
+                props = self._extract_calculation_properties(cjson, json.loads(calc_data))
+
+        if molecule_id is None:
+            mol = create_molecule(json.dumps(cjson), 'cjson', user, public)
+            molecule_id = mol['_id']
+
+        calc = CalculationModel().create_cjson(user, cjson, props, molecule_id, file_id=file_id,
+                                               notebooks=notebooks, public=public)
 
         cherrypy.response.status = 201
         cherrypy.response.headers['Location'] \
-            = '/molecules/%s/calc/%s' % (id, str(calc['_id']))
+            = '/calculations/%s' % (str(calc['_id']))
 
-        return self._model.filter(calc, user)
+        return CalculationModel().filter(calc, user)
 
     # Try and reuse schema for documentation, this only partially works!
     calc_schema = CalculationModel.schema.copy()
@@ -278,6 +301,61 @@ class Calculation(Resource):
             'body',
             'The calculation data', dataType='CalculationData', required=True,
             paramType='body'))
+
+    def _extract_calculation_properties(self, cjson, calculation_data):
+        calc_props = avogadro.calculation_properties(calculation_data)
+
+        # Use basisSet from cjson if we don't already have one.
+        if 'basisSet' in cjson and 'basisSet' not in calc_props:
+            calc_props['basisSet'] = cjson['basisSet']
+
+        # Use functional from cjson properties if we don't already have
+        # one.
+        functional = parse('properties.functional').find(cjson)
+        if functional and 'functional' not in calc_props:
+            calc_props['functional'] = functional[0].value
+
+        # Add theory priority to 'sort' calculations
+        theory = calc_props.get('theory')
+        functional = calc_props.get('functional')
+        if theory in constants.theory_priority:
+            priority = constants.theory_priority[theory]
+            calc_props['theoryPriority'] = priority
+
+        return calc_props
+
+    @access.user(scope=TokenScope.DATA_WRITE)
+    @autoDescribeRoute(
+        Description('Update pending calculation with results.')
+        .modelParam('id', 'The calculation id',
+            model=CalculationModel, destName='calculation',
+            level=AccessType.WRITE, paramType='path')
+        .jsonParam('body', 'The calculation details', required=True, paramType='body')
+    )
+    def ingest_calc(self, calculation, body):
+        self.requireParams(['fileId'], body)
+
+        file = File().load(body['fileId'], user=getCurrentUser())
+        with File().open(file) as f:
+            calc_data = f.read().decode()
+            cjson = avogadro.convert_str(calc_data, 'json', 'cjson')
+            cjson = json.loads(cjson)
+
+        if 'vibrations' in cjson or 'basisSet' in cjson:
+            calc_props = calculation['properties']
+            # The calculation is no longer psending
+            if 'pending' in calc_props:
+                del calc_props['pending']
+
+            new_props = self._extract_calculation_properties(cjson, json.loads(calc_data))
+            new_props.update(calc_props)
+            calc_props = new_props
+
+            calculation['properties'] = calc_props
+            calculation['cjson'] = cjson
+            calculation['fileId'] = file['_id']
+
+            return CalculationModel().save(calculation)
 
     @access.public
     def find_calc(self, params):

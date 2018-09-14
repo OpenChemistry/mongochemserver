@@ -199,3 +199,95 @@ def test_get_cjson(server, calculation, user):
     assert 'connections' in cjson['bonds']
     assert 'order' in cjson['bonds']
     assert len(cjson['bonds']['order']) == 7
+
+
+@pytest.mark.plugin('molecules')
+def test_ingest_nwchem_pending(server, molecule, user, make_girder_file, fsAssetstore):
+    body = {
+        'moleculeId': molecule['_id'],
+        'cjson': None,
+        'public': True,
+        'properties': {
+            'calculationTypes': 'energy;',
+            'basisSet': {
+                'name': '3-21g'
+            },
+            'theory': 'b3lyp',
+            'pending': True
+        }
+    }
+
+    # First create pending calculation
+    r = server.request('/calculations', method='POST', type='application/json',
+                       body=json.dumps(body), user=user)
+    assertStatus(r, 201)
+    calculation = r.json
+
+    # Upload simulation result
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    with open(os.path.join(dir_path, 'data', 'nwchem.json')) as f:
+        file = make_girder_file(fsAssetstore, user, 'nwchem.json', contents=f.read().encode())
+
+    # Now we can test the ingest
+    body = {
+        'fileId': str(file['_id']),
+        'public': True
+    }
+
+    r = server.request('/calculations/%s' % calculation['_id'], method='PUT', type='application/json',
+                       body=json.dumps(body), user=user)
+    assertStatusOk(r)
+    calculation = r.json
+
+    assert 'pending' not in calculation['properties']
+
+@pytest.mark.plugin('molecules')
+def test_ingest_nwchem_with_molecule(server, molecule, user, make_girder_file, fsAssetstore):
+    from girder.plugins.molecules.models.calculation import Calculation
+    # Upload simulation result
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    with open(os.path.join(dir_path, 'data', 'nwchem.json')) as f:
+        file = make_girder_file(fsAssetstore, user, 'nwchem.json', contents=f.read().encode())
+
+    # Now we can test the ingest
+    body = {
+        'fileId': str(file['_id']),
+        'moleculeId': str(molecule['_id']),
+        'public': True
+    }
+
+    r = server.request('/calculations', method='POST', type='application/json',
+                       body=json.dumps(body), user=user)
+    assertStatus(r, 201)
+
+    calculation =  Calculation().load(r.json['_id'], force=True)
+    for prop in ['fileId', 'moleculeId', 'notebooks', 'properties', 'cjson']:
+        assert prop in calculation
+
+@pytest.mark.plugin('molecules')
+def test_ingest_nwchem_without_molecule(server, molecule, user, make_girder_file, fsAssetstore):
+    from girder.plugins.molecules.models.calculation import Calculation
+    # Upload simulation result
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    with open(os.path.join(dir_path, 'data', 'nwchem.json')) as f:
+        file = make_girder_file(fsAssetstore, user, 'nwchem.json', contents=f.read().encode())
+
+    # Now we can test the ingest
+    body = {
+        'fileId': str(file['_id']),
+        'public': True
+    }
+
+    r = server.request('/calculations', method='POST', type='application/json',
+                       body=json.dumps(body), user=user)
+    assertStatus(r, 201)
+
+    calculation =  Calculation().load(r.json['_id'], force=True)
+    for prop in ['fileId', 'moleculeId', 'notebooks', 'properties', 'cjson']:
+        assert prop in calculation
+
+    # Molecule should be created
+    assert calculation['moleculeId'] is not None

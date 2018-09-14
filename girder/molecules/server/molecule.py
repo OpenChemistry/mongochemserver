@@ -12,13 +12,17 @@ from girder.api.rest import RestException, loadmodel, getCurrentUser
 from girder.api import access
 from girder.constants import AccessType
 from girder.constants import TerminalColor
+from girder.models.file import File
 from . import avogadro
 from . import openbabel
 from . import chemspider
 from . import query
 from . import semantic
 from . import constants
+from girder.plugins.molecules.utilities.molecules import create_molecule
+
 from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
+
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
@@ -92,49 +96,14 @@ class Molecule(Resource):
             raise RestException('Molecule not found.', code=404)
         return self._clean(mol)
 
-
-    def _process_experimental(self, doc):
-        facility_used = parse('experiment.experimentalEnvironment.facilityUsed').find(doc)[0].value
-        experiments = parse('experiment.experiments').find(doc)[0].value
-
-        experiment_model = self.model('experimental', 'molecules')
-
-        experiments_list = []
-        for experiment in experiments:
-            spectrum_type = experiment['spectrumType']
-            experimental_technique = experiment['experimentalTechnique']
-            id = experiment['id']
-            molecular_formula = experiment['molecularFormula']
-            instenisty_units = parse('measuredSpectrum.unitsY').find(experiment)[0].value
-            frequency_units = parse('measuredSpectrum.unitsX').find(experiment)[0].value
-            data_points = parse('measuredSpectrum.dataPoints').find(experiment)[0].value
-            frequencies = data_points[::2]
-            intensities = data_points[1::2]
-            measured_spectrum = {
-                'frequencies': {
-                    'units': frequency_units,
-                    'values': frequencies
-                },
-                'intensities': {
-                    'units': instenisty_units,
-                    'values': intensities
-                }
-            }
-
-            experiments_list.append(experiment_model.create(
-                facility_used, spectrum_type, experimental_technique, id,
-                molecular_formula, measured_spectrum))
-
-        return experiments_list
-
     @access.user
     def create(self, params):
         body = self.getBodyJson()
         user = self.getCurrentUser()
         public = body.get('public', False)
+        mol = None
         if 'fileId' in body:
             file_id = body['fileId']
-            calc_id = body.get('calculationId')
             file = self.model('file').load(file_id, user=user)
             parts = file['name'].split('.')
             input_format = parts[-1]
@@ -143,154 +112,26 @@ class Molecule(Resource):
             if input_format not in Molecule.input_formats:
                 raise RestException('Input format not supported.', code=400)
 
-            contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
-            data_str = contents.decode()
+            with File().open(file) as f:
+                data_str = f.read().decode()
 
-            # For now piggy backing experimental results upload here!
-            # This should be refactored ...
-            json_data = json.loads(data_str)
-            if 'experiment' in json_data:
-                return self._process_experimental(json_data)
-
-            # Use the SDF format as it is the one with bonding that 3Dmol uses.
-            output_format = 'sdf'
-
-            if input_format == 'pdb':
-                (output, _) = openbabel.convert_str(data_str, input_format, output_format)
-            else:
-                output = avogadro.convert_str(data_str, input_format, output_format)
-
-            # Get some basic molecular properties we want to add to the database.
-            props = avogadro.molecule_properties(data_str, input_format)
-            pieces = props['spacedFormula'].strip().split(' ')
-            atomCounts = {}
-            for i in range(0, int(len(pieces) / 2)):
-                atomCounts[pieces[2 * i ]] = int(pieces[2 * i + 1])
-
-            cjson = []
-            if input_format == 'cjson':
-                cjson = json.loads(data_str)
-            elif input_format == 'pdb':
-                cjson = json.loads(avogadro.convert_str(output, 'sdf', 'cjson'))
-            else:
-                cjson = json.loads(avogadro.convert_str(data_str, input_format,
-                                                        'cjson'))
-
-            atom_count = openbabel.atom_count(data_str, input_format)
-
-            if atom_count > 1024:
-                raise RestException('Unable to generate inchi, molecule has more than 1024 atoms .', code=400)
-
-            (inchi, inchikey) = openbabel.to_inchi(output, 'sdf')
-
-            if not inchi:
-                raise RestException('Unable to extract inchi', code=400)
-
-            # Check if the molecule exists, only create it if it does.
-            molExists = self._model.find_inchikey(inchikey)
-            mol = {}
-            if molExists:
-                mol = molExists
-            else:
-                # Whitelist parts of the CJSON that we store at the top level.
-                cjsonmol = {}
-                cjsonmol['atoms'] = cjson['atoms']
-                cjsonmol['bonds'] = cjson['bonds']
-                cjsonmol['chemical json'] = cjson['chemical json']
-                mol = self._model.create_xyz(user, {
-                    'name': chemspider.find_common_name(inchikey, props['formula']),
-                    'inchi': inchi,
-                    'inchikey': inchikey,
-                    output_format: output,
-                    'cjson': cjsonmol,
-                    'properties': props,
-                    'atomCounts': atomCounts
-                }, public)
-
-                # Upload the molecule to virtuoso
-                try:
-                    semantic.upload_molecule(mol)
-                except requests.ConnectionError:
-                    print(TerminalColor.warning('WARNING: Couldn\'t connect to virtuoso.'))
-
-            if 'vibrations' in cjson or 'basisSet' in cjson:
-                # We have some calculation data, let's add it to the calcs.
-                sdf = output
-                moleculeId = mol['_id']
-                calc_props = {}
-
-                if calc_id is not None:
-                    calc = self._calc_model.load(calc_id, user=user, level=AccessType.ADMIN)
-                    calc_props = calc['properties']
-                    # The calculation is no longer pending
-                    if 'pending' in calc_props:
-                        del calc_props['pending']
-
-                if input_format == 'json':
-                    jsonInput = json.loads(data_str)
-                    # Don't override existing properties
-                    new_calc_props = avogadro.calculation_properties(jsonInput)
-                    new_calc_props.update(calc_props)
-                    calc_props = new_calc_props
-
-                # Use basisSet from cjson if we don't already have one.
-                if 'basisSet' in cjson and 'basisSet' not in calc_props:
-                    calc_props['basisSet'] = cjson['basisSet']
-
-                # Use functional from cjson properties if we don't already have
-                # one.
-                functional = parse('properties.functional').find(cjson)
-                if functional and 'functional' not in calc_props:
-                    calc_props['functional'] = functional[0].value
-
-                # Add theory priority to 'sort' calculations
-                theory = calc_props.get('theory')
-                functional = calc_props.get('functional')
-                if theory in constants.theory_priority:
-                    priority = constants.theory_priority[theory]
-                    calc_props['theoryPriority'] = priority
-
-                if calc_id is not None:
-                    calc['properties'] = calc_props
-                    calc['cjson'] = cjson
-                    calc['fileId'] = file_id
-                    self._calc_model.save(calc)
-                else:
-                    self._calc_model.create_cjson(user, cjson, calc_props,
-                                                  moleculeId, file_id, public)
-
-        elif 'xyz' in body or 'sdf' in body:
-
-            if 'xyz' in body:
-                input_format = 'xyz'
-                data = body['xyz']
-            else:
-                input_format = 'sdf'
-                data = body['sdf']
-
-            (inchi, inchikey) = openbabel.to_inchi(data, input_format)
-            formula = openbabel.get_formula(data, input_format)
-
-            properties = {
-              'formula': formula
-            }
-
-            mol = {
-                'inchi': inchi,
-                'inchikey': inchikey,
-                input_format: data,
-                'properties': properties
-            }
-
-            if 'name' in body:
-                mol['name'] = body['name']
-
-            mol = self._model.create_xyz(user, mol, public)
+            mol = create_molecule(data_str, input_format, user, public)
         elif 'inchi' in body:
-            inchi = body['inchi']
-            formula = openbabel.get_formula(inchi, 'inchi')
-            mol = self._model.create(user, inchi, formula, public=public)
-        else:
+            input_format = 'inchi'
+            data = body['inchi']
+            if not data.startswith('InChI='):
+                data = 'InChI=' + data
+
+            mol = create_molecule(data, input_format, user, public)
+
+        for key in body:
+            if key in Molecule.input_formats:
+                input_format = key
+                data = body[input_format]
+                mol = create_molecule(data, input_format,  user, public)
+                break
+
+        if not mol:
             raise RestException('Invalid request', code=400)
 
         return self._clean(mol)
@@ -400,8 +241,8 @@ class Molecule(Resource):
         if file is None:
             raise RestException('File not found.', code=404)
 
-        contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
-        data_str = contents.decode()
+        with File().load(file) as f:
+            data_str = f.read().decode()
 
         if output_format.startswith('inchi'):
             atom_count = 0
