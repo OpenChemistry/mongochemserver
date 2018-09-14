@@ -12,6 +12,7 @@ from girder.api.rest import RestException, loadmodel, getCurrentUser
 from girder.api import access
 from girder.constants import AccessType
 from girder.constants import TerminalColor
+from girder.models.file import File
 from . import avogadro
 from . import openbabel
 from . import chemspider
@@ -111,8 +112,8 @@ class Molecule(Resource):
             if input_format not in Molecule.input_formats:
                 raise RestException('Input format not supported.', code=400)
 
-            contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
-            data_str = contents.decode()
+            with File().open(file) as f:
+                data_str = f.read().decode()
 
             mol = create_molecule(data_str, input_format, user, public)
         elif 'inchi' in body:
@@ -240,8 +241,8 @@ class Molecule(Resource):
         if file is None:
             raise RestException('File not found.', code=404)
 
-        contents = functools.reduce(lambda x, y: x + y, self.model('file').download(file, headers=False)())
-        data_str = contents.decode()
+        with File().load(file) as f:
+            data_str = f.read().decode()
 
         if output_format.startswith('inchi'):
             atom_count = 0
