@@ -19,7 +19,7 @@ class Experiment(Resource):
     def __init__(self):
         super(Experiment, self).__init__()
         self.resourceName = 'experiments'
-        self.rout('POST', (), self.create)
+        self.route('POST', (), self.create)
         self.route('GET', (), self.find_experiment)
 
         self._model = self.model('experimental', 'molecules')
@@ -67,7 +67,7 @@ class Experiment(Resource):
         self.requireParams(['fileId'], body)
 
         file = File().load(body['fileId'], user=getCurrentUser())
-        with open(file) as f:
+        with File().open(file) as f:
             experiment_data = json.load(f)
 
         if 'experiment' not in experiment_data:
