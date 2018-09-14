@@ -93,15 +93,6 @@ class Molecule(Resource):
         return self._clean(mol)
 
     def _create_molecule(self, data_str, input_format, body, user, public):
-
-        # Only perform the following check if we are using nwchem format
-        if input_format == 'nwchem':
-            # For now piggy backing experimental results upload here!
-            # This should be refactored ...
-            json_data = json.loads(data_str)
-            if 'experiment' in json_data:
-                return self._process_experimental(json_data)
-
         # Use the SDF format as it is the one with bonding that 3Dmol uses.
         sdf_format = 'sdf'
 
