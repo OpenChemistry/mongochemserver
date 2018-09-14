@@ -21,7 +21,7 @@ import json
 import os
 import pytest
 
-from pytest_girder.assertions import assertStatusOk
+from pytest_girder.assertions import assertStatusOk, assertStatus
 
 from . import molecule
 
@@ -191,3 +191,51 @@ def test_search_molecule_formula(server, molecule, user):
     assert mol.get('inchikey') == inchikey
     assert mol.get('name') == name
     assert mol.get('properties').get('formula') == ethane_formula
+
+
+@pytest.mark.plugin('molecules')
+def test_ingest_nwchem(server, molecule, user, make_girder_file, fsAssetstore):
+    body = {
+        'moleculeId': molecule['_id'],
+        'cjson': None,
+        'public': True,
+        'properties': {
+            'calculationTypes': 'energy;',
+            'basisSet': {
+                'name': '3-21g'
+            },
+            'theory': 'b3lyp',
+            'pending': True
+        }
+    }
+
+    # First create pending calculation
+    r = server.request('/calculations', method='POST', type='application/json',
+                       body=json.dumps(body), user=user)
+    assertStatus(r, 201)
+    calculation = r.json
+
+    # Upload simulation result
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    with open(os.path.join(dir_path, 'data', 'nwchem.json')) as f:
+        file = make_girder_file(fsAssetstore, user, 'nwchem.json', contents=f.read().encode())
+
+    # Now we can test the ingest
+    body = {
+        'calculationId': str(calculation['_id']),
+        'fileId': str(file['_id']),
+        'public': True
+    }
+
+    r = server.request('/molecules', method='POST', type='application/json',
+                       body=json.dumps(body), user=user)
+    assertStatusOk(r)
+
+    # Check that the calculation is no longer pending
+    r = server.request('/calculations/%s' % calculation['_id'], method='GET',
+                       user=user)
+    assertStatusOk(r)
+    calculation = r.json
+
+    assert 'pending' not in calculation['properties']
