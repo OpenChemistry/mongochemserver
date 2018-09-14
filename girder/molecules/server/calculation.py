@@ -15,6 +15,7 @@ from girder.models.file import File
 from girder.constants import AccessType, TokenScope
 from girder.utility import toBool
 from girder.plugins.molecules.models.calculation import Calculation as CalculationModel
+from girder.plugins.molecules.utilities.molecules import create_molecule
 
 from . import avogadro
 from . import constants
@@ -276,6 +277,9 @@ class Calculation(Resource):
 
                 props = self._extract_calculation_properties(cjson, json.loads(calc_data))
 
+        if molecule_id is None:
+            mol = create_molecule(json.dumps(cjson), 'cjson', user, public)
+            molecule_id = mol['_id']
 
         calc = CalculationModel().create_cjson(user, cjson, props, molecule_id, file_id=file_id,
                                                notebooks=notebooks, public=public)

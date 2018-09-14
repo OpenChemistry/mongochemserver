@@ -267,3 +267,28 @@ def test_ingest_nwchem_with_molecule(server, molecule, user, make_girder_file, f
     for prop in ['fileId', 'moleculeId', 'notebooks', 'properties', 'cjson']:
         assert prop in calculation
 
+@pytest.mark.plugin('molecules')
+def test_ingest_nwchem_without_molecule(server, molecule, user, make_girder_file, fsAssetstore):
+    from girder.plugins.molecules.models.calculation import Calculation
+    # Upload simulation result
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    with open(os.path.join(dir_path, 'data', 'nwchem.json')) as f:
+        file = make_girder_file(fsAssetstore, user, 'nwchem.json', contents=f.read().encode())
+
+    # Now we can test the ingest
+    body = {
+        'fileId': str(file['_id']),
+        'public': True
+    }
+
+    r = server.request('/calculations', method='POST', type='application/json',
+                       body=json.dumps(body), user=user)
+    assertStatus(r, 201)
+
+    calculation =  Calculation().load(r.json['_id'], force=True)
+    for prop in ['fileId', 'moleculeId', 'notebooks', 'properties', 'cjson']:
+        assert prop in calculation
+
+    # Molecule should be created
+    assert calculation['moleculeId'] is not None

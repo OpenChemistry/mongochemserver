@@ -18,7 +18,10 @@ from . import chemspider
 from . import query
 from . import semantic
 from . import constants
+from girder.plugins.molecules.utilities.molecules import create_molecule
+
 from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
+
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
