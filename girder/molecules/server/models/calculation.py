@@ -77,17 +77,17 @@ class Calculation(AccessControlledModel):
 
         return doc
 
-    def create_cjson(self, user, cjson, props, moleculeId = None, fileId = None,
+    def create_cjson(self, user, cjson, props, molecule_id= None, file_id = None,
                      public=False, notebooks=[]):
         calc = {
             'cjson': cjson,
             'properties': props,
             'notebooks': notebooks
         }
-        if moleculeId:
-            calc['moleculeId'] = moleculeId
-        if fileId:
-            calc['fileId'] = fileId
+        if molecule_id:
+            calc['moleculeId'] = molecule_id
+        if file_id:
+            calc['fileId'] = file_id
 
         self.setUserAccess(calc, user=user, level=AccessType.ADMIN)
         if public:

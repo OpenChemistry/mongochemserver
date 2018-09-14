@@ -252,23 +252,39 @@ class Calculation(Resource):
     @access.user
     def create_calc(self, params):
         body = getBodyJson()
-        self.requireParams(['cjson'],  body)
+        if 'cjson' not in  body and 'fileId' not in body:
+            raise RestException('Either cjson or fileId is required.')
+
         user = getCurrentUser()
 
-        cjson = body['cjson']
+        cjson = body.get('cjson')
         props = body.get('properties', {})
-        moleculeId = body.get('moleculeId', None)
+        molecule_id = body.get('moleculeId', None)
         public = body.get('public', False)
         notebooks = body.get('notebooks', [])
+        file_id = None
 
-        calc = self._model.create_cjson(user, cjson, props, moleculeId,
-                                        notebooks=notebooks, public=public)
+        if 'fileId' in body:
+            file = File().load(body['fileId'], user=getCurrentUser())
+            file_id = file['_id']
+            with File().open(file) as f:
+                calc_data = f.read().decode()
+                cjson = avogadro.convert_str(calc_data, 'json', 'cjson')
+                cjson = json.loads(cjson)
+
+            if 'vibrations' in cjson or 'basisSet' in cjson:
+
+                props = self._extract_calculation_properties(cjson, json.loads(calc_data))
+
+
+        calc = CalculationModel().create_cjson(user, cjson, props, molecule_id, file_id=file_id,
+                                               notebooks=notebooks, public=public)
 
         cherrypy.response.status = 201
         cherrypy.response.headers['Location'] \
-            = '/molecules/%s/calc/%s' % (id, str(calc['_id']))
+            = '/calculations/%s' % (str(calc['_id']))
 
-        return self._model.filter(calc, user)
+        return CalculationModel().filter(calc, user)
 
     # Try and reuse schema for documentation, this only partially works!
     calc_schema = CalculationModel.schema.copy()
