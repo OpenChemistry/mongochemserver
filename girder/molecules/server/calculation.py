@@ -198,11 +198,12 @@ class Calculation(Resource):
                         electron_count = electron_count[0].value
                     else:
                         raise RestException('Unable to access electronCount', 400)
-
+                # The index of the first orbital is 0, so homo needs to be
+                # electron_count // 2 - 1
                 if mo == 'homo':
-                    mo = int(electron_count / 2)
+                    mo = int(electron_count / 2) - 1
                 elif mo == 'lumo':
-                    mo = int(electron_count / 2 + 1)
+                    mo = int(electron_count / 2)
             else:
                 raise ValidationException('mo number be an integer or \'homo\'/\'lumo\'', 'mode')
 
