@@ -1,6 +1,8 @@
 .project
 .pydevproject
 .settings
+.cache
+.pytest_cache
 *.py[cod]
 girder/molecules/server/__pycache__/
 girder/molecules/server/models/__pycache__/
