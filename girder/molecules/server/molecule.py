@@ -340,8 +340,6 @@ class Molecule(Resource):
 
             mols = []
             for mol in self._model.find(query=mongo_query, fields = ['_id', 'inchikey', 'name']):
-                mol['id'] = mol['_id']
-                del mol['_id']
                 mols.append(mol)
 
             return mols
