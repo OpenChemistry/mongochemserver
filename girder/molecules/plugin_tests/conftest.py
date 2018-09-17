@@ -30,7 +30,10 @@ def molecule(user):
         'inchi': inchi,
         'inchikey': inchikey,
         'name': name,
-        'properties': properties
+        'properties': properties,
+        'cjson': {
+            'atoms': {}
+        }
     }
 
     mol = Molecule().create_xyz(user, mol, public=False)

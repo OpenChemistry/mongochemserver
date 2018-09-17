@@ -15,6 +15,7 @@ from girder.models.file import File
 from girder.constants import AccessType, TokenScope
 from girder.utility import toBool
 from girder.plugins.molecules.models.calculation import Calculation as CalculationModel
+from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
 from girder.plugins.molecules.utilities.molecules import create_molecule
 
 from . import avogadro
@@ -396,7 +397,8 @@ class Calculation(Resource):
         limit = params.get('limit', 50)
 
         fields = ['cjson.vibrations.modes', 'cjson.vibrations.intensities',
-                 'cjson.vibrations.frequencies', 'properties', 'fileId', 'access', 'public']
+                 'cjson.vibrations.frequencies', 'properties', 'fileId', 'access',
+                 'moleculeId', 'public']
         sort = None
         sort_by_theory = toBool(params.get('sortByTheory', False))
         if sort_by_theory:
@@ -419,7 +421,9 @@ class Calculation(Resource):
             AccessType.READ, limit=int(limit) - len(calcs))
             not_sortable = [self._model.filter(x, user) for x in not_sortable]
 
-        return calcs + not_sortable
+        calcs += not_sortable
+
+        return calcs
 
     find_calc.description = (
         Description('Search for particular calculation')
@@ -459,9 +463,11 @@ class Calculation(Resource):
 
     @access.public
     def find_id(self, id, params):
-        cal = self._model.load(id, level=AccessType.READ, user=getCurrentUser())
+        user = getCurrentUser()
+        cal = self._model.load(id, level=AccessType.READ, user=user)
         if not cal:
             raise RestException('Calculation not found.', code=404)
+
         return cal
     find_id.description = (
         Description('Get the calculation by id')
