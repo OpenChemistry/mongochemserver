@@ -23,9 +23,6 @@ import os
 
 from pytest_girder.assertions import assertStatusOk, assertStatus
 
-from . import calculation
-from . import molecule
-
 
 @pytest.mark.plugin('molecules')
 def test_create_calc(server, molecule, user):
