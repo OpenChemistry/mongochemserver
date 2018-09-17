@@ -194,7 +194,7 @@ def test_get_molecule(server, molecule, user):
     assert len(r.json) == 1
     mol = r.json[0]
 
-    assert mol.get('id') == _id
+    assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
     assert mol.get('name') == name
 
@@ -207,7 +207,7 @@ def test_get_molecule(server, molecule, user):
     assert len(r.json) == 1
     mol = r.json[0]
 
-    assert mol.get('id') == _id
+    assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
     assert mol.get('name') == name
 
@@ -220,7 +220,7 @@ def test_get_molecule(server, molecule, user):
     assert len(r.json) == 1
     mol = r.json[0]
 
-    assert mol.get('id') == _id
+    assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
     assert mol.get('name') == name
 
