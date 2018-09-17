@@ -423,14 +423,6 @@ class Calculation(Resource):
 
         calcs += not_sortable
 
-        # Add molecule properties to the response
-        for cal in calcs:
-            if 'moleculeId' in cal:
-                molecule = MoleculeModel().load(cal['moleculeId'], level=AccessType.READ, user=user)
-                if 'cjson' in molecule:
-                    del molecule['cjson']
-                cal['molecule'] = molecule
-
         return calcs
 
     find_calc.description = (
@@ -476,11 +468,6 @@ class Calculation(Resource):
         if not cal:
             raise RestException('Calculation not found.', code=404)
 
-        if 'moleculeId' in cal:
-                molecule = MoleculeModel().load(cal['moleculeId'], level=AccessType.READ, user=user)
-                if 'cjson' in molecule:
-                    del molecule['cjson']
-                cal['molecule'] = molecule
         return cal
     find_id.description = (
         Description('Get the calculation by id')

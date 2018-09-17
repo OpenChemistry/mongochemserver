@@ -91,7 +91,6 @@ def test_get_calc(server, molecule, calculation, user):
 
     assert '_id' in calc
     assert str(calc['_id']) == calc_id
-    assert calc['molecule']['properties'] == molecule['properties']
 
     # Find it by molecule id
     params = {'moleculeId': calc_molecule_id}
@@ -105,7 +104,6 @@ def test_get_calc(server, molecule, calculation, user):
 
     assert '_id' in calc
     assert str(calc['_id']) == calc_id
-    assert calc['molecule']['properties'] == molecule['properties']
 
     # Find it by its own id
     r = server.request('/calculations/%s' % calc_id, method='GET', user=user)
@@ -115,7 +113,6 @@ def test_get_calc(server, molecule, calculation, user):
 
     assert '_id' in calc
     assert str(calc['_id']) == calc_id
-    assert calc['molecule']['properties'] == molecule['properties']
 
 
 @pytest.mark.plugin('molecules')

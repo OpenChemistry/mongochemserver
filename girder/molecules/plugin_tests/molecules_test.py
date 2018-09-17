@@ -240,6 +240,34 @@ def test_get_molecule(server, molecule, user):
     assert mol.get('name') == name
     assert mol.get('properties') == properties
 
+    # Get molecule by id
+    params = {}
+    r = server.request('/molecules/%s' % _id, method='GET', params=params, user=user)
+    assertStatusOk(r)
+
+    # The molecule document is returned
+    mol = r.json
+
+    assert mol.get('_id') == _id
+    assert mol.get('inchikey') == inchikey
+    assert mol.get('name') == name
+    assert mol.get('properties') == properties
+    assert mol.get('cjson') is not None
+
+    # Get molecule by id
+    params = {'cjson': 'false'}
+    r = server.request('/molecules/%s' % _id, method='GET', params=params, user=user)
+    assertStatusOk(r)
+
+    # The molecule document is returned
+    mol = r.json
+
+    assert mol.get('_id') == _id
+    assert mol.get('inchikey') == inchikey
+    assert mol.get('name') == name
+    assert mol.get('properties') == properties
+    assert mol.get('cjson') is None
+
 
 @pytest.mark.plugin('molecules')
 def test_get_molecule_inchikey(server, molecule, user):

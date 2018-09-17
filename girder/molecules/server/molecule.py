@@ -51,16 +51,19 @@ class Molecule(Resource):
         self._model = self.model('molecule', 'molecules')
         self._calc_model = self.model('calculation', 'molecules')
 
-    def _clean(self, doc):
+    def _clean(self, doc, cjson=True):
         del doc['access']
         if 'sdf' in doc:
             del doc['sdf']
         doc['_id'] = str(doc['_id'])
         if 'cjson' in doc:
-            if 'basisSet' in doc['cjson']:
-                del doc['cjson']['basisSet']
-            if 'vibrations' in doc['cjson']:
-                del doc['cjson']['vibrations']
+            if cjson:
+                if 'basisSet' in doc['cjson']:
+                    del doc['cjson']['basisSet']
+                if 'vibrations' in doc['cjson']:
+                    del doc['cjson']['vibrations']
+            else:
+                del doc['cjson']
 
         return doc
 
@@ -94,7 +97,15 @@ class Molecule(Resource):
         mol = self._model.load(id, level=AccessType.READ, user=getCurrentUser())
         if not mol:
             raise RestException('Molecule not found.', code=404)
-        return self._clean(mol)
+        cjson = True
+        cjsonParam = params.get('cjson')
+        if cjsonParam is not None:
+            cjson = cjsonParam.lower() == 'true'
+        return self._clean(mol, cjson)
+    find_id.description = (
+        Description('Get a specific molecule by id')
+        .param('cjson', 'Attach the cjson data of the molecule to the response (Default: true)', paramType='query', required=False)
+    )
 
     @access.user
     def create(self, params):
