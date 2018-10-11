@@ -69,7 +69,7 @@ def create_molecule(data_str, input_format, user, public):
             'properties': props,
             'atomCounts': atomCounts
         }
-        mol = MoleculeModel().create_xyz(user, mol_dict, public)
+        mol = MoleculeModel().create(user, mol_dict, public)
 
         # Upload the molecule to virtuoso
         try:

@@ -23,7 +23,6 @@ from girder.plugins.molecules.utilities.molecules import create_molecule
 
 from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
 
-
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
     input_formats = ['cml', 'xyz', 'sdf', 'cjson', 'json', 'log', 'nwchem', 'pdb']
@@ -48,9 +47,6 @@ class Molecule(Resource):
         self.route('PATCH', (':id', 'notebooks'), self.add_notebooks)
         self.route('POST', ('conversions', ':output_format'), self.conversions)
 
-        self._model = self.model('molecule', 'molecules')
-        self._calc_model = self.model('calculation', 'molecules')
-
     def _clean(self, doc, cjson=True):
         del doc['access']
         if 'sdf' in doc:
@@ -69,7 +65,7 @@ class Molecule(Resource):
 
     @access.public
     def find(self, params):
-        return self._model.findmol(params)
+        return MoleculeModel().findmol(params)
     find.description = (
             Description('Find a molecule.')
             .param('name', 'The name of the molecule', paramType='query',
@@ -82,7 +78,7 @@ class Molecule(Resource):
 
     @access.public
     def find_inchikey(self, inchikey, params):
-        mol = self._model.find_inchikey(inchikey)
+        mol = MoleculeModel().find_inchikey(inchikey)
         if not mol:
             raise RestException('Molecule not found.', code=404)
         return self._clean(mol)
@@ -94,7 +90,7 @@ class Molecule(Resource):
 
     @access.public
     def find_id(self, id, params):
-        mol = self._model.load(id, level=AccessType.READ, user=getCurrentUser())
+        mol = MoleculeModel().load(id, level=AccessType.READ, user=getCurrentUser())
         if not mol:
             raise RestException('Molecule not found.', code=404)
         cjson = True
@@ -167,12 +163,12 @@ class Molecule(Resource):
     @access.user
     def delete(self, id, params):
         user = self.getCurrentUser()
-        mol = self._model.load(id, user=user, level=AccessType.WRITE)
+        mol = MoleculeModel().load(id, user=user, level=AccessType.WRITE)
 
         if not mol:
             raise RestException('Molecule not found.', code=404)
 
-        return self._model.remove(mol)
+        return MoleculeModel().remove(mol)
 
     delete.description = (
             Description('Delete a molecule by id.')
@@ -184,7 +180,7 @@ class Molecule(Resource):
     def update(self, id, params):
         user = self.getCurrentUser()
 
-        mol = self._model.load(id, user=user, level=AccessType.WRITE)
+        mol = MoleculeModel().load(id, user=user, level=AccessType.WRITE)
 
         if not mol:
             raise RestException('Molecule not found.', code=404)
@@ -196,7 +192,7 @@ class Molecule(Resource):
             logs = mol.setdefault('logs', [])
             logs += body['logs']
 
-        mol = self._model.update(mol)
+        mol = MoleculeModel().update(mol)
 
         return self._clean(mol)
     addModel('Molecule', 'UpdateMoleculeParams', {
@@ -313,7 +309,7 @@ class Molecule(Resource):
     def get_format(self, id, output_format, params):
         # For now will for force load ( i.e. ignore access control )
         # This will change when we have access controls.
-        molecule = self._model.load(id, force=True)
+        molecule = MoleculeModel().load(id, force=True)
 
         if output_format not in Molecule.output_formats:
             raise RestException('Format not supported.', code=400)
@@ -350,14 +346,14 @@ class Molecule(Resource):
                 raise RestException('Invalid query', 400)
 
             mols = []
-            for mol in self._model.find(query=mongo_query, fields = ['_id', 'inchikey', 'name']):
+            for mol in MoleculeModel().find(query=mongo_query, fields = ['_id', 'inchikey', 'name']):
                 mols.append(mol)
 
             return mols
 
         elif formula:
             # Search using formula
-            return list(self._model.find_formula(formula, getCurrentUser()))
+            return list(MoleculeModel().find_formula(formula, getCurrentUser()))
         elif cactus:
             # Disable cert verification for now
             # TODO Ensure we have the right root certs so this just works.
@@ -371,7 +367,7 @@ class Molecule(Resource):
             (inchi, inchikey) = openbabel.to_inchi(r.content.decode('utf8'), 'sdf')
 
             # See if we already have a molecule
-            mol = self._model.find_inchikey(inchikey)
+            mol = MoleculeModel().find_inchikey(inchikey)
 
             # Create new molecule
             if mol is None:
@@ -385,7 +381,7 @@ class Molecule(Resource):
 
                 user = getCurrentUser()
                 if user is not None:
-                    mol = self._model.create_xyz(getCurrentUser(), mol, public=True)
+                    mol = MoleculeModel().create(getCurrentUser(), mol, public=True)
 
             return [mol]
 

@@ -36,7 +36,7 @@ def molecule(user):
         }
     }
 
-    mol = Molecule().create_xyz(user, mol, public=False)
+    mol = Molecule().create(user, mol, public=False)
 
     # These are normally performed in the molecule resource _clean() function
     del mol['access']
