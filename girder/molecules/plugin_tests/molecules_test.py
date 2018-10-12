@@ -125,11 +125,11 @@ def test_create_molecule_inchi(server, user):
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
-    with open(dir_path + '/data/butanol.inchi', 'r') as rf:
+    with open(dir_path + '/data/water.inchi', 'r') as rf:
         inchi_data = rf.read()
 
     body = {
-        'name': 'butanol',
+        'name': 'water',
         'inchi': inchi_data
     }
 
@@ -143,7 +143,7 @@ def test_create_molecule_inchi(server, user):
     assert 'inchikey' in mol
     assert 'properties' in mol
     assert 'formula' in mol['properties']
-    assert mol['properties']['formula'] == 'C4H10O'
+    assert mol['properties']['formula'] == 'H2O'
 
     # Double check and make sure it exists
     id = mol['_id']
@@ -154,7 +154,7 @@ def test_create_molecule_inchi(server, user):
     assert 'inchikey' in mol2
     assert 'properties' in mol
     assert 'formula' in mol['properties']
-    assert mol['properties']['formula'] == 'C4H10O'
+    assert mol['properties']['formula'] == 'H2O'
 
     # id, inchi, and inchikey should match
     assert str(mol['_id']) == str(mol2['_id'])
