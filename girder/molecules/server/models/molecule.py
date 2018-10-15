@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import re
+import json
 
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.constants import AccessType
+from girder.plugins.molecules import avogadro
 
 class Molecule(AccessControlledModel):
 
@@ -53,21 +55,12 @@ class Molecule(AccessControlledModel):
 
         return self.filterResultsByPermission(mols, user, level=AccessType.READ)
 
+    def create(self, user, mol, public=False):
 
+        if 'properties' not in mol and mol.get('cjson') is not None:
+            props = avogadro.molecule_properties(json.dumps(mol.get('cjson')), 'cjson')
+            mol['properties'] = props
 
-    def create(self, user, inchi, formula=None, public=False):
-        mol = { 'inchi': inchi }
-        if formula:
-            if 'properties' not in mol:
-                mol['properties'] = {}
-            mol['properties']['formula'] = formula
-        self.setUserAccess(mol, user=user, level=AccessType.ADMIN)
-        if public:
-            self.setPublic(mol, True)
-        self.save(mol)
-        return mol
-
-    def create_xyz(self, user, mol, public=False):
         self.setUserAccess(mol, user=user, level=AccessType.ADMIN)
         if public:
             self.setPublic(mol, True)
