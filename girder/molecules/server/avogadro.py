@@ -1,4 +1,5 @@
-from avogadro2 import *
+from avogadro.core import *
+from avogadro.io import *
 import json
 from jsonpath_rw import parse
 
