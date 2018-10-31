@@ -11,6 +11,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install requirements
+          command: pip install -r requirements.txt
+      - run:
           name: Run pytest
           command: 'pytest ./girder/molecules/plugin_tests/'
 
