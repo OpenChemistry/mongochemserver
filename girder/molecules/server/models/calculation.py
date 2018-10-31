@@ -48,7 +48,7 @@ class Calculation(AccessControlledModel):
         self.ensureIndices([
             'moleculeId', 'calculationType', 'properties.functional',
             'properties.theory', 'properties.basisSet.name', 'properties.pending',
-            'theoryPriority'
+            'properties.code', 'properties.theoryPriority'
         ])
 
         self.exposeFields(level=AccessType.READ, fields=(
