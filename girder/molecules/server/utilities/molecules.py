@@ -59,7 +59,7 @@ def create_molecule(data_str, input_format, user, public):
         cjsonmol = {}
         cjsonmol['atoms'] = cjson['atoms']
         cjsonmol['bonds'] = cjson['bonds']
-        cjsonmol['chemical json'] = cjson['chemical json']
+        cjsonmol['chemicalJson'] = cjson['chemicalJson']
         mol_dict = {
             'name': chemspider.find_common_name(inchikey, props['formula']),
             'inchi': inchi,
