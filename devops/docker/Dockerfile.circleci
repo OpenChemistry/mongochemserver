@@ -1,8 +1,5 @@
 FROM girder/girder:2.x-maintenance-py3
 
-# Install avogadro from PyPI!
-RUN pip install avogadro
-
 # Install deps for pybel
 RUN apt-get update && apt-get -y install \
   swig \
