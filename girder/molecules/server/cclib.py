@@ -116,6 +116,14 @@ def convert_str(str_data):
     if hasattr(data, 'vibdisps'):
         vibdisps = _cclib_to_cjson_vibdisps(data.vibdisps)
         cjson.setdefault('vibrations', {})['eigenVectors'] = vibdisps
+
+    # Add a placeholder intensities array
+    if 'vibrations' in cjson and 'frequencies' in cjson['vibrations']:
+        if 'intensities'  not in cjson['vibrations']:
+            cjson['vibrations']['intensities'] = [1 for i in range(len(cjson['vibrations']['frequencies']))]
+        if 'modes'  not in cjson['vibrations']:
+            cjson['vibrations']['modes'] = [i + 1 for i in range(len(cjson['vibrations']['frequencies']))]
+
     
     # Convert calculation metadata
     if hasattr(data, 'metadata'):
