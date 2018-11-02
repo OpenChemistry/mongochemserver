@@ -265,19 +265,10 @@ class Calculation(Resource):
         if 'fileId' in body:
             file = File().load(body['fileId'], user=getCurrentUser())
             file_id = file['_id']
-            with File().open(file) as f:
-                calc_data = f.read().decode()
-                if code == 'nwchem':
-                    cjson = avogadro.convert_str(calc_data, 'json', 'cjson')
-                    cjson = json.loads(cjson)
-                elif code == 'psi4':
-                    cjson = cclib.convert_str(calc_data)
-                else:
-                    raise Exception('Unknown code %s' % code)
+            cjson, file_str = self._file_to_cjson(file, code)
 
             if 'vibrations' in cjson or 'basisSet' in cjson:
-
-                props = self._extract_calculation_properties(cjson, calc_data, code)
+                props = self._extract_calculation_properties(cjson, file_str, code)
 
         if molecule_id is None:
             mol = create_molecule(json.dumps(cjson), 'cjson', user, public)
@@ -303,6 +294,19 @@ class Calculation(Resource):
             'body',
             'The calculation data', dataType='CalculationData', required=True,
             paramType='body'))
+
+    def _file_to_cjson(self, file, code='nwchem'):
+        with File().open(file) as f:
+            calc_data = f.read().decode()
+            if code == 'nwchem':
+                cjson = avogadro.convert_str(calc_data, 'json', 'cjson')
+                cjson = json.loads(cjson)
+            elif code == 'psi4':
+                cjson = cclib.convert_str(calc_data)
+            else:
+                raise Exception('Unknown code %s' % code)
+
+        return cjson, calc_data
 
     def _extract_calculation_properties(self, cjson, calculation_data, code='nwchem'):
         if code == 'nwchem':
@@ -365,15 +369,7 @@ class Calculation(Resource):
         code = calculation['properties']['code']
 
         file = File().load(body['fileId'], user=getCurrentUser())
-        with File().open(file) as f:
-            calc_data = f.read().decode()
-            if code == 'nwchem':
-                cjson = avogadro.convert_str(calc_data, 'json', 'cjson')
-                cjson = json.loads(cjson)
-            elif code == 'psi4':
-                cjson = cclib.convert_str(calc_data)
-            else:
-                raise Exception('Unknown code %s' % code)
+        cjson, file_str = self._file_to_cjson(file, code)
 
         if 'vibrations' in cjson or 'basisSet' in cjson:
             calc_props = calculation['properties']
@@ -381,7 +377,7 @@ class Calculation(Resource):
             if 'pending' in calc_props:
                 del calc_props['pending']
 
-            new_props = self._extract_calculation_properties(cjson, calc_data, code)
+            new_props = self._extract_calculation_properties(cjson, file_str, code)
             new_props.update(calc_props)
             calc_props = new_props
 
