@@ -19,6 +19,7 @@ from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
 from girder.plugins.molecules.utilities.molecules import create_molecule
 
 from . import avogadro
+from . import cclib
 from . import constants
 from .molecule import Molecule
 import pymongo
@@ -184,21 +185,24 @@ class Calculation(Resource):
         try:
             mo = int(mo)
         except ValueError:
-
             # Check for homo lumo
             mo = mo.lower()
             if mo in ['homo', 'lumo']:
                 cal = self._model.load(id, force=True)
-                electron_count = parse('cjson.basisSet.electronCount').find(cal)
-                if electron_count:
-                    electron_count = electron_count[0].value
+                # Electron count might be saved in several places...
+                path_expressions = [
+                    'cjson.orbitals.electronCount',
+                    'cjson.basisSet.electronCount',
+                    'properties.electronCount'
+                ]
+                matches = []
+                for expr in path_expressions:
+                    matches.extend(parse(expr).find(cal))
+                if len(matches) > 0:
+                    electron_count = matches[0].value
                 else:
-                    # Look here as well.
-                    electron_count = parse('properties.electronCount').find(cal)
-                    if electron_count:
-                        electron_count = electron_count[0].value
-                    else:
-                        raise RestException('Unable to access electronCount', 400)
+                    raise RestException('Unable to access electronCount', 400)
+
                 # The index of the first orbital is 0, so homo needs to be
                 # electron_count // 2 - 1
                 if mo == 'homo':
@@ -207,7 +211,6 @@ class Calculation(Resource):
                     mo = int(electron_count / 2)
             else:
                 raise ValidationException('mo number be an integer or \'homo\'/\'lumo\'', 'mode')
-
 
         cached = self._cube_model.find_mo(id, mo)
 
@@ -220,17 +223,8 @@ class Calculation(Resource):
         # Ignoring access control on file/data for now, all public.
         calc =  self._model.load(id, fields=fields, force=True)
 
-        file_id = calc['fileId']
-        file = self.model('file').load(file_id, force=True)
-        parts = file['name'].split('.')
-        input_format = parts[-1]
-        name = '.'.join(parts[:-1])
-
-        with self.model('file').open(file) as fp:
-            data_str = fp.read().decode()
-
         # This is where the cube gets calculated, should be cached in future.
-        cjson = avogadro.calculate_mo(data_str, mo)
+        cjson = avogadro.calculate_mo(calc['cjson'], mo)
 
         # Remove the vibrational mode data from the cube - big, not needed here.
         if 'vibrations' in cjson:
@@ -265,19 +259,16 @@ class Calculation(Resource):
         molecule_id = body.get('moleculeId', None)
         public = body.get('public', False)
         notebooks = body.get('notebooks', [])
+        code = props.get('code', 'nwchem')
         file_id = None
 
         if 'fileId' in body:
             file = File().load(body['fileId'], user=getCurrentUser())
             file_id = file['_id']
-            with File().open(file) as f:
-                calc_data = f.read().decode()
-                cjson = avogadro.convert_str(calc_data, 'json', 'cjson')
-                cjson = json.loads(cjson)
+            cjson, file_str = self._file_to_cjson(file, code)
 
             if 'vibrations' in cjson or 'basisSet' in cjson:
-
-                props = self._extract_calculation_properties(cjson, json.loads(calc_data))
+                props = self._extract_calculation_properties(cjson, file_str, code)
 
         if molecule_id is None:
             mol = create_molecule(json.dumps(cjson), 'cjson', user, public)
@@ -304,7 +295,29 @@ class Calculation(Resource):
             'The calculation data', dataType='CalculationData', required=True,
             paramType='body'))
 
-    def _extract_calculation_properties(self, cjson, calculation_data):
+    def _file_to_cjson(self, file, code='nwchem'):
+        with File().open(file) as f:
+            calc_data = f.read().decode()
+            if code == 'nwchem':
+                cjson = avogadro.convert_str(calc_data, 'json', 'cjson')
+                cjson = json.loads(cjson)
+            elif code == 'psi4':
+                cjson = cclib.convert_str(calc_data)
+            else:
+                raise Exception('Unknown code %s' % code)
+
+        return cjson, calc_data
+
+    def _extract_calculation_properties(self, cjson, calculation_data, code='nwchem'):
+        if code == 'nwchem':
+            return self._extract_calculation_properties_nwchem(cjson, calculation_data)
+        elif code =='psi4':
+            return self._extract_calculation_properties_psi4(cjson)
+        else:
+            raise Exception('Unknown code %s' % code)
+
+    def _extract_calculation_properties_nwchem(self, cjson, calculation_data):
+        calculation_data = json.loads(calculation_data)
         calc_props = avogadro.calculation_properties(calculation_data)
 
         # Use basisSet from cjson if we don't already have one.
@@ -319,7 +332,24 @@ class Calculation(Resource):
 
         # Add theory priority to 'sort' calculations
         theory = calc_props.get('theory')
-        functional = calc_props.get('functional')
+        if theory in constants.theory_priority:
+            priority = constants.theory_priority[theory]
+            calc_props['theoryPriority'] = priority
+
+        return calc_props
+
+    def _extract_calculation_properties_psi4(self, cjson):
+        metadata = cjson.get('metadata', {})
+        basis_set = metadata.get('basisSet')
+        functional = metadata.get('functional')
+        theory = metadata.get('theory')
+
+        calc_props = {
+            'basisSet': basis_set,
+            'functional': functional,
+            'theory': theory
+        }
+
         if theory in constants.theory_priority:
             priority = constants.theory_priority[theory]
             calc_props['theoryPriority'] = priority
@@ -336,12 +366,10 @@ class Calculation(Resource):
     )
     def ingest_calc(self, calculation, body):
         self.requireParams(['fileId'], body)
+        code = calculation['properties']['code']
 
         file = File().load(body['fileId'], user=getCurrentUser())
-        with File().open(file) as f:
-            calc_data = f.read().decode()
-            cjson = avogadro.convert_str(calc_data, 'json', 'cjson')
-            cjson = json.loads(cjson)
+        cjson, file_str = self._file_to_cjson(file, code)
 
         if 'vibrations' in cjson or 'basisSet' in cjson:
             calc_props = calculation['properties']
@@ -349,7 +377,7 @@ class Calculation(Resource):
             if 'pending' in calc_props:
                 del calc_props['pending']
 
-            new_props = self._extract_calculation_properties(cjson, json.loads(calc_data))
+            new_props = self._extract_calculation_properties(cjson, file_str, code)
             new_props.update(calc_props)
             calc_props = new_props
 
@@ -384,6 +412,9 @@ class Calculation(Resource):
 
         if 'basis' in params:
             query['properties.basisSet.name'] = params.get('basis').lower()
+
+        if 'code' in params:
+            query['properties.code'] = params.get('code').lower()
 
         if 'pending' in params:
             pending = toBool(params['pending'])
@@ -458,7 +489,11 @@ class Calculation(Resource):
         .param(
             'sortByTheory',
             'Sort the result by theory "priority", "best" first.',
-             dataType='boolean', paramType='query', default=False, required=False))
+             dataType='boolean', paramType='query', default=False, required=False)
+        .param(
+            'code',
+            'The code used to run the calculation.',
+             dataType='string', paramType='query', required=False))
 
 
     @access.public

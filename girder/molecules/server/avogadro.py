@@ -102,10 +102,10 @@ def calculation_properties(json_data):
     return properties
 
 # This is far from ideal as it is a CPU intensive task blocking the main thread.
-def calculate_mo(json_str, mo):
+def calculate_mo(cjson, mo):
     mol = Molecule()
     conv = FileFormatManager()
-    conv.readString(mol, json_str, 'json')
+    conv.readString(mol, json.dumps(cjson), 'cjson')
     # Do some scaling of our spacing based on the size of the molecule.
     atomCount = mol.atomCount()
     spacing = 0.30
