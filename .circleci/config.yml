@@ -12,7 +12,7 @@ jobs:
       - checkout
       - run:
           name: Install requirements
-          command: pip install -r requirements.txt
+          command: pip install -r requirements.txt --process-dependency-links
       - run:
           name: Run pytest
           command: 'pytest ./girder/molecules/plugin_tests/'

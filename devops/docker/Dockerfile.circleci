@@ -10,7 +10,7 @@ COPY girder.local.conf /girder/girder/conf/girder.local.cfg
 
 # Install mongochemserver plugins
 RUN git clone https://github.com/OpenChemistry/mongochemserver.git /mongochemserver && \
-  pip install --no-cache-dir -r /mongochemserver/requirements.txt && \
+  pip install --no-cache-dir -r /mongochemserver/requirements.txt --process-dependency-links && \
   pip install --no-cache-dir -r /mongochemserver/requirements-dev.txt && \
   girder-install plugin -s /mongochemserver/girder/molecules && \
   girder-install plugin -s /mongochemserver/girder/notebooks

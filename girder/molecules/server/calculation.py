@@ -1,5 +1,6 @@
 import cherrypy
 import functools
+import tempfile
 from jsonpath_rw import parse
 from bson.objectid import ObjectId
 import json
@@ -18,8 +19,9 @@ from girder.plugins.molecules.models.calculation import Calculation as Calculati
 from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
 from girder.plugins.molecules.utilities.molecules import create_molecule
 
+import openchemistry as oc
+
 from . import avogadro
-from . import cclib
 from . import constants
 from .molecule import Molecule
 import pymongo
@@ -296,15 +298,22 @@ class Calculation(Resource):
             paramType='body'))
 
     def _file_to_cjson(self, file, code='nwchem'):
+        readers = {
+            'nwchem': oc.NWChemJsonReader,
+            'psi4': oc.Psi4Reader
+        }
+
+        if code not in readers:
+            raise Exception('Unknown code %s' % code)
+        reader = readers[code]
+
         with File().open(file) as f:
             calc_data = f.read().decode()
-            if code == 'nwchem':
-                cjson = avogadro.convert_str(calc_data, 'json', 'cjson')
-                cjson = json.loads(cjson)
-            elif code == 'psi4':
-                cjson = cclib.convert_str(calc_data)
-            else:
-                raise Exception('Unknown code %s' % code)
+
+        with tempfile.TemporaryFile('w+') as tf:
+            tf.write(calc_data)
+            tf.seek(0)
+            cjson = reader.read(f)
 
         return cjson, calc_data
 
