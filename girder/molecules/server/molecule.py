@@ -375,6 +375,7 @@ class Molecule(Resource):
                 cjson_str = avogadro.convert_str(r.content, 'sdf', 'cjson')
                 mol = {
                     'cjson': json.loads(cjson_str),
+                    'inchi': inchi,
                     'inchikey': inchikey,
                     'origin': 'cactus'
                 }
