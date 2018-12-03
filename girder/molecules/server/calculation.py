@@ -23,6 +23,7 @@ import openchemistry as oc
 
 from . import avogadro
 from . import constants
+from . import chemml
 from .molecule import Molecule
 import pymongo
 
@@ -269,8 +270,7 @@ class Calculation(Resource):
             file_id = file['_id']
             cjson, file_str = self._file_to_cjson(file, code)
 
-            if 'vibrations' in cjson or 'basisSet' in cjson:
-                props = self._extract_calculation_properties(cjson, file_str, code)
+            props = self._extract_calculation_properties(cjson, file_str, code)
 
         if molecule_id is None:
             mol = create_molecule(json.dumps(cjson), 'cjson', user, public)
@@ -300,7 +300,8 @@ class Calculation(Resource):
     def _file_to_cjson(self, file, code='nwchem'):
         readers = {
             'nwchem': oc.NWChemJsonReader,
-            'psi4': oc.Psi4Reader
+            'psi4': oc.Psi4Reader,
+            'chemml': chemml.ChemmlReader
         }
 
         if code not in readers:
@@ -326,6 +327,8 @@ class Calculation(Resource):
             return self._extract_calculation_properties_nwchem(cjson, calculation_data)
         elif code =='psi4':
             return self._extract_calculation_properties_psi4(cjson)
+        elif code == 'chemml':
+            return self._extract_calculation_properties_chemml(cjson)
         else:
             raise Exception('Unknown code %s' % code)
 
@@ -369,6 +372,18 @@ class Calculation(Resource):
 
         return calc_props
 
+    def _extract_calculation_properties_chemml(self, cjson):
+        theory = 'ChemML'
+        calc_props = {
+            'theory': theory
+        }
+
+        if theory in constants.theory_priority:
+            priority = constants.theory_priority[theory]
+            calc_props['theoryPriority'] = priority
+
+        return calc_props
+
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
         Description('Update pending calculation with results.')
@@ -384,21 +399,20 @@ class Calculation(Resource):
         file = File().load(body['fileId'], user=getCurrentUser())
         cjson, file_str = self._file_to_cjson(file, code)
 
-        if 'vibrations' in cjson or 'basisSet' in cjson:
-            calc_props = calculation['properties']
-            # The calculation is no longer psending
-            if 'pending' in calc_props:
-                del calc_props['pending']
+        calc_props = calculation['properties']
+        # The calculation is no longer pending
+        if 'pending' in calc_props:
+            del calc_props['pending']
 
-            new_props = self._extract_calculation_properties(cjson, file_str, code)
-            new_props.update(calc_props)
-            calc_props = new_props
+        new_props = self._extract_calculation_properties(cjson, file_str, code)
+        new_props.update(calc_props)
+        calc_props = new_props
 
-            calculation['properties'] = calc_props
-            calculation['cjson'] = cjson
-            calculation['fileId'] = file['_id']
+        calculation['properties'] = calc_props
+        calculation['cjson'] = cjson
+        calculation['fileId'] = file['_id']
 
-            return CalculationModel().save(calculation)
+        return CalculationModel().save(calculation)
 
     @access.public
     def find_calc(self, params):
