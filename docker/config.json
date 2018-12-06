@@ -1,0 +1,16 @@
+{
+    "girder": {
+        "baseUrl": "http://girder:8080/api/v1",
+        "user": "cumulus",
+        "group": "cumulus"
+    },
+        "ssh": {
+        "keyStore": "/keys"
+    },
+
+    "amis": {
+            },
+    "taskflow": {
+        "path": ["/openchemistrypy/taskflows/"]
+    }
+}
