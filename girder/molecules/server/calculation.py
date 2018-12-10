@@ -323,14 +323,27 @@ class Calculation(Resource):
         return cjson, calc_data
 
     def _extract_calculation_properties(self, cjson, calculation_data, code='nwchem'):
-        if code == 'nwchem':
-            return self._extract_calculation_properties_nwchem(cjson, calculation_data)
-        elif code =='psi4':
-            return self._extract_calculation_properties_psi4(cjson)
-        elif code == 'chemml':
-            return self._extract_calculation_properties_chemml(cjson)
-        else:
+        extract_properties = {
+            'nwchem': {
+                'fn': self._extract_calculation_properties_nwchem,
+                'args': [cjson, calculation_data]
+            },
+            'psi4': {
+                'fn': self._extract_calculation_properties_psi4,
+                'args': [cjson]
+            },
+            'chemml': {
+                'fn': self._extract_calculation_properties_chemml,
+                'args': [cjson]
+            }
+        }
+
+        if code not in extract_properties:
             raise Exception('Unknown code %s' % code)
+
+        function = extract_properties[code]['fn']
+        args = extract_properties[code]['args']
+        return function(*args)
 
     def _extract_calculation_properties_nwchem(self, cjson, calculation_data):
         calculation_data = json.loads(calculation_data)
