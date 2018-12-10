@@ -14,6 +14,20 @@ jobs:
           name: Install requirements
           command: pip install -r requirements.txt
       - run:
+          name: Install the plugins
+          command: >
+            pip install --no-cache-dir -r /mongochemserver/requirements.txt &&
+            pip install --no-cache-dir -r /mongochemserver/requirements-dev.txt &&
+            girder-install plugin -f /mongochemserver/girder/molecules &&
+            girder-install plugin -f /mongochemserver/girder/notebooks
+
+      - run:
+          name: Install girder_pytest
+          command: >
+            git clone -b 2.x-maintenance https://github.com/girder/girder.git /girder_pytest &&
+            cd /girder_pytest &&
+            pip install --no-cache-dir -r requirements-dev.txt
+      - run:
           name: Run pytest
           command: 'pytest ./girder/molecules/plugin_tests/'
 
