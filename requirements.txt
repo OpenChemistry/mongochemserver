@@ -5,4 +5,4 @@ chemspipy==1.0.4
 pyparsing==2.0.5
 rdflib==4.2.1
 avogadro==1.92.0
-openchemistry==0.0.4
+openchemistry==0.0.6
