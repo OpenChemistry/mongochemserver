@@ -22,6 +22,8 @@ jobs:
             girder-install plugin -f /mongochemserver/girder/notebooks
 
       - run:
+          # We need to clone Girder to install girder_pytest as its not included in the base
+          # image.
           name: Install girder_pytest
           command: >
             git clone -b 2.x-maintenance https://github.com/girder/girder.git /girder_pytest &&
