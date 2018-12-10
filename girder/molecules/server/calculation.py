@@ -310,10 +310,10 @@ class Calculation(Resource):
         with File().open(file) as f:
             calc_data = f.read().decode()
 
-        with tempfile.TemporaryFile('w+') as tf:
+        with tempfile.SpooledTemporaryFile(mode='w+', max_size=10*1024*1024) as tf:
             tf.write(calc_data)
             tf.seek(0)
-            cjson = reader.read(f)
+            cjson = reader(f).read()
 
         return cjson, calc_data
 
