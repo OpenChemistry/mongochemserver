@@ -310,10 +310,14 @@ class Calculation(Resource):
         with File().open(file) as f:
             calc_data = f.read().decode()
 
+        # cclib parsers call next() on the output files
+        # but SpooledTemporaryFile doesn't implement it
+        tempfile.SpooledTemporaryFile.__next__ = lambda self : self.__iter__().__next__()
+
         with tempfile.SpooledTemporaryFile(mode='w+', max_size=10*1024*1024) as tf:
             tf.write(calc_data)
             tf.seek(0)
-            cjson = reader(f).read()
+            cjson = reader(tf).read()
 
         return cjson, calc_data
 
