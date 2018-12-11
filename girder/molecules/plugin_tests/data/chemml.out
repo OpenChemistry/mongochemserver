@@ -1,0 +1,62 @@
+{
+  "chemical json": 0,
+  "atoms": {
+    "elements": {
+      "number": [
+        8,
+        1,
+        1
+      ]
+    },
+    "coords": {
+      "3d": [
+        0,
+        -0.0589,
+        0,
+        -0.811,
+        0.4677,
+        0,
+        0.811,
+        0.4677,
+        0
+      ]
+    },
+    "selected": [
+      false,
+      false,
+      false
+    ]
+  },
+  "bonds": {
+    "order": [
+      1,
+      1
+    ],
+    "connections": {
+      "index": [
+        0,
+        1,
+        0,
+        2
+      ]
+    }
+  },
+  "name": "H2O",
+  "calculatedProperties": {
+    "refractiveIndex": {
+      "label": "LL refractive index",
+      "value": 1.4835904836654663,
+      "units": ""
+    },
+    "polarizability": {
+      "label": "Polarizability",
+      "value": 112.57484436035156,
+      "units": "Bohr^3"
+    },
+    "density": {
+      "label": "Density",
+      "value": 1236.080078125,
+      "units": "Kg/m^3"
+    }
+  }
+}

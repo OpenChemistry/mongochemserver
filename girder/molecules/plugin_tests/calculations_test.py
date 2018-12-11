@@ -336,3 +336,39 @@ def test_ingest_psi4_with_molecule(server, molecule, user, make_girder_file, fsA
     calculation =  Calculation().load(r.json['_id'], force=True)
     for prop in ['fileId', 'moleculeId', 'notebooks', 'properties', 'cjson']:
         assert prop in calculation
+
+@pytest.mark.plugin('molecules')
+def test_ingest_chemml_with_molecule(server, molecule, user, make_girder_file, fsAssetstore):
+    from girder.plugins.molecules.models.calculation import Calculation
+    # Upload simulation result
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    with open(os.path.join(dir_path, 'data', 'chemml.out')) as f:
+        file = make_girder_file(fsAssetstore, user, 'chemml.out', contents=f.read().encode())
+
+    # Now we can test the ingest
+    body = {
+        'fileId': str(file['_id']),
+        'moleculeId': str(molecule['_id']),
+        'public': True,
+        'properties': {
+            'code': 'chemml'
+        }
+    }
+
+    r = server.request('/calculations', method='POST', type='application/json',
+                       body=json.dumps(body), user=user)
+    assertStatus(r, 201)
+
+    calculation =  Calculation().load(r.json['_id'], force=True)
+    for prop in ['fileId', 'moleculeId', 'notebooks', 'properties', 'cjson']:
+        assert prop in calculation
+
+    cjson = calculation['cjson']
+
+    assert 'calculatedProperties' in cjson
+
+    calculatedProperties = cjson['calculatedProperties']
+
+    for prop in ['refractiveIndex', 'polarizability', 'density']:
+        assert prop in calculatedProperties
