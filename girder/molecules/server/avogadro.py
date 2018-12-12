@@ -6,24 +6,24 @@ from jsonpath_rw import parse
 def convert_str(str_data, in_format, out_format):
     mol = Molecule()
     conv = FileFormatManager()
-    conv.readString(mol, str_data, in_format)
+    conv.read_string(mol, str_data, in_format)
 
-    return conv.writeString(mol, out_format)
+    return conv.write_string(mol, out_format)
 
 def atom_count(str_data, in_format):
     mol = Molecule()
     conv = FileFormatManager()
-    conv.readString(mol, str_data, in_format)
+    conv.read_string(mol, str_data, in_format)
 
-    return mol.atomCount()
+    return mol.atom_count()
 
 def molecule_properties(str_data, in_format):
     mol = Molecule()
     conv = FileFormatManager()
-    conv.readString(mol, str_data, in_format)
+    conv.read_string(mol, str_data, in_format)
     properties = {
-        'atomCount': mol.atomCount(),
-        'heavyAtomCount': mol.atomCount() - mol.atomCount(1),
+        'atomCount': mol.atom_count(),
+        'heavyAtomCount': mol.atom_count() - mol.atom_count(1),
         'mass': mol.mass(),
         'spacedFormula': mol.formula(' ', 0),
         'formula': mol.formula('', 1)
@@ -105,20 +105,20 @@ def calculation_properties(json_data):
 def calculate_mo(cjson, mo):
     mol = Molecule()
     conv = FileFormatManager()
-    conv.readString(mol, json.dumps(cjson), 'cjson')
+    conv.read_string(mol, json.dumps(cjson), 'cjson')
     # Do some scaling of our spacing based on the size of the molecule.
-    atomCount = mol.atomCount()
+    atom_count = mol.atom_count()
     spacing = 0.30
-    if atomCount > 50:
+    if atom_count > 50:
         spacing = 0.5
-    elif atomCount > 30:
+    elif atom_count > 30:
         spacing = 0.4
-    elif atomCount > 10:
+    elif atom_count > 10:
         spacing = 0.33
-    cube = mol.addCube()
+    cube = mol.add_cube()
     # Hard wiring spacing/padding for now, this could be exposed in future too.
     cube.setLimits(mol, spacing, 4)
     gaussian = GaussianSetTools(mol)
     gaussian.calculateMolecularOrbital(cube, mo)
 
-    return json.loads(conv.writeString(mol, "cjson"))
+    return json.loads(conv.write_string(mol, "cjson"))
