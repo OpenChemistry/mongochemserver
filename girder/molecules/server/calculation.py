@@ -64,7 +64,8 @@ class Calculation(Resource):
     @access.public
     def get_calc_vibrational_modes(self, id, params):
 
-        fields = ['cjson..vibrations.modes', 'cjson.vibrations.intensities',
+        # TODO: remove 'cjson' once girder issue #2883 is resolved
+        fields = ['cjson', 'cjson.vibrations.modes', 'cjson.vibrations.intensities',
                  'cjson.vibrations.frequencies', 'access']
 
         calc =  self._model.load(id, fields=fields, user=getCurrentUser(),
@@ -72,7 +73,10 @@ class Calculation(Resource):
 
         del calc['access']
 
-        return calc['cjson']['vibrations']
+        if 'cjson' in calc and 'vibrations' in calc['cjson']:
+            return calc['cjson']['vibrations']
+        else:
+            return {'modes': [], 'intensities': [], 'frequencies': []}
 
     get_calc_vibrational_modes.description = (
         Description('Get the vibrational modes associated with a calculation')
@@ -89,11 +93,12 @@ class Calculation(Resource):
         except ValueError:
             raise ValidationException('mode number be an integer', 'mode')
 
-        fields = ['cjson.vibrations.modes', 'access']
+        # TODO: remove 'cjson' once girder issue #2883 is resolved
+        fields = ['cjson', 'cjson.vibrations.modes', 'access']
         calc =  self._model.load(id, fields=fields, user=getCurrentUser(),
                                  level=AccessType.READ)
 
-        vibrational_modes = calc['cjson.vibrations']
+        vibrational_modes = calc['cjson']['vibrations']
         #frames = vibrational_modes.get('modeFrames')
         modes = vibrational_modes.get('modes', [])
 
@@ -116,12 +121,15 @@ class Calculation(Resource):
             },
             'cjson.vibrations.eigenVectors': {
                 '$slice': [index, 1]
+            },
+            'cjson.vibrations.modes': {
+                '$slice': [index, 1]
             }
         }
 
         mode = self._model.findOne(query, fields=projection)
 
-        return mode
+        return mode['cjson']['vibrations']
 
 
     get_calc_vibrational_mode.description = (
