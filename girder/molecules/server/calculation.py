@@ -72,7 +72,10 @@ class Calculation(Resource):
 
         del calc['access']
 
-        return calc['cjson']['vibrations']
+        if 'cjson' in calc and 'vibrations' in calc['cjson']:
+            return calc['cjson']['vibrations']
+        else:
+            return {'modes': [], 'intensities': [], 'frequencies': []}
 
     get_calc_vibrational_modes.description = (
         Description('Get the vibrational modes associated with a calculation')
