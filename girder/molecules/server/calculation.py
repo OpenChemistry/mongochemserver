@@ -64,7 +64,7 @@ class Calculation(Resource):
     @access.public
     def get_calc_vibrational_modes(self, id, params):
 
-        fields = ['cjson..vibrations.modes', 'cjson.vibrations.intensities',
+        fields = ['cjson.vibrations.modes', 'cjson.vibrations.intensities',
                  'cjson.vibrations.frequencies', 'access']
 
         calc =  self._model.load(id, fields=fields, user=getCurrentUser(),
@@ -93,7 +93,7 @@ class Calculation(Resource):
         calc =  self._model.load(id, fields=fields, user=getCurrentUser(),
                                  level=AccessType.READ)
 
-        vibrational_modes = calc['cjson.vibrations']
+        vibrational_modes = calc['cjson']['vibrations']
         #frames = vibrational_modes.get('modeFrames')
         modes = vibrational_modes.get('modes', [])
 
