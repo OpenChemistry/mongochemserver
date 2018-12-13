@@ -117,8 +117,8 @@ def calculate_mo(cjson, mo):
         spacing = 0.33
     cube = mol.add_cube()
     # Hard wiring spacing/padding for now, this could be exposed in future too.
-    cube.setLimits(mol, spacing, 4)
+    cube.set_limits(mol, spacing, 4)
     gaussian = GaussianSetTools(mol)
-    gaussian.calculateMolecularOrbital(cube, mo)
+    gaussian.calculate_molecular_orbital(cube, mo)
 
     return json.loads(conv.write_string(mol, "cjson"))
