@@ -1,0 +1,6 @@
+{
+  "name": "Taskflows Queue",
+  "description": "Queue system for taskflows",
+  "version": "0.1.0",
+  "dependencies": ["cumulus", "taskflow"]
+}
