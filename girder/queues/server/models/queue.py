@@ -11,9 +11,10 @@ class Queue(AccessControlledModel):
 
     def validate(self, queue):
         name = queue['name']
+        userId = queue['userId']
         # Do we already have this name?
         if queue.get('_id') is None:
-            if len(list(self.find(name=name, force=True))) > 0:
+            if len(list(self.find(name=name, owner=userId, force=True))) > 0:
                 raise ValidationException('"%s" has already been taken.' % name, field='name')
         return queue
 
@@ -59,5 +60,7 @@ class Queue(AccessControlledModel):
             userId = user['_id']
         
         queue['userId'] = userId
+
+        self.setUserAccess(queue, user=user, level=AccessType.ADMIN)
 
         return self.save(queue)
