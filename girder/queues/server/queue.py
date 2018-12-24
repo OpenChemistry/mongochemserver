@@ -1,4 +1,5 @@
 import cherrypy
+import sys
 
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
@@ -9,15 +10,11 @@ from girder.constants import TerminalColor
 from girder.models.file import File
 
 from girder.plugins.queues.models.queue import Queue as QueueModel
+from girder.plugins.queues.models.queue import QueueType
 from girder.plugins.taskflow.models.taskflow import Taskflow as TaskflowModel
 
 from cumulus.taskflow import load_class
 import cumulus
-
-class QueueType(object):
-    FIFO = 'fifo'
-    LIFO = 'lifo'
-    TYPES = [FIFO, LIFO]
 
 class Queue(Resource):
 
@@ -30,7 +27,6 @@ class Queue(Resource):
         self.route('DELETE', (':id', ), self.remove)
         self.route('POST', (':id', 'add', ':taskflowId'), self.add_task)
         self.route('POST', (':id', 'pop'), self.pop_task)
-        self.route('POST', (':id', 'popall'), self.pop_tasks)
         self.route('POST', (':id', 'finish', ':taskflowId'), self.finish_task)
         self.route('GET', (':id', 'pending'), self.pending_tasks)
         self.route('GET', (':id', 'running'), self.running_tasks)
@@ -82,7 +78,9 @@ class Queue(Resource):
                     level=AccessType.WRITE, paramType='path')
     )
     def remove(self, queue):
-        return QueueModel().remove(queue)
+        QueueModel().remove(queue)
+        cherrypy.response.status = 204
+        return
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
@@ -96,45 +94,24 @@ class Queue(Resource):
         .jsonParam('body', 'The taskflow start parameters', required=False, paramType='body')
     )
     def add_task(self, queue, taskflow, body=None):
-        if taskflow['_id'] in queue['pending']:
-            return queue
-
-        queue['pending'].append(taskflow['_id'])
-        if body is not None:
-            taskflowId = str(taskflow['_id'])
-            queue['start_params'][taskflowId] = body
-        return QueueModel().save(queue)
-
-    @access.user(scope=TokenScope.DATA_WRITE)
-    @autoDescribeRoute(
-        Description('If the current number of running taskflows is < max_running, pop a taskflow from the queue and start running it.')
-        .modelParam('id', 'The queue id',
-                    model=QueueModel, destName='queue',
-                    level=AccessType.WRITE, paramType='path')
-    )
-    def pop_task(self, queue):
-        queue, taskflowId, start_params = self._pop_one(queue)
-        if taskflowId is not None:
-            self._start_taskflow(taskflowId, start_params)
-
+        queue = QueueModel().add(queue, taskflow, body, self.getCurrentUser())
         return queue
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
-        Description('Pop as many taskflows from the queue as needed to fill max_running slots.')
+        Description('Pop a task from the queue if there are availabe run slots')
         .modelParam('id', 'The queue id',
                     model=QueueModel, destName='queue',
                     level=AccessType.WRITE, paramType='path')
+        .param('multi', 'Pop as many tasks as needed to fill the run slots', dataType='boolean', default=False, required=False)
     )
-    def pop_tasks(self, queue):
-        start = []
-        queue, taskflowId, start_params = self._pop_one(queue)
-        while taskflowId is not None:
-            start.append({'taskflowId': taskflowId, 'start_params': start_params})
-            queue, taskflowId, start_params = self._pop_one(queue)
+    def pop_task(self, queue, multi):
+        if multi:
+            limit = sys.maxsize
+        else:
+            limit = 1
 
-        for task in start:
-            self._start_taskflow(task['taskflowId'], task['start_params'])
+        queue = QueueModel().pop(queue, limit, user=self.getCurrentUser())
 
         return queue
 
@@ -149,11 +126,7 @@ class Queue(Resource):
                     level=AccessType.WRITE, paramType='path')
     )
     def finish_task(self, queue, taskflow):
-        try:
-            queue['running'].remove(taskflow['_id'])
-            return QueueModel().save(queue)
-        except ValueError:
-            return queue
+        return QueueModel().finish(queue, taskflow, self.getCurrentUser())
 
     @access.user(scope=TokenScope.DATA_READ)
     @autoDescribeRoute(
@@ -188,46 +161,3 @@ class Queue(Resource):
         }
         taskflows = TaskflowModel().find(query)
         return taskflows
-
-    def _pop_one(self, queue):
-        taskflowId = None
-        start_params = None
-        pending = queue['pending']
-        running = queue['running']
-        max_running = queue['max_running']
-        if ((max_running > 0 and len(running) >= max_running)
-            or len(pending) == 0):
-            return queue, taskflowId, start_params
-
-        if queue['type'] == QueueType.FIFO:
-            taskflowId = pending.pop(0)
-        else:
-            taskflowId = pending.pop()
-        running.append(taskflowId)
-        start_params = {}
-        taskflowId_str = str(taskflowId)
-        if taskflowId_str in queue['start_params']:
-            start_params = queue['start_params'][taskflowId_str]
-            del queue['start_params'][taskflowId_str]
-        queue = QueueModel().save(queue)
-
-        return queue, taskflowId, start_params
-
-    def _start_taskflow(self, taskflowId, params=None):
-        taskflow = TaskflowModel().load(taskflowId, user=self.getCurrentUser())
-
-        constructor = load_class(taskflow['taskFlowClass'])
-        token = self.model('token').createToken(user=self.getCurrentUser(), days=7)
-
-        workflow = constructor(
-            id=str(taskflow['_id']),
-            girder_token=token['_id'],
-            girder_api_url=cumulus.config.girder.baseUrl
-        )
-
-        if params is None:
-            params = {}
-
-        workflow.start(**params)
-
-        return workflow
