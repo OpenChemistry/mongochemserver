@@ -3,9 +3,10 @@ from bson.objectid import ObjectId, InvalidId
 from girder.constants import AccessType
 from girder.models.model_base import AccessControlledModel
 from girder.models.model_base import ValidationException
+from girder import events
 
 import cumulus
-from cumulus.taskflow import load_class
+from cumulus.taskflow import load_class, TaskFlowState
 from girder.plugins.taskflow.models.taskflow import Taskflow as TaskflowModel
 
 class QueueType(object):
@@ -118,6 +119,7 @@ class Queue(AccessControlledModel):
         queue, popped = self._pop_many(queue, limit, user)
 
         for task in popped:
+            events.bind('cumulus.taskflow.status_update', str(task['taskflowId']), taskflow_status_callback(task['taskflowId'], queue, user))
             self._start_taskflow(task['taskflowId'], task['start_params'], user)
 
         return queue
@@ -228,3 +230,25 @@ class Queue(AccessControlledModel):
         workflow.start(**params)
 
         return workflow
+
+def taskflow_status_callback(taskflow_id, queue, user):
+
+    def callback(event):
+        taskflow = event.info['taskflow']
+
+        if taskflow['_id'] != taskflow_id:
+            return
+
+        non_running_states = [
+            TaskFlowState.COMPLETE,
+            TaskFlowState.ERROR,
+            TaskFlowState.UNEXPECTEDERROR,
+            TaskFlowState.TERMINATED,
+            TaskFlowState.DELETED
+        ]
+
+        if taskflow['status'] in non_running_states:
+            Queue().finish(queue, taskflow, user)
+            Queue().pop(queue, sys.maxsize, user)
+
+    return callback
