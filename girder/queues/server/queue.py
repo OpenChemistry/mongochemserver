@@ -43,18 +43,18 @@ class Queue(Resource):
         Description('Create a queue.')
         .param('name', 'The queue name')
         .param('type', 'The queue type', required=False)
-        .param('max_running', 'The max number of taskflows that can be running at the same time', required=False, dataType='integer', default=0)
+        .param('maxRunning', 'The max number of taskflows that can be running at the same time', required=False, dataType='integer', default=0)
     )
-    def create(self, name, type, max_running):
+    def create(self, name, type, maxRunning):
         if type is None or type.lower() not in QueueType.TYPES:
             type = QueueType.FIFO
 
         try:
-            max_running = int(max_running)
+            maxRunning = int(maxRunning)
         except ValueError:
-            max_running = 0
+            maxRunning = 0
 
-        queue = QueueModel().create(name, type_=type, max_running=max_running, user=self.getCurrentUser())
+        queue = QueueModel().create(name, type_=type, max_running=maxRunning, user=self.getCurrentUser())
         cherrypy.response.status = 201
         return queue
 
