@@ -64,8 +64,8 @@ class Queue(AccessControlledModel):
         queue = {
             'name': name,
             'type': type_,
-            'n_running': 0,
-            'max_running': max_running,
+            'nRunning': 0,
+            'maxRunning': max_running,
             'pending': [],
             'taskflows': {}
         }
@@ -132,7 +132,7 @@ class Queue(AccessControlledModel):
 
         updates = {
             '$inc': {
-                'n_running': -1
+                'nRunning': -1
             },
             '$unset': {
                 'taskflows.%s' % taskflow['_id']: ""
@@ -144,18 +144,14 @@ class Queue(AccessControlledModel):
         return queue
 
     def _pop_one(self, queue, user):
-        max_running = queue['max_running']
+        max_running = queue['maxRunning']
 
         if max_running == 0:
             max_running = sys.maxsize
 
-        pop_idx = -1
-        if queue['type'] == QueueType.LIFO:
-            pop_idx = 1
-
         query = {
             '_id': queue['_id'],
-            'n_running': {
+            'nRunning': {
                 '$lt': max_running
             },
             '$where': 'this.pending.length > 0'
@@ -163,7 +159,7 @@ class Queue(AccessControlledModel):
 
         updates = {
             '$inc': {
-                'n_running': 1
+                'nRunning': 1
             },
             '$pop': {
                 'pending': -1
@@ -178,7 +174,7 @@ class Queue(AccessControlledModel):
         if queue is None:
             return queue, taskflow_id, start_params
 
-        n_running = queue['n_running']
+        n_running = queue['nRunning']
         pending = queue['pending']
         if (n_running >= max_running or len(pending) == 0):
             return queue, taskflow_id, start_params

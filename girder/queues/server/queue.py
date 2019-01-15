@@ -10,7 +10,7 @@ from girder.constants import TerminalColor
 from girder.models.file import File
 
 from girder.plugins.queues.models.queue import Queue as QueueModel
-from girder.plugins.queues.models.queue import QueueType
+from girder.plugins.queues.models.queue import QueueType, TaskStatus
 from girder.plugins.taskflow.models.taskflow import Taskflow as TaskflowModel
 
 from cumulus.taskflow import load_class
@@ -25,11 +25,9 @@ class Queue(Resource):
         self.route('POST', (), self.create)
         self.route('GET', (':id', ), self.find_id)
         self.route('DELETE', (':id', ), self.remove)
-        self.route('POST', (':id', 'add', ':taskflowId'), self.add_task)
-        self.route('POST', (':id', 'pop'), self.pop_task)
-        self.route('POST', (':id', 'finish', ':taskflowId'), self.finish_task)
-        self.route('GET', (':id', 'pending'), self.pending_tasks)
-        self.route('GET', (':id', 'running'), self.running_tasks)
+        self.route('PUT', (':id', 'add', ':taskflowId'), self.add_task)
+        self.route('PUT', (':id', 'pop'), self.pop_task)
+        self.route('GET', (':id', 'taskflows'), self.get_tasks)
 
     @access.user(scope=TokenScope.DATA_READ)
     @autoDescribeRoute(
@@ -37,26 +35,26 @@ class Queue(Resource):
         .param('name', 'A specific queue name', required=False)
         .pagingParams(defaultSort=None)
     )
-    def find(self, name=None):
+    def find(self, name):
         return list(QueueModel().find(name=name, user=self.getCurrentUser()))
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
         Description('Create a queue.')
-        .param('name', 'The queue name', required=True)
-        .param('type_', 'The queue type', required=False)
-        .param('max_running', 'The max number of taskflows that can be running at the same time', required=False)
+        .param('name', 'The queue name')
+        .param('type', 'The queue type', required=False)
+        .param('max_running', 'The max number of taskflows that can be running at the same time', required=False, dataType='integer', default=0)
     )
-    def create(self, name, type_=None, max_running=0):
-        if type_ is None or type_.lower() not in QueueType.TYPES:
-            type_ = QueueType.FIFO
+    def create(self, name, type, max_running):
+        if type is None or type.lower() not in QueueType.TYPES:
+            type = QueueType.FIFO
 
         try:
             max_running = int(max_running)
         except ValueError:
             max_running = 0
 
-        queue = QueueModel().create(name, type_=type_, max_running=max_running, user=self.getCurrentUser())
+        queue = QueueModel().create(name, type_=type, max_running=max_running, user=self.getCurrentUser())
         cherrypy.response.status = 201
         return queue
 
@@ -93,7 +91,7 @@ class Queue(Resource):
                     level=AccessType.WRITE, paramType='path')
         .jsonParam('body', 'The taskflow start parameters', required=False, paramType='body')
     )
-    def add_task(self, queue, taskflow, body=None):
+    def add_task(self, queue, taskflow, body):
         queue = QueueModel().add(queue, taskflow, body, self.getCurrentUser())
         return queue
 
@@ -115,19 +113,6 @@ class Queue(Resource):
 
         return queue
 
-    @access.user(scope=TokenScope.DATA_WRITE)
-    @autoDescribeRoute(
-        Description('Mark a taskflow as complete.')
-        .modelParam('id', 'The queue id',
-                    model=QueueModel, destName='queue',
-                    level=AccessType.WRITE, paramType='path')
-        .modelParam('taskflowId', 'The taskflow id',
-                    model=TaskflowModel, destName='taskflow',
-                    level=AccessType.WRITE, paramType='path')
-    )
-    def finish_task(self, queue, taskflow):
-        return QueueModel().finish(queue, taskflow, self.getCurrentUser())
-
     @access.user(scope=TokenScope.DATA_READ)
     @autoDescribeRoute(
         Description('Fetch the pending TaskFlows.')
@@ -135,7 +120,7 @@ class Queue(Resource):
                     model=QueueModel, destName='queue',
                     level=AccessType.READ, paramType='path')
     )
-    def pending_tasks(self, queue):
+    def get_tasks(self, queue):
         ids = queue['pending']
         query = {
             '_id': {
@@ -151,12 +136,28 @@ class Queue(Resource):
         .modelParam('id', 'The queue id',
                     model=QueueModel, destName='queue',
                     level=AccessType.READ, paramType='path')
+        .param('status', 'Filter taskflows by status (%s|%s)' % (TaskStatus.RUNNING, TaskStatus.PENDING),
+               required=False, default='')
     )
-    def running_tasks(self, queue):
-        ids = queue['running']
+    def running_tasks(self, queue, status):
+        if status not in [TaskStatus.RUNNING, TaskStatus.PENDING, '']:
+            status = ''
+
+        pending_ids = []
+        running_ids = []
+
+        include_pending = status in [TaskStatus.PENDING, '']
+        include_running = status in [TaskStatus.RUNNING, '']
+
+        for taskflow_id, taskflow_status in queue['taskflows'].items():
+            if taskflow_status == TaskStatus.PENDING and include_pending:
+                pending_ids.append(taskflow_id)
+            elif taskflow_status == TaskStatus.RUNNING and include_running:
+                running_ids.append(taskflow_id)
+
         query = {
             '_id': {
-                '$in': ids
+                '$in': running_ids + pending_ids
             }
         }
         taskflows = TaskflowModel().find(query)
