@@ -23,6 +23,7 @@ class Queue(AccessControlledModel):
     def initialize(self):
         self.name = 'queues'
         self.ensureIndices(['name'])
+        self.mutable_props = ['maxRunning']
 
     def validate(self, queue):
         name = queue['name']
@@ -79,6 +80,23 @@ class Queue(AccessControlledModel):
         self.setUserAccess(queue, user=user, level=AccessType.ADMIN)
 
         return self.save(queue)
+
+    def apply_updates(self, queue, model_updates, user):
+        query = {
+            '_id': queue['_id']
+        }
+
+        updates = {}
+
+        for prop in model_updates:
+            if prop in self.mutable_props:
+                updates.setdefault('$set', {})[prop] = model_updates[prop]
+
+        if updates:
+            super(Queue, self).update(query, updates, multi=False)
+            queue = self.load(queue['_id'], user=user, level=AccessType.READ)
+
+        return queue
 
     def add(self, queue, taskflow, params, user):
         query = {

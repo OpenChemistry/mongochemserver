@@ -25,6 +25,7 @@ class Queue(Resource):
         self.route('POST', (), self.create)
         self.route('GET', (':id', ), self.find_id)
         self.route('DELETE', (':id', ), self.remove)
+        self.route('PUT', (':id', ), self.set_max_running)
         self.route('PUT', (':id', 'add', ':taskflowId'), self.add_task)
         self.route('PUT', (':id', 'pop'), self.pop_task)
         self.route('GET', (':id', 'taskflows'), self.get_tasks)
@@ -49,10 +50,8 @@ class Queue(Resource):
         if type is None or type.lower() not in QueueType.TYPES:
             type = QueueType.FIFO
 
-        try:
-            maxRunning = int(maxRunning)
-        except ValueError:
-            maxRunning = 0
+        if maxRunning < 0:
+            raise RestException('Invalid maxRunning parameter. maxRunning must be >= 0')
 
         queue = QueueModel().create(name, type_=type, max_running=maxRunning, user=self.getCurrentUser())
         cherrypy.response.status = 201
@@ -79,6 +78,25 @@ class Queue(Resource):
         QueueModel().remove(queue)
         cherrypy.response.status = 204
         return
+
+    @access.user(scope=TokenScope.DATA_WRITE)
+    @autoDescribeRoute(
+        Description('Change the maximum number of running jobs in the queue')
+        .modelParam('id', 'The queue id',
+                    model=QueueModel, destName='queue',
+                    level=AccessType.WRITE, paramType='path')
+        .param('maxRunning', 'The max number of taskflows that can be running at the same time', required=True, dataType='integer')
+    )
+    def set_max_running(self, queue, maxRunning):
+        if maxRunning < 0:
+            raise RestException('Invalid maxRunning parameter. maxRunning must be >= 0')
+
+        updates = {
+            'maxRunning': maxRunning
+        }
+
+        queue = QueueModel().apply_updates(queue, updates, self.getCurrentUser())
+        return queue
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
