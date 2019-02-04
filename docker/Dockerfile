@@ -30,7 +30,8 @@ COPY . /mongochemserver
 # Install mongochemserver
 RUN pip install --no-cache-dir --process-dependency-links -r /mongochemserver/requirements.txt && \
   girder-install plugin /mongochemserver/girder/molecules && \
-  girder-install plugin /mongochemserver/girder/notebooks
+  girder-install plugin /mongochemserver/girder/notebooks && \
+  girder-install plugin /mongochemserver/girder/queues
 
 # Install clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
