@@ -3,6 +3,8 @@ from jsonschema import validate, ValidationError
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.constants import AccessType
 
+import openchemistry as oc
+
 class Calculation(AccessControlledModel):
     '''
     {
@@ -77,8 +79,12 @@ class Calculation(AccessControlledModel):
 
         return doc
 
-    def create_cjson(self, user, cjson, props, molecule_id= None, file_id = None,
-                     public=False, notebooks=[]):
+    def create_cjson(self, user, cjson, props, molecule_id= None,
+                     container_name=None, input_parameters=None,
+                     file_id = None, public=False, notebooks=None):
+        if notebooks is None:
+            notebooks = []
+
         calc = {
             'cjson': cjson,
             'properties': props,
@@ -88,6 +94,11 @@ class Calculation(AccessControlledModel):
             calc['moleculeId'] = molecule_id
         if file_id:
             calc['fileId'] = file_id
+        if container_name:
+            calc['containerName'] = container_name
+        if input_parameters is not None:
+            calc['inputParameters'] = input_parameters
+            calc['inputParametersHash'] = oc.hash_object(input_parameters)
 
         self.setUserAccess(calc, user=user, level=AccessType.ADMIN)
         if public:

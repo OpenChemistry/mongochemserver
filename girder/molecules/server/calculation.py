@@ -23,7 +23,6 @@ import openchemistry as oc
 
 from . import avogadro
 from . import constants
-from . import chemml
 from .molecule import Molecule
 import pymongo
 
@@ -260,7 +259,7 @@ class Calculation(Resource):
     @access.user
     def create_calc(self, params):
         body = getBodyJson()
-        if 'cjson' not in  body and 'fileId' not in body:
+        if 'cjson' not in  body and ('fileId' not in body or 'format' not in body):
             raise RestException('Either cjson or fileId is required.')
 
         user = getCurrentUser()
@@ -270,21 +269,24 @@ class Calculation(Resource):
         molecule_id = body.get('moleculeId', None)
         public = body.get('public', False)
         notebooks = body.get('notebooks', [])
-        code = props.get('code', 'nwchem')
+        container_name = body.get('containerName', 'unknown')
+        input_parameters = body.get('inputParameters', {})
         file_id = None
+        file_format = body.get('format', 'cjson')
 
         if 'fileId' in body:
             file = File().load(body['fileId'], user=getCurrentUser())
             file_id = file['_id']
-            cjson, file_str = self._file_to_cjson(file, code)
-
-            props = self._extract_calculation_properties(cjson, file_str, code)
+            cjson = self._file_to_cjson(file, file_format)
 
         if molecule_id is None:
             mol = create_molecule(json.dumps(cjson), 'cjson', user, public)
             molecule_id = mol['_id']
 
-        calc = CalculationModel().create_cjson(user, cjson, props, molecule_id, file_id=file_id,
+        calc = CalculationModel().create_cjson(user, cjson, props, molecule_id,
+                                               container_name=container_name,
+                                               input_parameters=input_parameters,
+                                               file_id=file_id,
                                                notebooks=notebooks, public=public)
 
         cherrypy.response.status = 201
@@ -305,22 +307,20 @@ class Calculation(Resource):
             'The calculation data', dataType='CalculationData', required=True,
             paramType='body'))
 
-    def _file_to_cjson(self, file, code='nwchem'):
+    def _file_to_cjson(self, file, file_format):
         readers = {
-            'nwchem': oc.NWChemJsonReader,
-            'psi4': oc.Psi4Reader,
-            'chemml': chemml.ChemmlReader
+            'cjson': oc.CjsonReader
         }
 
-        if code not in readers:
-            raise Exception('Unknown code %s' % code)
-        reader = readers[code]
+        if file_format not in readers:
+            raise Exception('Unknown file format %s' % file_format)
+        reader = readers[file_format]
 
         with File().open(file) as f:
             calc_data = f.read().decode()
 
-        # cclib parsers call next() on the output files
-        # but SpooledTemporaryFile doesn't implement it
+        # SpooledTemporaryFile doesn't implement next(),
+        # workaround in case any reader needs it
         tempfile.SpooledTemporaryFile.__next__ = lambda self : self.__iter__().__next__()
 
         with tempfile.SpooledTemporaryFile(mode='w+', max_size=10*1024*1024) as tf:
@@ -328,82 +328,7 @@ class Calculation(Resource):
             tf.seek(0)
             cjson = reader(tf).read()
 
-        return cjson, calc_data
-
-    def _extract_calculation_properties(self, cjson, calculation_data, code='nwchem'):
-        extract_properties = {
-            'nwchem': {
-                'fn': self._extract_calculation_properties_nwchem,
-                'args': [cjson, calculation_data]
-            },
-            'psi4': {
-                'fn': self._extract_calculation_properties_psi4,
-                'args': [cjson]
-            },
-            'chemml': {
-                'fn': self._extract_calculation_properties_chemml,
-                'args': [cjson]
-            }
-        }
-
-        if code not in extract_properties:
-            raise Exception('Unknown code %s' % code)
-
-        function = extract_properties[code]['fn']
-        args = extract_properties[code]['args']
-        return function(*args)
-
-    def _extract_calculation_properties_nwchem(self, cjson, calculation_data):
-        calculation_data = json.loads(calculation_data)
-        calc_props = avogadro.calculation_properties(calculation_data)
-
-        # Use basisSet from cjson if we don't already have one.
-        if 'basisSet' in cjson and 'basisSet' not in calc_props:
-            calc_props['basisSet'] = cjson['basisSet']
-
-        # Use functional from cjson properties if we don't already have
-        # one.
-        functional = parse('properties.functional').find(cjson)
-        if functional and 'functional' not in calc_props:
-            calc_props['functional'] = functional[0].value
-
-        # Add theory priority to 'sort' calculations
-        theory = calc_props.get('theory')
-        if theory in constants.theory_priority:
-            priority = constants.theory_priority[theory]
-            calc_props['theoryPriority'] = priority
-
-        return calc_props
-
-    def _extract_calculation_properties_psi4(self, cjson):
-        metadata = cjson.get('metadata', {})
-        basis_set = metadata.get('basisSet')
-        functional = metadata.get('functional')
-        theory = metadata.get('theory')
-
-        calc_props = {
-            'basisSet': basis_set,
-            'functional': functional,
-            'theory': theory
-        }
-
-        if theory in constants.theory_priority:
-            priority = constants.theory_priority[theory]
-            calc_props['theoryPriority'] = priority
-
-        return calc_props
-
-    def _extract_calculation_properties_chemml(self, cjson):
-        theory = 'ChemML'
-        calc_props = {
-            'theory': theory
-        }
-
-        if theory in constants.theory_priority:
-            priority = constants.theory_priority[theory]
-            calc_props['theoryPriority'] = priority
-
-        return calc_props
+        return cjson
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
@@ -414,20 +339,15 @@ class Calculation(Resource):
         .jsonParam('body', 'The calculation details', required=True, paramType='body')
     )
     def ingest_calc(self, calculation, body):
-        self.requireParams(['fileId'], body)
-        code = calculation['properties']['code']
+        self.requireParams(['fileId', 'format'], body)
 
         file = File().load(body['fileId'], user=getCurrentUser())
-        cjson, file_str = self._file_to_cjson(file, code)
+        cjson = self._file_to_cjson(file, body['format'])
 
         calc_props = calculation['properties']
         # The calculation is no longer pending
         if 'pending' in calc_props:
             del calc_props['pending']
-
-        new_props = self._extract_calculation_properties(cjson, file_str, code)
-        new_props.update(calc_props)
-        calc_props = new_props
 
         calculation['properties'] = calc_props
         calculation['cjson'] = cjson
@@ -436,36 +356,32 @@ class Calculation(Resource):
         return CalculationModel().save(calculation)
 
     @access.public
-    def find_calc(self, params):
+    @autoDescribeRoute(
+        Description('Search for particular calculation')
+        .param('moleculeId', 'The molecule ID linked to this calculation', required=False)
+        .param('containerName', 'The name of the Docker image that run this calculation', required=False)
+        .param('inputParametersHash', 'The hash of the input parameters dictionary.', required=False)
+        .param('inputGeometryHash', 'The hash of the input geometry.', required=False)
+    )
+    def find_calc(self, moleculeId=None, containerName=None, inputParametersHash=None, inputGeometryHash=None, pending=None, offset=0, limit=None, sort=None):
         user = getCurrentUser()
 
         query = { }
 
-        if 'moleculeId' in params:
-            query['moleculeId'] = ObjectId(params['moleculeId'])
-        if 'calculationType' in params:
-            calculation_type = params['calculationType']
-            if not isinstance(calculation_type, list):
-                calculation_type = [calculation_type]
+        if moleculeId:
+            query['moleculeId'] = ObjectId(moleculeId)
 
-            query['properties.calculationTypes'] = {
-                '$all': calculation_type
-            }
+        if containerName:
+            query['containerName'] = containerName
 
-        if 'functional' in params:
-            query['properties.functional'] = params.get('functional').lower()
+        if inputParametersHash:
+            query['inputParametersHash'] = inputParametersHash
 
-        if 'theory' in params:
-            query['properties.theory'] = params.get('theory').lower()
+        if inputGeometryHash:
+            query['inputGeometryHash'] = inputGeometryHash
 
-        if 'basis' in params:
-            query['properties.basisSet.name'] = params.get('basis').lower()
-
-        if 'code' in params:
-            query['properties.code'] = params.get('code').lower()
-
-        if 'pending' in params:
-            pending = toBool(params['pending'])
+        if pending is not None:
+            pending = toBool(pending)
             query['properties.pending'] = pending
             # The absence of the field mean the calculation is not pending ...
             if not pending:
@@ -473,76 +389,17 @@ class Calculation(Resource):
                     '$ne': True
                 }
 
-        limit = params.get('limit', 50)
-
-        fields = ['cjson.vibrations.modes', 'cjson.vibrations.intensities',
-                 'cjson.vibrations.frequencies', 'properties', 'fileId', 'access',
-                 'moleculeId', 'public']
-        sort = None
-        sort_by_theory = toBool(params.get('sortByTheory', False))
-        if sort_by_theory:
-            sort = [('properties.theoryPriority', pymongo.DESCENDING)]
-            # Exclude calculations that don't have a theoryPriority,
-            # otherwise they will appear first in the list.
-            query['properties.theoryPriority'] = { '$exists': True }
+        fields = ['containerName', 'inputParameters',
+                  'cjson', 'cjson.vibrations.modes', 'cjson.vibrations.intensities',
+                  'cjson.vibrations.frequencies', 'properties', 'fileId', 'access',
+                  'moleculeId', 'public']
 
         calcs = self._model.find(query, fields=fields, sort=sort)
         calcs = self._model.filterResultsByPermission(calcs, user,
-            AccessType.READ, limit=int(limit))
+            AccessType.READ, limit=limit)
         calcs = [self._model.filter(x, user) for x in calcs]
 
-        not_sortable = []
-        if sort_by_theory and len(calcs) < int(limit):
-            # Now select any calculations without theoryPriority
-            query['properties.theoryPriority'] = { '$exists': False }
-            not_sortable = self._model.find(query, fields=fields)
-            not_sortable = self._model.filterResultsByPermission(not_sortable, user,
-            AccessType.READ, limit=int(limit) - len(calcs))
-            not_sortable = [self._model.filter(x, user) for x in not_sortable]
-
-        calcs += not_sortable
-
         return calcs
-
-    find_calc.description = (
-        Description('Search for particular calculation')
-        .param(
-            'moleculeId',
-            'The moleculeId the calculations should be associated with',
-            dataType='string', paramType='query', required=False)
-        .param(
-            'calculationType',
-            'The type or types of calculation being searched for',
-            dataType='string', paramType='query', required=False)
-        .param(
-            'basis',
-            'The basis set used for the calculations.',
-             dataType='string', paramType='query', required=False)
-        .param(
-            'functional',
-            'The functional used for the calculations.',
-             dataType='string', paramType='query', required=False)
-        .param(
-            'theory',
-            'The theory used for the calculations.',
-             dataType='string', paramType='query', required=False)
-        .param(
-            'pending',
-            'Whether the calculation is currently running.',
-             dataType='boolean', paramType='query', required=False)
-        .param(
-            'limit',
-            'The max number of calculations to return',
-             dataType='integer', paramType='query', default=50, required=False)
-        .param(
-            'sortByTheory',
-            'Sort the result by theory "priority", "best" first.',
-             dataType='boolean', paramType='query', default=False, required=False)
-        .param(
-            'code',
-            'The code used to run the calculation.',
-             dataType='string', paramType='query', required=False))
-
 
     @access.public
     def find_id(self, id, params):
