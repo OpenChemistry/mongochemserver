@@ -48,13 +48,11 @@ class Calculation(AccessControlledModel):
     def initialize(self):
         self.name = 'calculations'
         self.ensureIndices([
-            'moleculeId', 'calculationType', 'properties.functional',
-            'properties.theory', 'properties.basisSet.name', 'properties.pending',
-            'properties.code', 'properties.theoryPriority'
+            'moleculeId', 'properties.pending'
         ])
 
         self.exposeFields(level=AccessType.READ, fields=(
-            '_id', 'moleculeId', 'fileId', 'properties', 'notebooks'))
+            '_id', 'moleculeId', 'fileId', 'properties', 'notebooks', 'input', 'image'))
 
     def filter(self, calc, user):
         calc = super(Calculation, self).filter(doc=calc, user=user)
@@ -80,7 +78,7 @@ class Calculation(AccessControlledModel):
         return doc
 
     def create_cjson(self, user, cjson, props, molecule_id= None,
-                     container_name=None, input_parameters=None,
+                     image=None, input_parameters=None,
                      file_id = None, public=False, notebooks=None):
         if notebooks is None:
             notebooks = []
@@ -94,11 +92,11 @@ class Calculation(AccessControlledModel):
             calc['moleculeId'] = molecule_id
         if file_id:
             calc['fileId'] = file_id
-        if container_name:
-            calc['containerName'] = container_name
+        if image is not None:
+            calc['image'] = image
         if input_parameters is not None:
-            calc['inputParameters'] = input_parameters
-            calc['inputParametersHash'] = oc.hash_object(input_parameters)
+            calc.setdefault('input', {})['parameters'] = input_parameters
+            calc.setdefault('input', {})['parametersHash'] = oc.hash_object(input_parameters)
 
         self.setUserAccess(calc, user=user, level=AccessType.ADMIN)
         if public:

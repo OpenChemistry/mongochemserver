@@ -269,8 +269,8 @@ class Calculation(Resource):
         molecule_id = body.get('moleculeId', None)
         public = body.get('public', False)
         notebooks = body.get('notebooks', [])
-        container_name = body.get('containerName', 'unknown')
-        input_parameters = body.get('inputParameters', {})
+        image = body.get('image')
+        input_parameters = body.get('input', {}).get('parameters')
         file_id = None
         file_format = body.get('format', 'cjson')
 
@@ -284,7 +284,7 @@ class Calculation(Resource):
             molecule_id = mol['_id']
 
         calc = CalculationModel().create_cjson(user, cjson, props, molecule_id,
-                                               container_name=container_name,
+                                               image=image,
                                                input_parameters=input_parameters,
                                                file_id=file_id,
                                                notebooks=notebooks, public=public)
@@ -359,11 +359,11 @@ class Calculation(Resource):
     @autoDescribeRoute(
         Description('Search for particular calculation')
         .param('moleculeId', 'The molecule ID linked to this calculation', required=False)
-        .param('containerName', 'The name of the Docker image that run this calculation', required=False)
+        .param('imageName', 'The name of the Docker image that run this calculation', required=False)
         .param('inputParametersHash', 'The hash of the input parameters dictionary.', required=False)
         .param('inputGeometryHash', 'The hash of the input geometry.', required=False)
     )
-    def find_calc(self, moleculeId=None, containerName=None, inputParametersHash=None, inputGeometryHash=None, pending=None, offset=0, limit=None, sort=None):
+    def find_calc(self, moleculeId=None, imageName=None, inputParametersHash=None, inputGeometryHash=None, pending=None, offset=0, limit=None, sort=None):
         user = getCurrentUser()
 
         query = { }
@@ -371,14 +371,16 @@ class Calculation(Resource):
         if moleculeId:
             query['moleculeId'] = ObjectId(moleculeId)
 
-        if containerName:
-            query['containerName'] = containerName
+        if imageName:
+            repository, tag = oc.parse_image_name(imageName)
+            query['image.repository'] = repository
+            query['image.tag'] = tag
 
         if inputParametersHash:
-            query['inputParametersHash'] = inputParametersHash
+            query['input.parametersHash'] = inputParametersHash
 
         if inputGeometryHash:
-            query['inputGeometryHash'] = inputGeometryHash
+            query['input.geometryHash'] = inputGeometryHash
 
         if pending is not None:
             pending = toBool(pending)
@@ -389,7 +391,7 @@ class Calculation(Resource):
                     '$ne': True
                 }
 
-        fields = ['containerName', 'inputParameters',
+        fields = ['image', 'input',
                   'cjson', 'cjson.vibrations.modes', 'cjson.vibrations.intensities',
                   'cjson.vibrations.frequencies', 'properties', 'fileId', 'access',
                   'moleculeId', 'public']
