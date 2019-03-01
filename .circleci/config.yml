@@ -13,8 +13,8 @@ jobs:
       - run:
           name: Install requirements
           command: >
-            pip install --no-cache-dir -r /mongochemserver/requirements.txt &&
-            pip install --no-cache-dir -r /mongochemserver/requirements-dev.txt
+            pip install -U --no-cache-dir -r /mongochemserver/requirements.txt &&
+            pip install -U --no-cache-dir -r /mongochemserver/requirements-dev.txt
       - run:
           name: Install the plugins
           command: >
