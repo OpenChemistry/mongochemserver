@@ -85,7 +85,7 @@ class Experiment(Resource):
             from .nist import search_nist_inchi, get_jdx
             from jcamp import jcamp_read
 
-            inchi = params['molecularFormula']      # TODO change API to accept
+            inchi = params['inchi']      # TODO change API to accept
                                                     # a different key. From
                                                     # molecularFormula to inchi?
             stype = params['spectrum_type']
