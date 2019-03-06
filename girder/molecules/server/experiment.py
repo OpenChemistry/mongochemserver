@@ -81,7 +81,7 @@ class Experiment(Resource):
     def find_experiment(self, params):
         user = getCurrentUser()
 
-        if 'source' in params.keys():
+        if 'source' in params:
             from .nist import search_nist_inchi, get_jdx
             from jcamp import jcamp_read
 
