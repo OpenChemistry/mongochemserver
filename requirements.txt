@@ -7,4 +7,7 @@ rdflib==4.2.1
 avogadro==1.92.1
 openchemistry
 numpy
+beautifulsoup4
+jcamp
+requests
 -e git+git://github.com/cclib/cclib.git#egg=cclib
