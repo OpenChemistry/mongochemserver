@@ -14,6 +14,7 @@ from girder.constants import AccessType, TokenScope
 
 from girder.plugins.molecules.models.experimental import Experimental
 
+
 class Experiment(Resource):
 
     def __init__(self):
@@ -80,15 +81,27 @@ class Experiment(Resource):
     def find_experiment(self, params):
         user = getCurrentUser()
 
-        query = { }
-        if 'molecularFormula' in params:
-            query['molecularFormula'] = params['molecularFormula']
+        if 'source' in params:
+            from .nist import search_nist_inchi, get_jdx
+            from jcamp import jcamp_read
 
-        limit = int(params.get('limit', 50))
-        experiments = self._model.find(query, limit=limit)
+            inchi = params['inchi']
+            stype = params['spectrum_type']
+            nist_identifier =  search_nist_inchi(inchi)
+            jdx = get_jdx(nist_identifier, stype=stype)
 
-        return  [self._model.filter(x, user) for x in experiments]
+            ir = jcamp_read(jdx)
+            return ir
 
+        else:
+            query = { }
+            if 'molecularFormula' in params:
+                query['molecularFormula'] = params['molecularFormula']
+
+            limit = int(params.get('limit', 50))
+            experiments = self._model.find(query, limit=limit)
+
+            return  [self._model.filter(x, user) for x in experiments]
 
     find_experiment.description = (
         Description('Get the calculation types available for the molecule')
