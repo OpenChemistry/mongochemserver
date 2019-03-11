@@ -354,6 +354,14 @@ class Calculation(Resource):
         calculation['cjson'] = cjson
         calculation['fileId'] = file['_id']
 
+        image = body.get('image')
+        if image is not None:
+            calculation['image'] = image
+
+        scratch_folder_id = body.get('scratchFolderId')
+        if scratch_folder_id is not None:
+            calculation['scratchFolderId'] = scratch_folder_id
+
         return CalculationModel().save(calculation)
 
     @access.public
