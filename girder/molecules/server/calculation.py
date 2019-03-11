@@ -36,6 +36,7 @@ class Calculation(Resource):
         self.resourceName = 'calculations'
         self.route('POST', (), self.create_calc)
         self.route('PUT', (':id', ), self.ingest_calc)
+        self.route('DELETE', (':id',), self.delete)
         self.route('GET', (), self.find_calc)
         self.route('GET', ('types',), self.find_calc_types)
         self.route('GET', (':id', 'vibrationalmodes'),
@@ -413,6 +414,21 @@ class Calculation(Resource):
         return cal
     find_id.description = (
         Description('Get the calculation by id')
+        .param(
+            'id',
+            'The id of calculatino.',
+            dataType='string', required=True, paramType='path'))
+
+    @access.user
+    def delete(self, id, params):
+        user = getCurrentUser()
+        cal = self._model.load(id, level=AccessType.READ, user=user)
+        if not cal:
+            raise RestException('Calculation not found.', code=404)
+
+        return self._model.remove(cal, user)
+    delete.description = (
+        Description('Delete a calculation by id.')
         .param(
             'id',
             'The id of calculatino.',
