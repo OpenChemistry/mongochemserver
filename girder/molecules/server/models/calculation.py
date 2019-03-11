@@ -2,6 +2,7 @@ from jsonschema import validate, ValidationError
 
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.models.file import File
+from girder.models.item import Item
 from girder.models.folder import Folder
 from girder.constants import AccessType
 
@@ -127,7 +128,9 @@ class Calculation(AccessControlledModel):
         if file_id is not None:
             file = File().load(file_id, user=user, level=AccessType.WRITE)
             if file:
-                File().remove(file)
+                item = Item().load(file['itemId'], user=user, level=AccessType.WRITE)
+                if item:
+                    Item().remove(item)
         # remove scratch folder with calculation output
         scratch_folder_id = calc.get('scratchFolderId')
         if scratch_folder_id is not None:
