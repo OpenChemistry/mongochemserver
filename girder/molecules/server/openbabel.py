@@ -2,14 +2,20 @@ from openbabel import OBMol, OBConversion
 
 import pybel
 
-def convert_str(str_data, in_format, out_format):
-    mol = OBMol()
+# gen3d should be true for 2D input formats such as inchi or smiles
+def convert_str(str_data, in_format, out_format, gen3d=False):
+    obMol = OBMol()
     conv = OBConversion()
     conv.SetInFormat(in_format)
     conv.SetOutFormat(out_format)
-    conv.ReadString(mol, str_data)
+    conv.ReadString(obMol, str_data)
 
-    return (conv.WriteString(mol), conv.GetOutFormat().GetMIMEType())
+    if gen3d:
+        # Generate 3D coordinates for the input
+        mol = pybel.Molecule(obMol)
+        mol.make3D()
+
+    return (conv.WriteString(obMol), conv.GetOutFormat().GetMIMEType())
 
 def to_inchi(str_data, in_format):
     mol = OBMol()
@@ -33,17 +39,10 @@ def to_inchi(str_data, in_format):
     return (inchi, inchikey)
 
 def from_inchi(str_data, out_format):
-    obMol = OBMol()
-    conv = OBConversion()
-    conv.SetInFormat('inchi')
-    conv.SetOutFormat(out_format)
-    conv.ReadString(obMol, str_data)
+    return convert_str(str_data, 'inchi', out_format, True)
 
-    # Generate 3D coordinates for the inchi
-    mol = pybel.Molecule(obMol)
-    mol.make3D()
-
-    return (conv.WriteString(obMol), conv.GetOutFormat().GetMIMEType())
+def from_smiles(str_data, out_format):
+    return convert_str(str_data, 'smi', out_format, True)
 
 def atom_count(str_data, in_format):
     mol = OBMol()
