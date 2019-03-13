@@ -74,6 +74,8 @@ class Molecule(Resource):
                    required=False)
             .param('inchikey', 'The InChI key of the molecule', paramType='query',
                    required=False)
+            .param('smiles', 'The SMILES of the molecule', paramType='query',
+                   required=False)
             .errorResponse())
 
     @access.public

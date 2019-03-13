@@ -28,6 +28,8 @@ class Molecule(AccessControlledModel):
                 query['inchi'] = search['inchi']
             if 'inchikey' in search:
                 query['inchikey'] = search['inchikey']
+            if 'smiles' in search:
+                query['smiles'] = search['smiles']
         cursor = self.find(query)
         mols = list()
         for mol in cursor:
