@@ -41,6 +41,12 @@ def to_inchi(str_data, in_format):
 def from_inchi(str_data, out_format):
     return convert_str(str_data, 'inchi', out_format, True)
 
+def to_smiles(str_data, in_format):
+    # This returns ["<smiles>", "chemical/x-daylight-smiles"]
+    # The smiles also has returns on it, so we get rid of
+    # those with strip()
+    return convert_str(str_data, in_format, 'smi')[0].strip()
+
 def from_smiles(str_data, out_format):
     return convert_str(str_data, 'smi', out_format, True)
 
