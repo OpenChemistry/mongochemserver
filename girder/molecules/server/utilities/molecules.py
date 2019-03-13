@@ -21,6 +21,8 @@ def create_molecule(data_str, input_format, user, public):
         (sdf_data, _) = openbabel.convert_str(data_str, input_format, sdf_format)
     elif input_format == 'inchi':
         (sdf_data, _) = openbabel.from_inchi(data_str, sdf_format)
+    elif input_format == 'smi' or input_format == 'smiles':
+        (sdf_data, _) = openbabel.from_smiles(data_str, sdf_format)
     else:
         sdf_data = avogadro.convert_str(data_str, input_format, sdf_format)
 

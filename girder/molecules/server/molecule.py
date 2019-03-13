@@ -25,7 +25,7 @@ from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
-    input_formats = ['cml', 'xyz', 'sdf', 'cjson', 'json', 'log', 'nwchem', 'pdb']
+    input_formats = ['cml', 'xyz', 'sdf', 'cjson', 'json', 'log', 'nwchem', 'pdb', 'smi', 'smiles']
     mime_types = {
         'cml': 'chemical/x-cml',
         'xyz': 'chemical/x-xyz',

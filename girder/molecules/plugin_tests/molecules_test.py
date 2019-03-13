@@ -167,6 +167,54 @@ def test_create_molecule_inchi(server, user):
 
 
 @pytest.mark.plugin('molecules')
+def test_create_molecule_smiles(server, user):
+    from girder.plugins.molecules.models.molecule import Molecule
+    from girder.constants import AccessType
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    with open(dir_path + '/data/aspirin.smi', 'r') as rf:
+        smi_data = rf.read()
+
+    body = {
+        'name': 'aspirin',
+        'smi': smi_data
+    }
+
+    r = server.request('/molecules', method='POST', type='application/json',
+                       body=json.dumps(body), user=user)
+    assertStatusOk(r)
+
+    mol = r.json
+    assert '_id' in mol
+    assert 'inchi' in mol
+    assert 'inchikey' in mol
+    assert 'properties' in mol
+    assert 'formula' in mol['properties']
+    assert mol['properties']['formula'] == 'C9H8O4'
+
+    # Double check and make sure it exists
+    id = mol['_id']
+    mol2 = Molecule().load(id, level=AccessType.READ, user=user)
+
+    assert '_id' in mol2
+    assert 'inchi' in mol2
+    assert 'inchikey' in mol2
+    assert 'properties' in mol
+    assert 'formula' in mol['properties']
+    assert mol['properties']['formula'] == 'C9H8O4'
+
+    # id, inchi, and inchikey should match
+    assert str(mol['_id']) == str(mol2['_id'])
+    assert mol['inchi'] == mol2['inchi']
+    assert mol['inchikey'] == mol2['inchikey']
+
+    # Delete the molecule
+    r = server.request('/molecules/%s' % id, method='DELETE', user=user)
+    assertStatusOk(r)
+
+
+@pytest.mark.plugin('molecules')
 def test_get_molecule(server, molecule, user):
 
     # The molecule will have been created by the fixture
