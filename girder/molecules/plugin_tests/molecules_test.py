@@ -47,6 +47,8 @@ def test_create_molecule_xyz(server, user):
     assert '_id' in mol
     assert 'inchi' in mol
     assert 'inchikey' in mol
+    assert 'smiles' in mol
+    assert mol['smiles'] == 'CC'
 
     # Double check and make sure it exists
     id = mol['_id']
@@ -55,11 +57,13 @@ def test_create_molecule_xyz(server, user):
     assert '_id' in mol2
     assert 'inchi' in mol2
     assert 'inchikey' in mol2
+    assert 'smiles' in mol2
 
-    # id, inchi, and inchikey should match
+    # id, inchi, inchikey, and smiles should match
     assert str(mol['_id']) == str(mol2['_id'])
     assert mol['inchi'] == mol2['inchi']
     assert mol['inchikey'] == mol2['inchikey']
+    assert mol['smiles'] == mol2['smiles']
 
     # Delete the molecule
     r = server.request('/molecules/%s' % id, method='DELETE', user=user)
@@ -93,6 +97,8 @@ def test_create_molecule_file_id(server, user, fsAssetstore, make_girder_file):
     assert '_id' in mol
     assert 'inchi' in mol
     assert 'inchikey' in mol
+    assert 'smiles' in mol
+    assert mol['smiles'] == 'CC'
     assert 'properties' in mol
     assert 'formula' in mol['properties']
     assert mol['properties']['formula'] == 'C2H6'
@@ -104,14 +110,16 @@ def test_create_molecule_file_id(server, user, fsAssetstore, make_girder_file):
     assert '_id' in mol2
     assert 'inchi' in mol2
     assert 'inchikey' in mol2
+    assert 'smiles' in mol2
     assert 'properties' in mol
     assert 'formula' in mol['properties']
     assert mol['properties']['formula'] == 'C2H6'
 
-    # id, inchi, and inchikey should match
+    # id, inchi, inchikey, and smiles should match
     assert str(mol['_id']) == str(mol2['_id'])
     assert mol['inchi'] == mol2['inchi']
     assert mol['inchikey'] == mol2['inchikey']
+    assert mol['smiles'] == mol2['smiles']
 
     # Delete the molecule
     r = server.request('/molecules/%s' % id, method='DELETE', user=user)
@@ -141,6 +149,8 @@ def test_create_molecule_inchi(server, user):
     assert '_id' in mol
     assert 'inchi' in mol
     assert 'inchikey' in mol
+    assert 'smiles' in mol
+    assert mol['smiles'] == 'O'
     assert 'properties' in mol
     assert 'formula' in mol['properties']
     assert mol['properties']['formula'] == 'H2O'
@@ -152,14 +162,16 @@ def test_create_molecule_inchi(server, user):
     assert '_id' in mol2
     assert 'inchi' in mol2
     assert 'inchikey' in mol2
-    assert 'properties' in mol
-    assert 'formula' in mol['properties']
-    assert mol['properties']['formula'] == 'H2O'
+    assert 'smiles' in mol2
+    assert 'properties' in mol2
+    assert 'formula' in mol2['properties']
+    assert mol2['properties']['formula'] == 'H2O'
 
-    # id, inchi, and inchikey should match
+    # id, inchi, inchikey, and smiles should match
     assert str(mol['_id']) == str(mol2['_id'])
     assert mol['inchi'] == mol2['inchi']
     assert mol['inchikey'] == mol2['inchikey']
+    assert mol['smiles'] == mol2['smiles']
 
     # Delete the molecule
     r = server.request('/molecules/%s' % id, method='DELETE', user=user)
@@ -189,6 +201,8 @@ def test_create_molecule_smiles(server, user):
     assert '_id' in mol
     assert 'inchi' in mol
     assert 'inchikey' in mol
+    assert 'smiles' in mol
+    assert mol['smiles'] == 'O'
     assert 'properties' in mol
     assert 'formula' in mol['properties']
     assert mol['properties']['formula'] == 'H2O'
@@ -200,14 +214,16 @@ def test_create_molecule_smiles(server, user):
     assert '_id' in mol2
     assert 'inchi' in mol2
     assert 'inchikey' in mol2
+    assert 'smiles' in mol2
     assert 'properties' in mol
     assert 'formula' in mol['properties']
     assert mol['properties']['formula'] == 'H2O'
 
-    # id, inchi, and inchikey should match
+    # id, inchi, inchikey, and smiles should match
     assert str(mol['_id']) == str(mol2['_id'])
     assert mol['inchi'] == mol2['inchi']
     assert mol['inchikey'] == mol2['inchikey']
+    assert mol['smiles'] == mol2['smiles']
 
     # Delete the molecule
     r = server.request('/molecules/%s' % id, method='DELETE', user=user)
@@ -221,6 +237,7 @@ def test_get_molecule(server, molecule, user):
     assert '_id' in molecule
     assert 'inchi' in molecule
     assert 'inchikey' in molecule
+    assert 'smiles' in molecule
 
     # This one is not essential, but we set it ourselves
     assert 'name' in molecule
@@ -228,6 +245,7 @@ def test_get_molecule(server, molecule, user):
     _id = molecule['_id']
     inchi = molecule['inchi']
     inchikey = molecule['inchikey']
+    smiles = molecule['smiles']
     name = molecule['name']
     properties = molecule['properties']
 
@@ -242,6 +260,7 @@ def test_get_molecule(server, molecule, user):
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
+    assert mol.get('smiles') == smiles
     assert mol.get('name') == name
     assert mol.get('properties') == properties
 
@@ -257,6 +276,7 @@ def test_get_molecule(server, molecule, user):
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
+    assert mol.get('smiles') == smiles
     assert mol.get('name') == name
     assert mol.get('properties') == properties
 
@@ -271,6 +291,7 @@ def test_get_molecule(server, molecule, user):
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
+    assert mol.get('smiles') == smiles
     assert mol.get('name') == name
     assert mol.get('properties') == properties
 
@@ -285,6 +306,22 @@ def test_get_molecule(server, molecule, user):
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
+    assert mol.get('smiles') == smiles
+    assert mol.get('name') == name
+    assert mol.get('properties') == properties
+
+    # Find the molecule by smiles
+    params = {'smiles': smiles}
+    r = server.request('/molecules', method='GET', params=params, user=user)
+    assertStatusOk(r)
+
+    # There should be exactly one
+    assert len(r.json) == 1
+    mol = r.json[0]
+
+    assert mol.get('_id') == _id
+    assert mol.get('inchikey') == inchikey
+    assert mol.get('smiles') == smiles
     assert mol.get('name') == name
     assert mol.get('properties') == properties
 
@@ -298,6 +335,7 @@ def test_get_molecule(server, molecule, user):
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
+    assert mol.get('smiles') == smiles
     assert mol.get('name') == name
     assert mol.get('properties') == properties
     assert mol.get('cjson') is not None
@@ -312,6 +350,7 @@ def test_get_molecule(server, molecule, user):
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
+    assert mol.get('smiles') == smiles
     assert mol.get('name') == name
     assert mol.get('properties') == properties
     assert mol.get('cjson') is None
@@ -324,6 +363,7 @@ def test_get_molecule_inchikey(server, molecule, user):
     assert '_id' in molecule
     assert 'inchi' in molecule
     assert 'inchikey' in molecule
+    assert 'smiles' in molecule
 
     # This one is not essential, but we set it ourselves
     assert 'name' in molecule
@@ -331,6 +371,7 @@ def test_get_molecule_inchikey(server, molecule, user):
     _id = molecule['_id']
     inchi = molecule['inchi']
     inchikey = molecule['inchikey']
+    smiles = molecule['smiles']
     name = molecule['name']
 
     # Find the molecule by its inchikey
@@ -343,6 +384,7 @@ def test_get_molecule_inchikey(server, molecule, user):
     assert mol.get('_id') == _id
     assert mol.get('inchi') == inchi
     assert mol.get('inchikey') == inchikey
+    assert mol.get('smiles') == smiles
     assert mol.get('name') == name
 
 
@@ -353,6 +395,7 @@ def test_search_molecule_formula(server, molecule, user):
     assert '_id' in molecule
     assert 'inchi' in molecule
     assert 'inchikey' in molecule
+    assert 'smiles' in molecule
     assert 'properties' in molecule
     assert 'formula' in molecule['properties']
 
@@ -362,6 +405,7 @@ def test_search_molecule_formula(server, molecule, user):
     _id = molecule['_id']
     inchi = molecule['inchi']
     inchikey = molecule['inchikey']
+    smiles = molecule['smiles']
     name = molecule['name']
     formula = molecule['properties']['formula']
 
@@ -382,5 +426,6 @@ def test_search_molecule_formula(server, molecule, user):
     assert mol.get('_id') == _id
     assert mol.get('inchi') == inchi
     assert mol.get('inchikey') == inchikey
+    assert mol.get('smiles') == smiles
     assert mol.get('name') == name
     assert mol.get('properties').get('formula') == ethane_formula
