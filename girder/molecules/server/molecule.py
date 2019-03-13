@@ -368,6 +368,8 @@ class Molecule(Resource):
 
             (inchi, inchikey) = openbabel.to_inchi(r.content.decode('utf8'), 'sdf')
 
+            smiles = openbabel.to_smiles(r.content.decode('utf8'), 'sdf')
+
             # See if we already have a molecule
             mol = MoleculeModel().find_inchikey(inchikey)
 
@@ -379,6 +381,7 @@ class Molecule(Resource):
                     'cjson': json.loads(cjson_str),
                     'inchi': inchi,
                     'inchikey': inchikey,
+                    'smiles': smiles,
                     'origin': 'cactus'
                 }
 
