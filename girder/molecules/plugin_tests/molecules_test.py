@@ -173,11 +173,11 @@ def test_create_molecule_smiles(server, user):
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
-    with open(dir_path + '/data/aspirin.smi', 'r') as rf:
+    with open(dir_path + '/data/acetic_acid.smi', 'r') as rf:
         smi_data = rf.read()
 
     body = {
-        'name': 'aspirin',
+        'name': 'acetic_acid',
         'smi': smi_data
     }
 
@@ -191,7 +191,7 @@ def test_create_molecule_smiles(server, user):
     assert 'inchikey' in mol
     assert 'properties' in mol
     assert 'formula' in mol['properties']
-    assert mol['properties']['formula'] == 'C9H8O4'
+    assert mol['properties']['formula'] == 'C2H4O2'
 
     # Double check and make sure it exists
     id = mol['_id']
@@ -202,7 +202,7 @@ def test_create_molecule_smiles(server, user):
     assert 'inchikey' in mol2
     assert 'properties' in mol
     assert 'formula' in mol['properties']
-    assert mol['properties']['formula'] == 'C9H8O4'
+    assert mol['properties']['formula'] == 'C2H4O2'
 
     # id, inchi, and inchikey should match
     assert str(mol['_id']) == str(mol2['_id'])
