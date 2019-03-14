@@ -1,6 +1,7 @@
 from jsonschema import validate, ValidationError
 
 from girder.models.model_base import AccessControlledModel, ValidationException
+from girder.utility.model_importer import ModelImporter
 from girder.constants import AccessType
 
 import openchemistry as oc
@@ -71,7 +72,7 @@ class Calculation(AccessControlledModel):
 
         # If we have a moleculeId check it valid
         if 'moleculeId' in doc:
-            mol = self.model('molecule', 'molecules').load(doc['moleculeId'],
+            mol = ModelImporter.model('molecule', 'molecules').load(doc['moleculeId'],
                                                            force=True)
             doc['moleculeId'] = mol['_id']
 

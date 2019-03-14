@@ -3,7 +3,7 @@ from . import cheminf
 from . import virtuoso
 
 from girder.utility.model_importer import ModelImporter
-from girder.plugins.molecules.constants import PluginSettings
+from molecules.constants import PluginSettings
 
 def upload_molecule(mol):
     settings = ModelImporter.model('setting')

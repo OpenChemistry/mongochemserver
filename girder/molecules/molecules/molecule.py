@@ -13,15 +13,16 @@ from girder.api import access
 from girder.constants import AccessType
 from girder.constants import TerminalColor
 from girder.models.file import File
+from girder.utility.model_importer import ModelImporter
 from . import avogadro
 from . import openbabel
 from . import chemspider
 from . import query
 from . import semantic
 from . import constants
-from girder.plugins.molecules.utilities.molecules import create_molecule
+from molecules.utilities.molecules import create_molecule
 
-from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
+from molecules.models.molecule import Molecule as MoleculeModel
 
 class Molecule(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
@@ -111,7 +112,7 @@ class Molecule(Resource):
         mol = None
         if 'fileId' in body:
             file_id = body['fileId']
-            file = self.model('file').load(file_id, user=user)
+            file = ModelImporter.model('file').load(file_id, user=user)
             parts = file['name'].split('.')
             input_format = parts[-1]
             name = '.'.join(parts[:-1])
@@ -238,7 +239,7 @@ class Molecule(Resource):
 
         file_id = body['fileId']
 
-        file = self.model('file').load(file_id, user=user)
+        file = ModelImporter.model('file').load(file_id, user=user)
 
         input_format = file['name'].split('.')[-1]
 

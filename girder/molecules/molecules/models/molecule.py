@@ -5,7 +5,7 @@ import json
 
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.constants import AccessType
-from girder.plugins.molecules import avogadro
+from molecules import avogadro
 
 class Molecule(AccessControlledModel):
 
