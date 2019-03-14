@@ -47,7 +47,8 @@ def to_smiles(str_data, in_format):
     # The smiles has returns at the end of it, and may contain
     # a return in the middle with a common name. Get rid of
     # all of these.
-    smiles = convert_str(str_data, in_format, 'smi')[0].strip()
+    # Use canonical smiles
+    smiles = convert_str(str_data, in_format, 'can')[0].strip()
     return smiles.split()[0]
 
 def from_smiles(str_data, out_format):
