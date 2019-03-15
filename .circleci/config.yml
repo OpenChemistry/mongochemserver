@@ -18,15 +18,15 @@ jobs:
       - run:
           name: Install the plugins
           command: >
-            girder-install plugin -f /mongochemserver/girder/molecules &&
-            girder-install plugin -f /mongochemserver/girder/notebooks
+            pip install -e /mongochemserver/girder/molecules
 
       - run:
           name: Install girder_pytest
           command: >
-            git clone -b 2.x-maintenance https://github.com/girder/girder.git /girder_pytest &&
+            git clone https://github.com/girder/girder.git /girder_pytest &&
             cd /girder_pytest &&
             pip install --no-cache-dir -r requirements-dev.txt
+
       - run:
           name: Run pytest
           command: 'pytest ./girder/molecules/plugin_tests/'
