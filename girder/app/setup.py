@@ -6,7 +6,7 @@ setup(
     description='Saves configuration data for OpenChemistry app.',
     packages=['openchemistryapp'],
     install_requires=[
-      'girder>=3.0.0a5',
+      'girder>=3.0.0a5'
     ],
     entry_points={
       'girder.plugin': [
