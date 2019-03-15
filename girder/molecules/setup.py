@@ -1,10 +1,10 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
-    name='girder-molecules',
+    name='openchemistry-molecules',
     version='0.1.0',
     description='Molecular data, containers and RESTful API.',
-    packages=['molecules'],
+    packages=find_packages(),
     install_requires=[
       'girder>=3.0.0a5',
       'jsonpath-rw==1.4.0',
