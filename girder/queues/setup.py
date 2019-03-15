@@ -8,12 +8,12 @@ setup(
     install_requires=[
       'girder>=3.0.0a5',
       # Add these in when they have been modified for use with girder 3.x
-      #'cumulus',
-      #'taskflows'
+      'cumulus-plugin',
+      'cumulus-taskflow'
     ],
     entry_points={
       'girder.plugin': [
-          'openchemistryqueues = openchemistryqueues:QueuePlugin'
+          'queues = queues:QueuePlugin'
       ]
     }
 )
