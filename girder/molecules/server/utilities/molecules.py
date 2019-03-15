@@ -57,6 +57,8 @@ def create_molecule(data_str, input_format, user, public):
             cjson = json.loads(avogadro.convert_str(sdf_data, sdf_format,
                                                     'cjson'))
 
+        smiles = openbabel.to_smiles(sdf_data, sdf_format)
+
         # Whitelist parts of the CJSON that we store at the top level.
         cjsonmol = {}
         cjsonmol['atoms'] = cjson['atoms']
@@ -66,6 +68,7 @@ def create_molecule(data_str, input_format, user, public):
             'name': chemspider.find_common_name(inchikey, props['formula']),
             'inchi': inchi,
             'inchikey': inchikey,
+            'smiles': smiles,
             sdf_format: sdf_data,
             'cjson': cjsonmol,
             'properties': props,
