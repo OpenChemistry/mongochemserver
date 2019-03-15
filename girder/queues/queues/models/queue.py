@@ -7,7 +7,7 @@ from girder import events
 
 import cumulus
 from cumulus.taskflow import load_class, TaskFlowState
-from girder.plugins.taskflow.models.taskflow import Taskflow as TaskflowModel
+from taskflow.models.taskflow import Taskflow as TaskflowModel
 
 class QueueType(object):
     FIFO = 'fifo'
