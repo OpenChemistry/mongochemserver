@@ -9,8 +9,8 @@ from girder.models.upload import Upload
 @pytest.fixture
 def molecule(user):
     """Our method for creating a molecule within girder."""
-    from girder.plugins.molecules.models.molecule import Molecule
-    from girder.plugins.molecules import openbabel
+    from molecules.models.molecule import Molecule
+    from molecules import openbabel
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -51,7 +51,7 @@ def molecule(user):
 @pytest.fixture
 def calculation(user, molecule):
     """Our method for creating a calculation within girder."""
-    from girder.plugins.molecules.models.calculation import Calculation
+    from molecules.models.calculation import Calculation
 
     assert '_id' in molecule
 
