@@ -4,6 +4,10 @@ class PluginSettings:
     VIRTUOSO_USER = 'molecules.virtuoso.user'
     VIRTUOSO_PASSWORD = 'molecules.virtuoso.password'
     SEMANTIC_URI_BASE = 'molecules.semantic.url_base'
+    JENA_BASE_URL = 'molecules.jena.url'
+    JENA_USER = 'molecules.jena.user'
+    JENA_PASSWORD = 'molecules.jena.password'
+    JENA_DATASET = 'molecules.jena.dataset'
 
 theory_priority = {
     'mm': 10, # (molecular mechanics)

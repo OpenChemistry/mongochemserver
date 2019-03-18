@@ -77,6 +77,6 @@ def create_molecule(data_str, input_format, user, public):
         try:
             semantic.upload_molecule(mol)
         except requests.ConnectionError:
-            print(TerminalColor.warning('WARNING: Couldn\'t connect to virtuoso.'))
+            print(TerminalColor.warning('WARNING: Couldn\'t connect to Jena.'))
 
     return mol
