@@ -10,7 +10,7 @@ setup(
     ],
     entry_points={
       'girder.plugin': [
-          'openchemistryapp = openchemistryapp:OpenChemistryAppPlugin'
+          'app = app:AppPlugin'
       ]
     }
 )

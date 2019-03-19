@@ -8,7 +8,7 @@ from girder.plugin import GirderPlugin
     Features.NOTEBOOKS
 })
 
-class OpenChemistryAppPlugin(GirderPlugin):
+class AppPlugin(GirderPlugin):
     DISPLAY_NAME = 'OpenChemistry App'
 
     def validateSettings(self, event):

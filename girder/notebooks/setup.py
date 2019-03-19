@@ -11,7 +11,7 @@ setup(
     ],
     entry_points={
       'girder.plugin': [
-          'openchemistrynotebooks = openchemistrynotebooks:OpenChemistryNotebooksPlugin'
+          'notebooks = notebooks:NotebooksPlugin'
       ]
     }
 )

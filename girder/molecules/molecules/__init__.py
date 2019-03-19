@@ -16,7 +16,7 @@ from .models.molecule import Molecule as MoleculeModel
 from girder.plugin import GirderPlugin
 
 
-class MoleculePlugin(GirderPlugin):
+class MoleculesPlugin(GirderPlugin):
     DISPLAY_NAME = 'Molecular Data'
 
     def validateSettings(self, event):

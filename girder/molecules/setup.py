@@ -17,7 +17,7 @@ setup(
     ],
     entry_points={
       'girder.plugin': [
-          'molecules = molecules:MoleculePlugin'
+          'molecules = molecules:MoleculesPlugin'
       ]
     }
 )

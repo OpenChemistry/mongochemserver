@@ -41,7 +41,7 @@ def createNotebooks(event):
                 parent={'_id': ObjectId(notebook_folder['_id'])}, user=user,
                 mimeType='application/x-ipynb+json')
 
-class OpenChemistryNotebooksPlugin(GirderPlugin):
+class NotebooksPlugin(GirderPlugin):
     DISPLAY_NAME = 'Sample Open Chemistry Notebooks'
 
     def load(self, info):
