@@ -2,6 +2,9 @@ from jsonschema import validate, ValidationError
 
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.utility.model_importer import ModelImporter
+from girder.models.file import File
+from girder.models.item import Item
+from girder.models.folder import Folder
 from girder.constants import AccessType
 
 import openchemistry as oc
@@ -118,3 +121,20 @@ class Calculation(AccessControlledModel):
             }
         }
         super(Calculation, self).update(query, update)
+
+    def remove(self, calc, user=None, force=False):
+        super(Calculation, self).remove(calc)
+        # remove ingested file
+        file_id = calc.get('fileId')
+        if file_id is not None:
+            file = File().load(file_id, user=user, level=AccessType.WRITE)
+            if file:
+                item = Item().load(file['itemId'], user=user, level=AccessType.WRITE)
+                if item:
+                    Item().remove(item)
+        # remove scratch folder with calculation output
+        scratch_folder_id = calc.get('scratchFolderId')
+        if scratch_folder_id is not None:
+            folder = Folder().load(scratch_folder_id, user=user, level=AccessType.WRITE)
+            if folder:
+                Folder().remove(folder)
