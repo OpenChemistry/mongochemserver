@@ -6,6 +6,7 @@ import json
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.constants import AccessType
 from molecules import avogadro
+from molecules import openbabel
 
 class Molecule(AccessControlledModel):
 
@@ -28,11 +29,15 @@ class Molecule(AccessControlledModel):
                 query['inchi'] = search['inchi']
             if 'inchikey' in search:
                 query['inchikey'] = search['inchikey']
+            if 'smiles' in search:
+                # Make sure it is canonical before searching
+                query['smiles'] = openbabel.to_smiles(search['smiles'], 'smi')
         cursor = self.find(query)
         mols = list()
         for mol in cursor:
             molecule = { '_id': mol['_id'], 'inchikey': mol.get('inchikey'),
-                         'name': mol.get('name'), 'properties': mol.get('properties')}
+                         'smiles': mol.get('smiles'), 'name': mol.get('name'),
+                         'properties': mol.get('properties') }
             mols.append(molecule)
         return mols
 

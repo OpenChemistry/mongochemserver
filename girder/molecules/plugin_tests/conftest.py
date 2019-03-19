@@ -24,11 +24,14 @@ def molecule(user):
     (inchi, inchikey) = openbabel.to_inchi(data, input_format)
     formula = openbabel.get_formula(data, input_format)
 
+    smiles = openbabel.to_smiles(data, input_format)
+
     properties = {'formula': formula}
 
     mol = {
         'inchi': inchi,
         'inchikey': inchikey,
+        'smiles': smiles,
         'name': name,
         'properties': properties,
         'cjson': {

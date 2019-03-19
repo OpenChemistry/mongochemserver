@@ -41,6 +41,16 @@ def to_inchi(str_data, in_format):
 def from_inchi(str_data, out_format):
     return convert_str(str_data, 'inchi', out_format, True)
 
+def to_smiles(str_data, in_format):
+    # This returns ["<smiles>", "chemical/x-daylight-smiles"]
+    # Keep only the first part.
+    # The smiles has returns at the end of it, and may contain
+    # a return in the middle with a common name. Get rid of
+    # all of these.
+    # Use canonical smiles
+    smiles = convert_str(str_data, in_format, 'can')[0].strip()
+    return smiles.split()[0]
+
 def from_smiles(str_data, out_format):
     return convert_str(str_data, 'smi', out_format, True)
 

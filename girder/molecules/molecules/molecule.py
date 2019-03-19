@@ -75,6 +75,8 @@ class Molecule(Resource):
                    required=False)
             .param('inchikey', 'The InChI key of the molecule', paramType='query',
                    required=False)
+            .param('smiles', 'The SMILES of the molecule', paramType='query',
+                   required=False)
             .errorResponse())
 
     @access.public
@@ -367,6 +369,8 @@ class Molecule(Resource):
 
             (inchi, inchikey) = openbabel.to_inchi(r.content.decode('utf8'), 'sdf')
 
+            smiles = openbabel.to_smiles(r.content.decode('utf8'), 'sdf')
+
             # See if we already have a molecule
             mol = MoleculeModel().find_inchikey(inchikey)
 
@@ -378,6 +382,7 @@ class Molecule(Resource):
                     'cjson': json.loads(cjson_str),
                     'inchi': inchi,
                     'inchikey': inchikey,
+                    'smiles': smiles,
                     'origin': 'cactus'
                 }
 
