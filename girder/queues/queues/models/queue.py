@@ -4,6 +4,7 @@ from girder.constants import AccessType
 from girder.models.model_base import AccessControlledModel
 from girder.models.model_base import ValidationException
 from girder import events
+from girder.utility.model_importer import ModelImporter
 
 import cumulus
 from cumulus.taskflow import load_class, TaskFlowState
@@ -230,7 +231,7 @@ class Queue(AccessControlledModel):
         taskflow = TaskflowModel().load(taskflow_id, user=user)
 
         constructor = load_class(taskflow['taskFlowClass'])
-        token = self.model('token').createToken(user=user, days=7)
+        token = ModelImporter.model('token').createToken(user=user, days=7)
 
         workflow = constructor(
             id=str(taskflow['_id']),
