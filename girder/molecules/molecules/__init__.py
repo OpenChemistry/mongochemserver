@@ -7,6 +7,7 @@ from girder import events
 from girder.models.model_base import ValidationException
 from girder.utility.model_importer import ModelImporter
 from .constants import PluginSettings
+from girder.utility import setting_utilities
 
 from .models.calculation import Calculation as CalculationModel
 from .models.cubecache import Cubecache as CubecacheModel
@@ -16,16 +17,23 @@ from .models.molecule import Molecule as MoleculeModel
 from girder.plugin import GirderPlugin
 
 
+@setting_utilities.validator({
+    PluginSettings.VIRTUOSO_BASE_URL,
+    PluginSettings.VIRTUOSO_RDF_UPLOAD_PATH,
+    PluginSettings.VIRTUOSO_USER,
+    PluginSettings.SEMANTIC_URI_BASE,
+    PluginSettings.VIRTUOSO_PASSWORD,
+    PluginSettings.JENA_BASE_URL,
+    PluginSettings.JENA_USER,
+    PluginSettings.JENA_PASSWORD,
+    PluginSettings.JENA_DATASET
+})
+def validateSettings(event):
+    pass
+
+
 class MoleculesPlugin(GirderPlugin):
     DISPLAY_NAME = 'Molecular Data'
-
-    def validateSettings(self, event):
-        if event.info['key'] == PluginSettings.VIRTUOSO_BASE_URL or \
-           event.info['key'] == PluginSettings.VIRTUOSO_RDF_UPLOAD_PATH or \
-           event.info['key'] == PluginSettings.VIRTUOSO_USER or \
-           event.info['key'] == PluginSettings.SEMANTIC_URI_BASE or \
-           event.info['key'] == PluginSettings.VIRTUOSO_PASSWORD:
-            event.preventDefault().stopPropagation()
 
 
     def load(self, info):
@@ -41,4 +49,4 @@ class MoleculesPlugin(GirderPlugin):
         info['apiRoot'].calculations = Calculation()
         info['apiRoot'].experiments = Experiment()
         events.bind('model.setting.validate', 'molecules',
-                    self.validateSettings)
+                    validateSettings)

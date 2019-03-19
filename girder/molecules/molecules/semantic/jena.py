@@ -1,7 +1,7 @@
 from girder.utility.model_importer import ModelImporter
 import requests
 
-from girder.plugins.molecules.constants import PluginSettings
+from molecules.constants import PluginSettings
 
 def upload_rdf(_, rdf):
     settings = ModelImporter.model('setting')
