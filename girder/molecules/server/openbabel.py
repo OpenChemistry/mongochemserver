@@ -1,9 +1,28 @@
+from girder.api.rest import RestException
+
 from openbabel import OBMol, OBConversion
 
 import pybel
 
+import re
+
+inchi_validator = re.compile('InChI=[0-9]S?\/')
+
+# This function only validates the first part. It does not guarantee
+# that the entire InChI is valid.
+def validate_start_of_inchi(inchi):
+    if not inchi_validator.match(inchi):
+        raise RestException('Invalid InChI: "' + inchi +'"', 400)
+
+
 # gen3d should be true for 2D input formats such as inchi or smiles
 def convert_str(str_data, in_format, out_format, gen3d=False):
+
+    # Make sure that the start of InChI is valid before passing it to
+    # Open Babel, or Open Babel will crash the server.
+    if in_format.lower() == 'inchi':
+        validate_start_of_inchi(str_data)
+
     obMol = OBMol()
     conv = OBConversion()
     conv.SetInFormat(in_format)
@@ -66,6 +85,7 @@ def get_formula(str_data, in_format):
     # Inchi must start with 'InChI='
     if in_format == 'inchi' and not str_data.startswith('InChI='):
         str_data = 'InChI=' + str_data
+        validate_start_of_inchi(str_data)
     # Get the molecule using the "Hill Order" - i. e., C first, then H,
     # and then alphabetical.
     mol = OBMol()
