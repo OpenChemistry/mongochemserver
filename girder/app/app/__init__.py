@@ -7,12 +7,11 @@ from girder.plugin import GirderPlugin
 @setting_utilities.validator({
     Features.NOTEBOOKS
 })
+def validateSettings(event):
+    pass
 
 class AppPlugin(GirderPlugin):
     DISPLAY_NAME = 'OpenChemistry App'
-
-    def validateSettings(self, event):
-        pass
 
     def load(self, info):
         info['apiRoot'].configuration = Configuration()
