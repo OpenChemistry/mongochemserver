@@ -359,7 +359,7 @@ class Molecule(Resource):
         elif cactus:
             # Disable cert verification for now
             # TODO Ensure we have the right root certs so this just works.
-            r = requests.get('https://cactus.nci.nih.gov/chemical/structure/%s/sdf' % cactus, verify=False)
+            r = requests.get('https://cactus.nci.nih.gov/chemical/structure/%s/file?format=sdf' % cactus, verify=False)
 
             if r.status_code == 404:
                 return []
