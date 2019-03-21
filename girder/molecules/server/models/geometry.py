@@ -1,0 +1,44 @@
+from bson.objectid import ObjectId
+
+from girder.models.model_base import AccessControlledModel
+from girder.constants import AccessType
+
+
+class Geometry(AccessControlledModel):
+
+    def __init__(self):
+        super(Geometry, self).__init__()
+
+    def initialize(self):
+        self.name = 'geometry'
+        self.ensureIndices(['moleculeId', 'cjson', 'provenanceType',
+                            'provenanceid'])
+
+        self.exposeFields(level=AccessType.READ, fields=(
+            '_id', 'moleculeId', 'cjson', 'provenanceType', 'provenanceId'))
+
+    def validate(self, doc):
+        # If we have a moleculeId ensure it is valid.
+        if 'moleculeId' in doc:
+            mol = self.model('molecule', 'molecules').load(doc['moleculeId'],
+                                                           force=True)
+            doc['moleculeId'] = mol['_id']
+
+        return doc
+
+    def create(self, moleculeId, cjson, provenanceType, provenanceId):
+        geometry = {
+            'moleculeId': moleculeId,
+            'cjson': cjson,
+            'provenanceType': provenanceType,
+            'provenanceId': provenanceId
+        }
+
+        return self.save(geometry)
+
+    def find_geometries(self, moleculeId):
+        query = {
+            'moleculeId': ObjectId(moleculeId)
+        }
+
+        return self.find(query)
