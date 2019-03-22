@@ -1,8 +1,10 @@
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api import access
 from girder.api.rest import Resource
+from girder.api.rest import RestException
 from girder.api.rest import getCurrentUser
 
+from girder.constants import AccessType
 from girder.constants import TokenScope
 
 from .models.geometry import Geometry as GeometryModel
@@ -14,6 +16,7 @@ class Geometry(Resource):
         super(Geometry, self).__init__()
         self.resourceName = 'geometry'
         self.route('POST', (), self.create)
+        self.route('DELETE', (':id',), self.delete)
         self.route('GET', (), self.find_geometries)
 
         self._model = GeometryModel()
@@ -33,6 +36,21 @@ class Geometry(Resource):
         cjson = params['cjson']
 
         return self._model.create(moleculeId, cjson, 'user', user['_id'])
+
+    @access.user(scope=TokenScope.DATA_WRITE)
+    @autoDescribeRoute(
+        Description('Delete a geometry.')
+        .param('id', 'The id of the geometry to be deleted.')
+        .errorResponse('Geometry not found.', 404)
+    )
+    def delete(self, id):
+        user = self.getCurrentUser()
+        geometry = GeometryModel().load(id, user=user, level=AccessType.WRITE)
+
+        if not geometry:
+            raise RestException('Geometry not found.', code=404)
+
+        return GeometryModel().remove(geometry)
 
     @access.public
     @autoDescribeRoute(
