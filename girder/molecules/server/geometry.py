@@ -15,11 +15,25 @@ class Geometry(Resource):
     def __init__(self):
         super(Geometry, self).__init__()
         self.resourceName = 'geometry'
+        self.route('GET', (), self.find_geometries)
         self.route('POST', (), self.create)
         self.route('DELETE', (':id',), self.delete)
-        self.route('GET', (), self.find_geometries)
 
         self._model = GeometryModel()
+
+    @access.public
+    @autoDescribeRoute(
+        Description('Find geometries of a given molecule.')
+        .param('moleculeId', 'The id of the parent molecule.')
+    )
+    def find_geometries(self, params):
+        user = getCurrentUser()
+
+        moleculeId = params['moleculeId']
+        geometries = self._model.find_geometries(moleculeId)
+
+        # Filter based upon access level.
+        return [self._model.filter(x, user) for x in geometries]
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
@@ -51,17 +65,3 @@ class Geometry(Resource):
             raise RestException('Geometry not found.', code=404)
 
         return GeometryModel().remove(geometry)
-
-    @access.public
-    @autoDescribeRoute(
-        Description('Find geometries of a given molecule.')
-        .param('moleculeId', 'The id of the parent molecule.')
-    )
-    def find_geometries(self, params):
-        user = getCurrentUser()
-
-        moleculeId = params['moleculeId']
-        geometries = self._model.find_geometries(moleculeId)
-
-        # Filter based upon access level.
-        return [self._model.filter(x, user) for x in geometries]
