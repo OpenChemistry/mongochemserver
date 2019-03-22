@@ -11,8 +11,7 @@ class Geometry(AccessControlledModel):
 
     def initialize(self):
         self.name = 'geometry'
-        self.ensureIndices(['moleculeId', 'cjson', 'provenanceType',
-                            'provenanceid'])
+        self.ensureIndices(['moleculeId', 'cjson'])
 
         self.exposeFields(level=AccessType.READ, fields=(
             '_id', 'moleculeId', 'cjson', 'provenanceType', 'provenanceId'))
@@ -34,13 +33,18 @@ class Geometry(AccessControlledModel):
 
         return doc
 
-    def create(self, moleculeId, cjson, provenanceType, provenanceId):
+    def create(self, moleculeId, cjson, provenanceType=None,
+               provenanceId=None):
         geometry = {
             'moleculeId': moleculeId,
-            'cjson': cjson,
-            'provenanceType': provenanceType,
-            'provenanceId': provenanceId
+            'cjson': cjson
         }
+
+        if provenanceType is not None:
+            geometry['provenanceType'] = provenanceType
+
+        if provenanceId is not None:
+            geometry['provenanceId'] = provenanceId
 
         return self.save(geometry)
 
