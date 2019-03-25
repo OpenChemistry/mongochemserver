@@ -21,6 +21,12 @@ class Geometry(Resource):
 
         self._model = GeometryModel()
 
+    def _clean(self, doc):
+        if 'access' in doc:
+            del doc['access']
+
+        return doc
+
     @access.public
     @autoDescribeRoute(
         Description('Find geometries of a given molecule.')
@@ -33,7 +39,7 @@ class Geometry(Resource):
         geometries = self._model.find_geometries(moleculeId)
 
         # Filter based upon access level.
-        return [self._model.filter(x, user) for x in geometries]
+        return [self._clean(self._model.filter(x, user)) for x in geometries]
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
@@ -49,7 +55,8 @@ class Geometry(Resource):
         moleculeId = params['moleculeId']
         cjson = params['cjson']
 
-        return self._model.create(moleculeId, cjson, 'user', user['_id'])
+        return self._clean(self._model.create(user, moleculeId, cjson, 'user',
+                                              user['_id']))
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
