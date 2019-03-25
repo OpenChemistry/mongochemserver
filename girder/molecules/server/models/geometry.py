@@ -33,8 +33,8 @@ class Geometry(AccessControlledModel):
 
         return doc
 
-    def create(self, moleculeId, cjson, provenanceType=None,
-               provenanceId=None):
+    def create(self, user, moleculeId, cjson, provenanceType=None,
+               provenanceId=None, public=False):
         geometry = {
             'moleculeId': moleculeId,
             'cjson': cjson
@@ -45,6 +45,10 @@ class Geometry(AccessControlledModel):
 
         if provenanceId is not None:
             geometry['provenanceId'] = provenanceId
+
+        self.setUserAccess(geometry, user=user, level=AccessType.ADMIN)
+        if public:
+            self.setPublic(geometry, True)
 
         return self.save(geometry)
 
