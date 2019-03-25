@@ -1,6 +1,7 @@
 import pytest
 import six
 import os
+import json
 
 from girder.models.file import File
 from girder.models.folder import Folder
@@ -49,6 +50,40 @@ def molecule(user):
 
     # Delete mol
     Molecule().remove(mol)
+
+
+@pytest.fixture
+def geometry(user, molecule):
+    """Our method for creating a geometry within girder."""
+    from girder.plugins.molecules.models.geometry import Geometry
+
+    # The molecule will have been created by the fixture
+    assert '_id' in molecule
+
+    molecule_id = molecule['_id']
+
+    # Get some cjson
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    with open(dir_path + '/data/ethane.cjson', 'r') as rf:
+        ethane_cjson = json.load(rf)
+
+    # Whitelist the cjson to only contain the parts needed for geometry
+    whitelist = ['atoms', 'bonds', 'chemical json']
+    cjson = {}
+    for item in whitelist:
+        cjson[item] = ethane_cjson[item]
+
+    # Create a geometry
+    geometry = Geometry().create(user, molecule_id, json.dumps(cjson),
+                                 'user', user['_id'])
+
+    # This is normally performed in a _clean() function
+    del geometry['access']
+
+    yield geometry
+
+    # Delete mol
+    Geometry().remove(geometry)
 
 
 @pytest.fixture
