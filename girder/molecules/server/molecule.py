@@ -30,7 +30,8 @@ class Molecule(Resource):
         'cml': 'chemical/x-cml',
         'xyz': 'chemical/x-xyz',
         'sdf': 'chemical/x-mdl-sdfile',
-        'cjson': 'application/json'
+        'cjson': 'application/json',
+        'svg': 'image/svg+xml'
     }
 
     def __init__(self):
@@ -40,6 +41,7 @@ class Molecule(Resource):
         self.route('GET', ('inchikey', ':inchikey'), self.find_inchikey)
         self.route('GET', (':id', ':output_format'), self.get_format)
         self.route('GET', (':id', ), self.find_id)
+        self.route('GET', (':id', 'svg'), self.get_svg)
         self.route('GET', ('search',), self.search)
         self.route('POST', (), self.create)
         self.route('DELETE', (':id',), self.delete)
@@ -51,6 +53,8 @@ class Molecule(Resource):
         del doc['access']
         if 'sdf' in doc:
             del doc['sdf']
+        if 'svg' in doc:
+            del doc['svg']
         doc['_id'] = str(doc['_id'])
         if 'cjson' in doc:
             if cjson:
@@ -331,6 +335,31 @@ class Molecule(Resource):
             .param('id', 'The id of the molecule', paramType='path')
             .param('output_format', 'The format to convert to', paramType='path')
             .errorResponse('Output format not supported.', 400))
+
+    @access.public
+    @autoDescribeRoute(
+            Description('Get an SVG representation of a molecule.')
+            .param('id', 'The id of the molecule', paramType='path')
+            .errorResponse('Molecule not found.', 404)
+            .errorResponse('Molecule does not have SVG data.', 404))
+    def get_svg(self, id):
+        # For now will for force load ( i.e. ignore access control )
+        # This will change when we have access controls.
+        mol = MoleculeModel().load(id, force=True)
+
+        if not mol:
+            raise RestException('Molecule not found.', code=404)
+
+        if 'svg' not in mol:
+            raise RestException('Molecule does not have SVG data.', code=404)
+
+        data = mol['svg']
+
+        def stream():
+            cherrypy.response.headers['Content-Type'] = Molecule.mime_types['svg']
+            yield data
+
+        return stream
 
     @access.public
     def search(self, params):

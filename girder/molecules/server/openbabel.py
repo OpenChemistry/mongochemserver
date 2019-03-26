@@ -117,3 +117,6 @@ def get_formula(str_data, in_format):
     conv.ReadString(mol, str_data)
 
     return mol.GetFormula()
+
+def to_svg(str_data, in_format):
+    return convert_str(str_data, in_format, 'svg')[0]
