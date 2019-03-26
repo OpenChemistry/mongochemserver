@@ -355,9 +355,10 @@ class Molecule(Resource):
 
         data = mol['svg']
 
+        cherrypy.response.headers['Content-Type'] = Molecule.mime_types['svg']
+
         def stream():
-            cherrypy.response.headers['Content-Type'] = Molecule.mime_types['svg']
-            yield data
+            yield data.encode()
 
         return stream
 
