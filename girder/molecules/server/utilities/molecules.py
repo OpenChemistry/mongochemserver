@@ -59,6 +59,9 @@ def create_molecule(data_str, input_format, user, public):
 
         smiles = openbabel.to_smiles(sdf_data, sdf_format)
 
+        # Generate an svg file for an image
+        svg_data = openbabel.to_svg(sdf_data, sdf_format)
+
         # Find the cjson version key
         version_key = 'chemicalJson'
         if version_key not in cjson:
@@ -80,7 +83,8 @@ def create_molecule(data_str, input_format, user, public):
             sdf_format: sdf_data,
             'cjson': cjsonmol,
             'properties': props,
-            'atomCounts': atomCounts
+            'atomCounts': atomCounts,
+            'svg': svg_data
         }
         mol = MoleculeModel().create(user, mol_dict, public)
 
