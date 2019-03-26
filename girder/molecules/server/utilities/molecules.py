@@ -60,7 +60,7 @@ def create_molecule(data_str, input_format, user, public):
         smiles = openbabel.to_smiles(sdf_data, sdf_format)
 
         # Generate an svg file for an image
-        svg_data = openbabel.to_svg(sdf_data, sdf_format)
+        svg_data = openbabel.to_svg(smiles, 'smiles')
 
         # Find the cjson version key
         version_key = 'chemicalJson'
