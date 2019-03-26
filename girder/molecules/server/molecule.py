@@ -30,7 +30,8 @@ class Molecule(Resource):
         'cml': 'chemical/x-cml',
         'xyz': 'chemical/x-xyz',
         'sdf': 'chemical/x-mdl-sdfile',
-        'cjson': 'application/json'
+        'cjson': 'application/json',
+        'svg': 'image/svg+xml'
     }
 
     def __init__(self):
@@ -352,7 +353,13 @@ class Molecule(Resource):
         if 'svg' not in mol:
             raise RestException('Molecule does not have SVG data.', code=404)
 
-        return mol['svg']
+        data = mol['svg']
+
+        def stream():
+            cherrypy.response.headers['Content-Type'] = Molecule.mime_types['svg']
+            yield data
+
+        return stream
 
     @access.public
     def search(self, params):
