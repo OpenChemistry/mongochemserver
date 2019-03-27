@@ -92,3 +92,5 @@ def callback_factory(inchikey, user):
             events.unbind('jobs.job.update.after', inchikey)
 
         return
+
+    return callback
