@@ -79,7 +79,7 @@ def callback_factory(inchikey, user):
             updates = {}
             updates.setdefault('$set', {})['cjson'] = kwargs.get('cjson')
 
-            update_result = MoleculeModel().update(query, updates)
+            update_result = super(MoleculeModel, MoleculeModel()).update(query, updates)
             if update_result.matched_count == 0:
                 raise ValidationException('Invalid inchikey (%s)' % inchikey)
 
