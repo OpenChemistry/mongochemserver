@@ -193,12 +193,28 @@ class Molecule(Resource):
 
         body = self.getBodyJson()
 
-        # TODO this should be refactored to use $addToSet
-        if 'logs' in body:
-            logs = mol.setdefault('logs', [])
-            logs += body['logs']
+        query = {
+            '_id': mol['_id']
+        }
 
-        mol = MoleculeModel().update(mol)
+        updates = {
+            '$set': {},
+            '$addToSet': {}
+        }
+
+        if 'name' in body:
+            updates['$set']['name'] = body['name']
+
+        if 'logs' in body:
+            updates['$addToSet']['logs'] = body['logs']
+
+        # Remove unused keys
+        updates = {k: v for k, v in updates.items() if v}
+
+        super(MoleculeModel, MoleculeModel()).update(query, updates)
+
+        # Reload the molecule
+        mol = MoleculeModel().load(id, user=user)
 
         return self._clean(mol)
     addModel('Molecule', 'UpdateMoleculeParams', {
