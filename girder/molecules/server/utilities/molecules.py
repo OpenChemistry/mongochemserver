@@ -1,7 +1,6 @@
 import json
 import requests
 
-from girder.api.rest import RestException
 from girder.api import access
 from girder.constants import AccessType
 from .. import avogadro
@@ -12,26 +11,38 @@ from .. import constants
 from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
 from girder.constants import TerminalColor
 
+from .generate_3d_coords_async import schedule_3d_coords_gen
+from .whitelist_cjson import whitelist_cjson
+
+mol_formats_2d = [
+    'smiles',
+    'smi',
+    'inchi'
+]
+
 
 def create_molecule(data_str, input_format, user, public):
-    # Use the SDF format as it is the one with bonding that 3Dmol uses.
-    sdf_format = 'sdf'
+
+    format_2d = (input_format in mol_formats_2d)
+    smiles_format = 'smiles'
 
     if input_format == 'pdb':
-        (sdf_data, _) = openbabel.convert_str(data_str, input_format, sdf_format)
+        smiles = openbabel.to_smiles(data_str, input_format)
     elif input_format == 'inchi':
-        (sdf_data, _) = openbabel.from_inchi(data_str, sdf_format)
+        smiles = openbabel.to_smiles(data_str, input_format)
     elif input_format == 'smi' or input_format == 'smiles':
-        (sdf_data, _) = openbabel.from_smiles(data_str, sdf_format)
+        # This conversion still occurs to make sure we have canonical smiles
+        smiles = openbabel.to_smiles(data_str, smiles_format)
     else:
-        sdf_data = avogadro.convert_str(data_str, input_format, sdf_format)
+        smiles = avogadro.convert_str(data_str, input_format, smiles_format)
 
-    atom_count = openbabel.atom_count(sdf_data, sdf_format)
+    atom_count = openbabel.atom_count(smiles, smiles_format)
 
     if atom_count > 1024:
-        raise RestException('Unable to generate inchi, molecule has more than 1024 atoms .', code=400)
+        raise RestException('Unable to generate inchi, '
+                            'molecule has more than 1024 atoms .', code=400)
 
-    (inchi, inchikey) = openbabel.to_inchi(sdf_data, sdf_format)
+    (inchi, inchikey) = openbabel.to_inchi(smiles, smiles_format)
 
     if not inchi:
         raise RestException('Unable to extract inchi', code=400)
@@ -44,48 +55,41 @@ def create_molecule(data_str, input_format, user, public):
     else:
         # Get some basic molecular properties we want to add to the
         # database.
-        props = avogadro.molecule_properties(sdf_data, sdf_format)
+        props = avogadro.molecule_properties(smiles, smiles_format)
         pieces = props['spacedFormula'].strip().split(' ')
         atomCounts = {}
         for i in range(0, int(len(pieces) / 2)):
-            atomCounts[pieces[2 * i ]] = int(pieces[2 * i + 1])
-
-        cjson = {}
-        if input_format == 'cjson':
-            cjson = json.loads(data_str)
-        else:
-            cjson = json.loads(avogadro.convert_str(sdf_data, sdf_format,
-                                                    'cjson'))
-
-        smiles = openbabel.to_smiles(sdf_data, sdf_format)
+            atomCounts[pieces[2 * i]] = int(pieces[2 * i + 1])
 
         # Generate an svg file for an image
-        svg_data = openbabel.to_svg(smiles, 'smiles')
+        svg_data = openbabel.to_svg(smiles, smiles_format)
 
-        # Find the cjson version key
-        version_key = 'chemicalJson'
-        if version_key not in cjson:
-            if 'chemical json' in cjson:
-                version_key = 'chemical json'
-            else:
-                raise RestException('No "chemicalJson" key found', 400)
-
-        # Whitelist parts of the CJSON that we store at the top level.
-        cjsonmol = {}
-        cjsonmol['atoms'] = cjson['atoms']
-        cjsonmol['bonds'] = cjson['bonds']
-        cjsonmol['chemicalJson'] = cjson[version_key]
         mol_dict = {
             'name': chemspider.find_common_name(inchikey, props['formula']),
             'inchi': inchi,
             'inchikey': inchikey,
             'smiles': smiles,
-            sdf_format: sdf_data,
-            'cjson': cjsonmol,
             'properties': props,
             'atomCounts': atomCounts,
             'svg': svg_data
         }
+
+        cjson = {}
+        if input_format == 'cjson':
+            cjson = json.loads(data_str)
+        else:
+            if format_2d:
+                # Generate 3d coordinates in a background thread
+                schedule_3d_coords_gen(mol_dict, user)
+                # This will be complete other than the cjson
+                return MoleculeModel().create(user, mol_dict, public)
+            else:
+                sdf_data = openbabel.from_smiles(smiles, smiles_format)
+                cjson = json.loads(avogadro.convert_str(sdf_data, 'sdf',
+                                                        'cjson'))
+
+        mol_dict['cjson'] = whitelist_cjson(cjson)
+
         mol = MoleculeModel().create(user, mol_dict, public)
 
         # Upload the molecule to virtuoso

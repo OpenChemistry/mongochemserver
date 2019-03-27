@@ -1,5 +1,6 @@
 {
     "name": "Molecular Data",
     "description": "Molecular data, containers and RESTful API.",
-    "version": "0.1.0"
+    "version": "0.1.0",
+    "dependencies": ["jobs"]
 }
