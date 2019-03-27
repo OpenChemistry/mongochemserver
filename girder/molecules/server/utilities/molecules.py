@@ -55,7 +55,10 @@ def create_molecule(data_str, input_format, user, public):
     else:
         # Get some basic molecular properties we want to add to the
         # database.
-        props = avogadro.molecule_properties(smiles, smiles_format)
+        # Use sdf without 3d generation for avogadro's molecule properties
+        sdf_no_3d = openbabel.convert_str(smiles, smiles_format, 'sdf')[0]
+        props = avogadro.molecule_properties(sdf_no_3d, 'sdf')
+
         pieces = props['spacedFormula'].strip().split(' ')
         atomCounts = {}
         for i in range(0, int(len(pieces) / 2)):
