@@ -46,7 +46,7 @@ def _run_3d_coords_gen(job):
     try:
         mol = job['kwargs']['mol']
         smiles = mol['smiles']
-        sdf_data = openbabel.from_smiles(smiles, 'sdf')
+        sdf_data = openbabel.from_smiles(smiles, 'sdf')[0]
         cjson = json.loads(avogadro.convert_str(sdf_data, 'sdf',
                                                 'cjson'))
         job['kwargs']['cjson'] = whitelist_cjson(cjson)
@@ -65,7 +65,7 @@ def callback_factory(inchikey, user):
         job = event.info['job']
 
         kwargs = job['kwargs']
-        if 'mol' not in kwargs or kwargs['mol'].get('inichikey') != inchikey:
+        if 'mol' not in kwargs or kwargs['mol'].get('inchikey') != inchikey:
             return
 
         SUCCESS = JobStatus.SUCCESS
@@ -78,6 +78,7 @@ def callback_factory(inchikey, user):
             }
             updates = {}
             updates.setdefault('$set', {})['cjson'] = kwargs.get('cjson')
+
             update_result = MoleculeModel().update(query, updates)
             if update_result.matched_count == 0:
                 raise ValidationException('Invalid inchikey (%s)' % inchikey)
