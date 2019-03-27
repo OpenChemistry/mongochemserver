@@ -10,6 +10,7 @@ from .. import semantic
 from .. import constants
 from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
 from girder.constants import TerminalColor
+from girder.api.rest import RestException
 
 from .generate_3d_coords_async import schedule_3d_coords_gen
 from .whitelist_cjson import whitelist_cjson
