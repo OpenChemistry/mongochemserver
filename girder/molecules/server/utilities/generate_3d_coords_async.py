@@ -1,16 +1,19 @@
 import json
+import requests
 import sys
 import traceback
 
 from girder import events
+from girder.constants import TerminalColor
 from girder.plugins.jobs.models.job import Job
 from girder.plugins.jobs.constants import JobStatus
 from girder.models.model_base import ValidationException
 
 from .whitelist_cjson import whitelist_cjson
 
-from .. import openbabel
 from .. import avogadro
+from .. import openbabel
+from .. import semantic
 
 from ..models.molecule import Molecule as MoleculeModel
 
@@ -21,7 +24,7 @@ def schedule_3d_coords_gen(mol, user):
     smiles = mol['smiles']
     job_mol = {
         'inchikey': inchikey,
-        'smiles' : smiles
+        'smiles': smiles
     }
     events.bind('jobs.job.update.after', inchikey,
                 callback_factory(inchikey, user))
@@ -79,7 +82,8 @@ def callback_factory(inchikey, user):
             updates = {}
             updates.setdefault('$set', {})['cjson'] = kwargs.get('cjson')
 
-            update_result = super(MoleculeModel, MoleculeModel()).update(query, updates)
+            update_result = super(MoleculeModel,
+                                  MoleculeModel()).update(query, updates)
             if update_result.matched_count == 0:
                 raise ValidationException('Invalid inchikey (%s)' % inchikey)
 
@@ -87,7 +91,8 @@ def callback_factory(inchikey, user):
             try:
                 semantic.upload_molecule(MoleculeModel().findOne(query))
             except requests.ConnectionError:
-                print(TerminalColor.warning('WARNING: Couldn\'t connect to Jena.'))
+                print(TerminalColor.warning('WARNING: Couldn\'t '
+                                            'connect to Jena.'))
 
         if job['status'] in [SUCCESS, ERROR, CANCELED]:
             events.unbind('jobs.job.update.after', inchikey)

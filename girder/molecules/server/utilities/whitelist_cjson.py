@@ -1,5 +1,6 @@
 from girder.api.rest import RestException
 
+
 def whitelist_cjson(cjson):
     # Find the cjson version key
     version_key = 'chemicalJson'

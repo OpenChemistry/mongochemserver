@@ -1,13 +1,10 @@
 import json
 import requests
 
-from girder.api import access
-from girder.constants import AccessType
 from .. import avogadro
 from .. import openbabel
 from .. import chemspider
 from .. import semantic
-from .. import constants
 from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
 from girder.constants import TerminalColor
 from girder.api.rest import RestException
@@ -15,27 +12,29 @@ from girder.api.rest import RestException
 from .generate_3d_coords_async import schedule_3d_coords_gen
 from .whitelist_cjson import whitelist_cjson
 
-mol_formats_2d = [
+openbabel_2d_formats = [
     'smiles',
     'smi',
     'inchi'
 ]
 
+# Add more to this list if we want open babel to convert them
+# rather than avogadro.
+openbabel_3d_formats = [
+  'pdb'
+]
+
 
 def create_molecule(data_str, input_format, user, public):
 
-    format_2d = (input_format in mol_formats_2d)
+    using_2d_format = (input_format in openbabel_2d_formats)
     smiles_format = 'smiles'
 
-    if input_format == 'pdb':
+    if using_2d_format or input_format in openbabel_3d_formats:
         smiles = openbabel.to_smiles(data_str, input_format)
-    elif input_format == 'inchi':
-        smiles = openbabel.to_smiles(data_str, input_format)
-    elif input_format == 'smi' or input_format == 'smiles':
-        # This conversion still occurs to make sure we have canonical smiles
-        smiles = openbabel.to_smiles(data_str, smiles_format)
     else:
-        smiles = avogadro.convert_str(data_str, input_format, smiles_format)
+        sdf_data = avogadro.convert_str(data_str, input_format, 'sdf')
+        smiles = openbabel.to_smiles(sdf_data, 'sdf')
 
     atom_count = openbabel.atom_count(smiles, smiles_format)
 
@@ -81,15 +80,19 @@ def create_molecule(data_str, input_format, user, public):
         cjson = {}
         if input_format == 'cjson':
             cjson = json.loads(data_str)
+
+        if not cjson and using_2d_format:
+            # Generate 3d coordinates in a background thread
+            schedule_3d_coords_gen(mol_dict, user)
+            # This will be complete other than the cjson
+            return MoleculeModel().create(user, mol_dict, public)
         else:
-            if format_2d:
-                # Generate 3d coordinates in a background thread
-                schedule_3d_coords_gen(mol_dict, user)
-                # This will be complete other than the cjson
-                return MoleculeModel().create(user, mol_dict, public)
-            else:
-                sdf_data = openbabel.from_smiles(smiles, smiles_format)
+            if input_format in openbabel_3d_formats:
+                sdf_data = openbabel.convert_str(data_str, input_format, 'sdf')
                 cjson = json.loads(avogadro.convert_str(sdf_data, 'sdf',
+                                                        'cjson'))
+            else:
+                cjson = json.loads(avogadro.convert_str(data_str, input_format,
                                                         'cjson'))
 
         mol_dict['cjson'] = whitelist_cjson(cjson)
