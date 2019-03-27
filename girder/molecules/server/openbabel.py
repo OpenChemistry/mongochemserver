@@ -102,4 +102,8 @@ def get_formula(str_data, in_format):
     return mol.GetFormula()
 
 def to_svg(str_data, in_format):
-    return convert_str(str_data, in_format, 'svg')[0]
+    out_options = {
+        'b': 'none', # transparent background color
+        'B': 'black' # black bonds color
+    }
+    return convert_str(str_data, in_format, 'svg', out_options=out_options)[0]
