@@ -1,10 +1,13 @@
 from girder.api.rest import RestException
 
+import json
 from openbabel import OBMol, OBConversion
 
 import pybel
 
 import re
+
+from .avogadro import convert_str as avo_convert_str
 
 inchi_validator = re.compile('InChI=[0-9]S?\/')
 
@@ -13,7 +16,6 @@ inchi_validator = re.compile('InChI=[0-9]S?\/')
 def validate_start_of_inchi(inchi):
     if not inchi_validator.match(inchi):
         raise RestException('Invalid InChI: "' + inchi +'"', 400)
-
 
 # gen3d should be true for 2D input formats such as inchi or smiles
 def convert_str(str_data, in_format, out_format, gen3d=False, out_options=None):
@@ -41,6 +43,27 @@ def convert_str(str_data, in_format, out_format, gen3d=False, out_options=None):
         conv.AddOption(option, conv.OUTOPTIONS, value)
 
     return (conv.WriteString(obMol), conv.GetOutFormat().GetMIMEType())
+
+def cjson_to_ob_molecule(cjson):
+    cjson_str = json.dumps(cjson)
+    sdf_str = avo_convert_str(cjson_str, 'cjson', 'sdf')
+    conv = OBConversion()
+    conv.SetInFormat('sdf')
+    conv.SetOutFormat('sdf')
+    mol = OBMol()
+    conv.ReadString(mol, sdf_str)
+    return mol
+
+def autodetect_bonds(cjson):
+    mol = cjson_to_ob_molecule(cjson)
+    mol.ConnectTheDots()
+    mol.PerceiveBondOrders()
+    conv = OBConversion()
+    conv.SetInFormat('sdf')
+    conv.SetOutFormat('sdf')
+    sdf_str = conv.WriteString(mol)
+    cjson_str = avo_convert_str(sdf_str, 'sdf', 'cjson')
+    return json.loads(cjson_str)
 
 def to_inchi(str_data, in_format):
     mol = OBMol()

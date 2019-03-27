@@ -23,6 +23,7 @@ import openchemistry as oc
 
 from . import avogadro
 from . import constants
+from . import openbabel
 from .molecule import Molecule
 import pymongo
 
@@ -337,9 +338,14 @@ class Calculation(Resource):
         .modelParam('id', 'The calculation id',
             model=CalculationModel, destName='calculation',
             level=AccessType.WRITE, paramType='path')
+        .param('detectBonds',
+               'Automatically detect bonds if they are not already present in the ingested molecule',
+               required=False,
+               dataType='boolean',
+               default=False)
         .jsonParam('body', 'The calculation details', required=True, paramType='body')
     )
-    def ingest_calc(self, calculation, body):
+    def ingest_calc(self, calculation, body, detectBonds=None):
         self.requireParams(['fileId', 'format'], body)
 
         file = File().load(body['fileId'], user=getCurrentUser())
@@ -349,6 +355,16 @@ class Calculation(Resource):
         # The calculation is no longer pending
         if 'pending' in calc_props:
             del calc_props['pending']
+
+        # Add bonds if they were not there already
+        if detectBonds is None:
+            detectBonds = False
+
+        bonds = cjson.get('bonds')
+        if bonds is None and detectBonds:
+            new_cjson = openbabel.autodetect_bonds(cjson)
+            if new_cjson.get('bonds') is not None:
+                cjson['bonds'] = new_cjson['bonds']
 
         calculation['properties'] = calc_props
         calculation['cjson'] = cjson
