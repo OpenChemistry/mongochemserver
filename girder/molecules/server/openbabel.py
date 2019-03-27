@@ -42,6 +42,18 @@ def convert_str(str_data, in_format, out_format, gen3d=False, out_options=None):
 
     return (conv.WriteString(obMol), conv.GetOutFormat().GetMIMEType())
 
+def gen_sdf_no_3d(str_data, in_format):
+
+    obMol = OBMol()
+    conv = OBConversion()
+    conv.SetInFormat(in_format)
+    conv.SetOutFormat('sdf')
+    conv.ReadString(obMol, str_data)
+
+    obMol.AddHydrogens()
+
+    return (conv.WriteString(obMol), conv.GetOutFormat().GetMIMEType())
+
 def to_inchi(str_data, in_format):
     mol = OBMol()
     conv = OBConversion()
