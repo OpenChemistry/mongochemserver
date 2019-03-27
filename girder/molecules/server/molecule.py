@@ -355,9 +355,10 @@ class Molecule(Resource):
 
         data = mol['svg']
 
+        cherrypy.response.headers['Content-Type'] = Molecule.mime_types['svg']
+
         def stream():
-            cherrypy.response.headers['Content-Type'] = Molecule.mime_types['svg']
-            yield data
+            yield data.encode()
 
         return stream
 
@@ -395,28 +396,8 @@ class Molecule(Resource):
             else:
                 r.raise_for_status()
 
-            (inchi, inchikey) = openbabel.to_inchi(r.content.decode('utf8'), 'sdf')
-
-            smiles = openbabel.to_smiles(r.content.decode('utf8'), 'sdf')
-
-            # See if we already have a molecule
-            mol = MoleculeModel().find_inchikey(inchikey)
-
-            # Create new molecule
-            if mol is None:
-
-                cjson_str = avogadro.convert_str(r.content, 'sdf', 'cjson')
-                mol = {
-                    'cjson': json.loads(cjson_str),
-                    'inchi': inchi,
-                    'inchikey': inchikey,
-                    'smiles': smiles,
-                    'origin': 'cactus'
-                }
-
-                user = getCurrentUser()
-                if user is not None:
-                    mol = MoleculeModel().create(getCurrentUser(), mol, public=True)
+            sdf_data = r.content.decode('utf8')
+            mol = create_molecule(sdf_data, 'sdf', getCurrentUser(), True)
 
             return [mol]
 

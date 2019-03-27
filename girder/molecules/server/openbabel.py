@@ -16,12 +16,15 @@ def validate_start_of_inchi(inchi):
 
 
 # gen3d should be true for 2D input formats such as inchi or smiles
-def convert_str(str_data, in_format, out_format, gen3d=False):
+def convert_str(str_data, in_format, out_format, gen3d=False, out_options=None):
 
     # Make sure that the start of InChI is valid before passing it to
     # Open Babel, or Open Babel will crash the server.
     if in_format.lower() == 'inchi':
         validate_start_of_inchi(str_data)
+
+    if out_options is None:
+        out_options = {}
 
     obMol = OBMol()
     conv = OBConversion()
@@ -33,6 +36,9 @@ def convert_str(str_data, in_format, out_format, gen3d=False):
         # Generate 3D coordinates for the input
         mol = pybel.Molecule(obMol)
         mol.make3D()
+
+    for option, value in out_options.items():
+        conv.AddOption(option, conv.OUTOPTIONS, value)
 
     return (conv.WriteString(obMol), conv.GetOutFormat().GetMIMEType())
 
@@ -96,4 +102,8 @@ def get_formula(str_data, in_format):
     return mol.GetFormula()
 
 def to_svg(str_data, in_format):
-    return convert_str(str_data, in_format, 'svg')[0]
+    out_options = {
+        'b': 'none', # transparent background color
+        'B': 'black' # black bonds color
+    }
+    return convert_str(str_data, in_format, 'svg', out_options=out_options)[0]
