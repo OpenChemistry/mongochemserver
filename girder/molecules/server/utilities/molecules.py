@@ -68,7 +68,6 @@ def create_molecule(data_str, input_format, user, public):
         svg_data = openbabel.to_svg(smiles, smiles_format)
 
         mol_dict = {
-            'name': chemspider.find_common_name(inchikey, props['formula']),
             'inchi': inchi,
             'inchikey': inchikey,
             'smiles': smiles,
@@ -76,6 +75,11 @@ def create_molecule(data_str, input_format, user, public):
             'atomCounts': atomCounts,
             'svg': svg_data
         }
+
+        # Set a name if we find one
+        name = chemspider.find_common_name(inchikey)
+        if name is not None:
+            mol_dict['name'] = name
 
         cjson = {}
         if input_format == 'cjson':
