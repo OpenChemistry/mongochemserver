@@ -10,7 +10,7 @@ def create_molecule_graph(uri_base, mol):
     mongochem = Namespace('%s/api/v1/molecules/' % uri_base)
     g = Graph()
     inchi = mol['inchi']
-    name = mol['name']
+    name = mol.get('name')
     inchi_node = BNode()
 
     molecule = URIRef(mongochem[mol['_id']])
@@ -21,7 +21,10 @@ def create_molecule_graph(uri_base, mol):
     namespace_manager.bind('owl', OWL, override=False)
 
     g.add((molecule, OWL.subClassOf, cheminf.CHEMINF_000000))
-    g.add((molecule, OWL.label, Literal(name.lower())))
+
+    if name is not None:
+        g.add((molecule, OWL.label, Literal(name.lower())))
+
     g.add((inchi_node, RDF.type, cheminf.CHEMINF_000113))
     g.add((inchi_node, cheminf.SIO_000300, Literal(inchi)))
     g.add((molecule, cheminf.CHEMINF_000200, inchi_node))
