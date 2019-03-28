@@ -10,9 +10,9 @@ except KeyError:
 
 
 def find_common_name(inchikey):
-    # Try to find the common name for the compound, if not use an empty string.
+    # Try to find the common name for the compound, if not, return None.
 
-    name = ''
+    name = None
 
     if chemspikey:
         cs = ChemSpider(chemspikey)
