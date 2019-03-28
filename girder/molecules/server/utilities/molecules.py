@@ -76,7 +76,7 @@ def create_molecule(data_str, input_format, user, public):
         cjsonmol['bonds'] = cjson['bonds']
         cjsonmol['chemicalJson'] = cjson[version_key]
         mol_dict = {
-            'name': chemspider.find_common_name(inchikey, props['formula']),
+            'name': chemspider.find_common_name(inchikey),
             'inchi': inchi,
             'inchikey': inchikey,
             'smiles': smiles,

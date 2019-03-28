@@ -9,10 +9,10 @@ except KeyError:
     print(TerminalColor.warning('WARNING: chemspikey not set, common names will not be resolved.'))
 
 
-def find_common_name(inchikey, formula):
-    # Try to find the common name for the compound, if not use the formula.
+def find_common_name(inchikey):
+    # Try to find the common name for the compound, if not use an empty string.
 
-    name = formula
+    name = ''
 
     if chemspikey:
         cs = ChemSpider(chemspikey)
