@@ -24,9 +24,15 @@ from girder.plugins.molecules.utilities.molecules import create_molecule
 from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
 
 class Molecule(Resource):
-    output_formats = ['cml', 'xyz', 'inchikey', 'sdf', 'cjson']
+    output_formats_2d = ['smiles', 'inchi', 'inchikey']
+    output_formats_3d = ['cml', 'xyz', 'sdf', 'cjson']
+    output_formats = output_formats_2d + output_formats_3d
+
     input_formats = ['cml', 'xyz', 'sdf', 'cjson', 'json', 'log', 'nwchem', 'pdb', 'smi', 'smiles']
     mime_types = {
+        'smiles': 'chemical/x-daylight-smiles',
+        'inchi': 'chemical/x-inchi',
+        'inchikey': 'text/plain',
         'cml': 'chemical/x-cml',
         'xyz': 'chemical/x-xyz',
         'sdf': 'chemical/x-mdl-sdfile',
@@ -336,9 +342,18 @@ class Molecule(Resource):
         if output_format not in Molecule.output_formats:
             raise RestException('Format not supported.', code=400)
 
-        data = json.dumps(molecule['cjson'])
-        if output_format != 'cjson':
-            data = avogadro.convert_str(data, 'cjson', output_format)
+        if output_format in Molecule.output_formats_3d:
+            # If it is a 3d output format, cjson is required
+            if 'cjson' not in molecule:
+                raise RestException('Molecule does not have 3D coordinates.',
+                                    404)
+
+            data = json.dumps(molecule['cjson'])
+            if output_format != 'cjson':
+                data = avogadro.convert_str(data, 'cjson', output_format)
+        else:
+            # Right now, all 2d output formats are stored in the molecule
+            data = molecule[output_format]
 
         def stream():
             cherrypy.response.headers['Content-Type'] = Molecule.mime_types[output_format]
@@ -350,7 +365,8 @@ class Molecule(Resource):
             Description('Get molecule in particular format.')
             .param('id', 'The id of the molecule', paramType='path')
             .param('output_format', 'The format to convert to', paramType='path')
-            .errorResponse('Output format not supported.', 400))
+            .errorResponse('Output format not supported.', 400)
+            .errorResponse('Molecule does not have 3D coordinates.', 404))
 
     @access.public
     @autoDescribeRoute(
