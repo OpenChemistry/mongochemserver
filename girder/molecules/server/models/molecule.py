@@ -20,6 +20,16 @@ class Molecule(AccessControlledModel):
     def validate(self, doc):
         return doc
 
+    def has_3d_coordinates(self, mol):
+        if ('cjson' in mol and
+            'atoms' in mol['cjson'] and
+            'coords' in mol['cjson']['atoms'] and
+            '3d' in mol['cjson']['atoms']['coords'] and
+            len(mol['cjson']['atoms']['coords']['3d']) > 0):
+            return True
+
+        return False
+
     def findmol(self, search = None):
         query = {}
         if search:
