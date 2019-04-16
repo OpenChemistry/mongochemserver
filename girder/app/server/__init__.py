@@ -1,16 +1,16 @@
 from .configuration import Configuration
 from girder.utility import setting_utilities
-from .constants import Features, Configuration as Conf
+from .constants import Features, Branding
 
 
 @setting_utilities.validator({
     Features.NOTEBOOKS,
-    Conf.PRIVACY,
-    Conf.LICENSE,
-    Conf.HEADER_LOGO_ID,
-    Conf.FOOTER_LOGO_ID,
-    Conf.FOOTER_LOGO_URL,
-    Conf.FAVICON_ID
+    Branding.PRIVACY,
+    Branding.LICENSE,
+    Branding.HEADER_LOGO_ID,
+    Branding.FOOTER_LOGO_ID,
+    Branding.FOOTER_LOGO_URL,
+    Branding.FAVICON_ID
 })
 def validateSettings(event):
     pass

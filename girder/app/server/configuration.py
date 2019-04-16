@@ -3,7 +3,7 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, RestException
 from girder.constants import AccessType, TokenScope
 from girder.models.setting import Setting
-from .constants import Features, Configuration as Conf
+from .constants import Features, Branding
 
 class Configuration(Resource):
 
@@ -17,25 +17,16 @@ class Configuration(Resource):
         Description('Get the deployment configuration.')
     )
     def get(self):
-        config = {
-            'notebooks': Setting().get(Features.NOTEBOOKS, True),
-            'license': Setting().get(Conf.LICENSE),
-            'privacy': Setting().get(Conf.PRIVACY),
-            'headerLogoFileId': Setting().get(Conf.HEADER_LOGO_ID),
-            'footerLogoFileId': Setting().get(Conf.FOOTER_LOGO_ID),
-            'footerLogoUrl': Setting().get(Conf.FOOTER_LOGO_URL),
-            'faviconFileId': Setting().get(Conf.FAVICON_ID)
-        }
         return  {
             'features': {
                 'notebooks': Setting().get(Features.NOTEBOOKS, True)
             },
-            'configuration': {
-                'license': Setting().get(Conf.LICENSE),
-                'privacy': Setting().get(Conf.PRIVACY),
-                'headerLogoFileId': Setting().get(Conf.HEADER_LOGO_ID),
-                'footerLogoFileId': Setting().get(Conf.FOOTER_LOGO_ID),
-                'footerLogoUrl': Setting().get(Conf.FOOTER_LOGO_URL),
-                'faviconFileId': Setting().get(Conf.FAVICON_ID)
+            'branding': {
+                'license': Setting().get(Branding.LICENSE),
+                'privacy': Setting().get(Branding.PRIVACY),
+                'headerLogoFileId': Setting().get(Branding.HEADER_LOGO_ID),
+                'footerLogoFileId': Setting().get(Branding.FOOTER_LOGO_ID),
+                'footerLogoUrl': Setting().get(Branding.FOOTER_LOGO_URL),
+                'faviconFileId': Setting().get(Branding.FAVICON_ID)
             }
         }

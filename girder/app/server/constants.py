@@ -1,7 +1,7 @@
 class Features:
     NOTEBOOKS = 'app.features.notebooks'
 
-class Configuration:
+class Branding:
     PRIVACY = 'app.configuration.privacy'
     LICENSE = 'app.configuration.license'
     HEADER_LOGO_ID = 'app.configuration.header.logo.file.id'
