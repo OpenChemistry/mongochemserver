@@ -3,7 +3,7 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, RestException
 from girder.constants import AccessType, TokenScope
 from girder.models.setting import Setting
-from .constants import Features
+from .constants import Features, Deployment
 
 class Configuration(Resource):
 
@@ -18,8 +18,12 @@ class Configuration(Resource):
     )
     def get(self):
         return {
+
             'features': {
                 'notebooks': Setting().get(Features.NOTEBOOKS, True)
+            },
+            'deployment': {
+                'site': Setting().get(Deployment.SITE, '')
             }
         }
 

@@ -1,10 +1,11 @@
 from .configuration import Configuration
 from girder.utility import setting_utilities
-from .constants import Features
+from .constants import Features, Deployment
 
 
 @setting_utilities.validator({
-    Features.NOTEBOOKS
+    Features.NOTEBOOKS,
+    Deployment.SITE
 })
 def validateSettings(event):
     pass
