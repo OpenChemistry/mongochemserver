@@ -1,6 +1,9 @@
 class Features:
     NOTEBOOKS = 'app.features.notebooks'
 
+class Deployment:
+    SITE = 'app.deployment.site'
+
 class Branding:
     PRIVACY = 'app.configuration.privacy'
     LICENSE = 'app.configuration.license'

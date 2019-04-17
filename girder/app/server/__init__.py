@@ -1,10 +1,11 @@
 from .configuration import Configuration
 from girder.utility import setting_utilities
-from .constants import Features, Branding
+from .constants import Features, Branding, Deployment
 
 
 @setting_utilities.validator({
     Features.NOTEBOOKS,
+    Deployment.SITE,
     Branding.PRIVACY,
     Branding.LICENSE,
     Branding.HEADER_LOGO_ID,
