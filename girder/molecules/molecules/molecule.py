@@ -31,7 +31,8 @@ class Molecule(Resource):
         'cml': 'chemical/x-cml',
         'xyz': 'chemical/x-xyz',
         'sdf': 'chemical/x-mdl-sdfile',
-        'cjson': 'application/json'
+        'cjson': 'application/json',
+        'svg': 'image/svg+xml'
     }
 
     def __init__(self):
@@ -41,6 +42,7 @@ class Molecule(Resource):
         self.route('GET', ('inchikey', ':inchikey'), self.find_inchikey)
         self.route('GET', (':id', ':output_format'), self.get_format)
         self.route('GET', (':id', ), self.find_id)
+        self.route('GET', (':id', 'svg'), self.get_svg)
         self.route('GET', ('search',), self.search)
         self.route('POST', (), self.create)
         self.route('DELETE', (':id',), self.delete)
@@ -52,6 +54,8 @@ class Molecule(Resource):
         del doc['access']
         if 'sdf' in doc:
             del doc['sdf']
+        if 'svg' in doc:
+            del doc['svg']
         doc['_id'] = str(doc['_id'])
         if 'cjson' in doc:
             if cjson:
@@ -190,12 +194,28 @@ class Molecule(Resource):
 
         body = self.getBodyJson()
 
-        # TODO this should be refactored to use $addToSet
-        if 'logs' in body:
-            logs = mol.setdefault('logs', [])
-            logs += body['logs']
+        query = {
+            '_id': mol['_id']
+        }
 
-        mol = MoleculeModel().update(mol)
+        updates = {
+            '$set': {},
+            '$addToSet': {}
+        }
+
+        if 'name' in body:
+            updates['$set']['name'] = body['name']
+
+        if 'logs' in body:
+            updates['$addToSet']['logs'] = body['logs']
+
+        # Remove unused keys
+        updates = {k: v for k, v in updates.items() if v}
+
+        super(MoleculeModel, MoleculeModel()).update(query, updates)
+
+        # Reload the molecule
+        mol = MoleculeModel().load(id, user=user)
 
         return self._clean(mol)
     addModel('Molecule', 'UpdateMoleculeParams', {
@@ -334,6 +354,32 @@ class Molecule(Resource):
             .errorResponse('Output format not supported.', 400))
 
     @access.public
+    @autoDescribeRoute(
+            Description('Get an SVG representation of a molecule.')
+            .param('id', 'The id of the molecule', paramType='path')
+            .errorResponse('Molecule not found.', 404)
+            .errorResponse('Molecule does not have SVG data.', 404))
+    def get_svg(self, id):
+        # For now will for force load ( i.e. ignore access control )
+        # This will change when we have access controls.
+        mol = MoleculeModel().load(id, force=True)
+
+        if not mol:
+            raise RestException('Molecule not found.', code=404)
+
+        if 'svg' not in mol:
+            raise RestException('Molecule does not have SVG data.', code=404)
+
+        data = mol['svg']
+
+        cherrypy.response.headers['Content-Type'] = Molecule.mime_types['svg']
+
+        def stream():
+            yield data.encode()
+
+        return stream
+
+    @access.public
     def search(self, params):
 
         query_string = params.get('q')
@@ -360,35 +406,15 @@ class Molecule(Resource):
         elif cactus:
             # Disable cert verification for now
             # TODO Ensure we have the right root certs so this just works.
-            r = requests.get('https://cactus.nci.nih.gov/chemical/structure/%s/sdf' % cactus, verify=False)
+            r = requests.get('https://cactus.nci.nih.gov/chemical/structure/%s/file?format=sdf' % cactus, verify=False)
 
             if r.status_code == 404:
                 return []
             else:
                 r.raise_for_status()
 
-            (inchi, inchikey) = openbabel.to_inchi(r.content.decode('utf8'), 'sdf')
-
-            smiles = openbabel.to_smiles(r.content.decode('utf8'), 'sdf')
-
-            # See if we already have a molecule
-            mol = MoleculeModel().find_inchikey(inchikey)
-
-            # Create new molecule
-            if mol is None:
-
-                cjson_str = avogadro.convert_str(r.content, 'sdf', 'cjson')
-                mol = {
-                    'cjson': json.loads(cjson_str),
-                    'inchi': inchi,
-                    'inchikey': inchikey,
-                    'smiles': smiles,
-                    'origin': 'cactus'
-                }
-
-                user = getCurrentUser()
-                if user is not None:
-                    mol = MoleculeModel().create(getCurrentUser(), mol, public=True)
+            sdf_data = r.content.decode('utf8')
+            mol = create_molecule(sdf_data, 'sdf', getCurrentUser(), True)
 
             return [mol]
 

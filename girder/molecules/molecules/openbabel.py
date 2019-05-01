@@ -1,10 +1,13 @@
 from girder.api.rest import RestException
 
+import json
 from openbabel import OBMol, OBConversion
 
 import pybel
 
 import re
+
+from .avogadro import convert_str as avo_convert_str
 
 inchi_validator = re.compile('InChI=[0-9]S?\/')
 
@@ -14,14 +17,16 @@ def validate_start_of_inchi(inchi):
     if not inchi_validator.match(inchi):
         raise RestException('Invalid InChI: "' + inchi +'"', 400)
 
-
 # gen3d should be true for 2D input formats such as inchi or smiles
-def convert_str(str_data, in_format, out_format, gen3d=False):
+def convert_str(str_data, in_format, out_format, gen3d=False, out_options=None):
 
     # Make sure that the start of InChI is valid before passing it to
     # Open Babel, or Open Babel will crash the server.
     if in_format.lower() == 'inchi':
         validate_start_of_inchi(str_data)
+
+    if out_options is None:
+        out_options = {}
 
     obMol = OBMol()
     conv = OBConversion()
@@ -34,7 +39,31 @@ def convert_str(str_data, in_format, out_format, gen3d=False):
         mol = pybel.Molecule(obMol)
         mol.make3D()
 
+    for option, value in out_options.items():
+        conv.AddOption(option, conv.OUTOPTIONS, value)
+
     return (conv.WriteString(obMol), conv.GetOutFormat().GetMIMEType())
+
+def cjson_to_ob_molecule(cjson):
+    cjson_str = json.dumps(cjson)
+    sdf_str = avo_convert_str(cjson_str, 'cjson', 'sdf')
+    conv = OBConversion()
+    conv.SetInFormat('sdf')
+    conv.SetOutFormat('sdf')
+    mol = OBMol()
+    conv.ReadString(mol, sdf_str)
+    return mol
+
+def autodetect_bonds(cjson):
+    mol = cjson_to_ob_molecule(cjson)
+    mol.ConnectTheDots()
+    mol.PerceiveBondOrders()
+    conv = OBConversion()
+    conv.SetInFormat('sdf')
+    conv.SetOutFormat('sdf')
+    sdf_str = conv.WriteString(mol)
+    cjson_str = avo_convert_str(sdf_str, 'sdf', 'cjson')
+    return json.loads(cjson_str)
 
 def to_inchi(str_data, in_format):
     mol = OBMol()
@@ -94,3 +123,10 @@ def get_formula(str_data, in_format):
     conv.ReadString(mol, str_data)
 
     return mol.GetFormula()
+
+def to_svg(str_data, in_format):
+    out_options = {
+        'b': 'none', # transparent background color
+        'B': 'black' # black bonds color
+    }
+    return convert_str(str_data, in_format, 'svg', out_options=out_options)[0]

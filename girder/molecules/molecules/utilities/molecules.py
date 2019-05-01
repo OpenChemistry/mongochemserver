@@ -59,21 +59,38 @@ def create_molecule(data_str, input_format, user, public):
 
         smiles = openbabel.to_smiles(sdf_data, sdf_format)
 
+        # Generate an svg file for an image
+        svg_data = openbabel.to_svg(smiles, 'smiles')
+
+        # Find the cjson version key
+        version_key = 'chemicalJson'
+        if version_key not in cjson:
+            if 'chemical json' in cjson:
+                version_key = 'chemical json'
+            else:
+                raise RestException('No "chemicalJson" key found', 400)
+
         # Whitelist parts of the CJSON that we store at the top level.
         cjsonmol = {}
         cjsonmol['atoms'] = cjson['atoms']
         cjsonmol['bonds'] = cjson['bonds']
-        cjsonmol['chemicalJson'] = cjson['chemicalJson']
+        cjsonmol['chemicalJson'] = cjson[version_key]
         mol_dict = {
-            'name': chemspider.find_common_name(inchikey, props['formula']),
             'inchi': inchi,
             'inchikey': inchikey,
             'smiles': smiles,
             sdf_format: sdf_data,
             'cjson': cjsonmol,
             'properties': props,
-            'atomCounts': atomCounts
+            'atomCounts': atomCounts,
+            'svg': svg_data
         }
+
+        # Set a name if we find one
+        name = chemspider.find_common_name(inchikey)
+        if name is not None:
+            mol_dict['name'] = name
+
         mol = MoleculeModel().create(user, mol_dict, public)
 
         # Upload the molecule to virtuoso

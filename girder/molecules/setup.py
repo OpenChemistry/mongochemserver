@@ -9,11 +9,14 @@ setup(
       'girder>=3.0.0a5',
       'jsonpath-rw==1.4.0',
       'avogadro==1.92.1',
-      'openbabel==1.8.2',
+      'openbabel==2.4.1',
       'chemspipy==1.0.4',
       'pyparsing==2.0.5',
       'rdflib==4.2.1',
-      'openchemistry'
+      'openchemistry',
+      'beautifulsoup4',
+      'jcamp',
+      'requests'
     ],
     entry_points={
       'girder.plugin': [

@@ -36,8 +36,10 @@ class Molecule(AccessControlledModel):
         mols = list()
         for mol in cursor:
             molecule = { '_id': mol['_id'], 'inchikey': mol.get('inchikey'),
-                         'smiles': mol.get('smiles'), 'name': mol.get('name'),
+                         'smiles': mol.get('smiles'),
                          'properties': mol.get('properties') }
+            if 'name' in mol:
+                molecule['name'] = mol['name']
             mols.append(molecule)
         return mols
 
