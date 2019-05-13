@@ -255,8 +255,8 @@ def test_get_molecule(server, molecule, user):
     assertStatusOk(r)
 
     # There should be exactly one
-    assert len(r.json) == 1
-    mol = r.json[0]
+    assert len(r.json['results']) == 1
+    mol = r.json['results'][0]
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
@@ -271,8 +271,8 @@ def test_get_molecule(server, molecule, user):
     assertStatusOk(r)
 
     # There should be exactly one
-    assert len(r.json) == 1
-    mol = r.json[0]
+    assert len(r.json['results']) == 1
+    mol = r.json['results'][0]
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
@@ -286,8 +286,8 @@ def test_get_molecule(server, molecule, user):
     assertStatusOk(r)
 
     # There should be exactly one
-    assert len(r.json) == 1
-    mol = r.json[0]
+    assert len(r.json['results']) == 1
+    mol = r.json['results'][0]
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
@@ -301,8 +301,8 @@ def test_get_molecule(server, molecule, user):
     assertStatusOk(r)
 
     # There should be exactly one
-    assert len(r.json) == 1
-    mol = r.json[0]
+    assert len(r.json['results']) == 1
+    mol = r.json['results'][0]
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
@@ -316,8 +316,8 @@ def test_get_molecule(server, molecule, user):
     assertStatusOk(r)
 
     # There should be exactly one
-    assert len(r.json) == 1
-    mol = r.json[0]
+    assert len(r.json['results']) == 1
+    mol = r.json['results'][0]
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
