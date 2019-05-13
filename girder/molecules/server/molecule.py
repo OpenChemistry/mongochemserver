@@ -114,6 +114,7 @@ class Molecule(Resource):
         body = self.getBodyJson()
         user = self.getCurrentUser()
         public = body.get('public', False)
+        gen3d = body.get('generate3D', True)
         mol = None
         if 'fileId' in body:
             file_id = body['fileId']
@@ -128,20 +129,20 @@ class Molecule(Resource):
             with File().open(file) as f:
                 data_str = f.read().decode()
 
-            mol = create_molecule(data_str, input_format, user, public)
+            mol = create_molecule(data_str, input_format, user, public, gen3d)
         elif 'inchi' in body:
             input_format = 'inchi'
             data = body['inchi']
             if not data.startswith('InChI='):
                 data = 'InChI=' + data
 
-            mol = create_molecule(data, input_format, user, public)
+            mol = create_molecule(data, input_format, user, public, gen3d)
 
         for key in body:
             if key in Molecule.input_formats:
                 input_format = key
                 data = body[input_format]
-                mol = create_molecule(data, input_format,  user, public)
+                mol = create_molecule(data, input_format,  user, public, gen3d)
                 break
 
         if not mol:

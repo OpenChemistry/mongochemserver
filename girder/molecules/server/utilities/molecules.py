@@ -25,7 +25,7 @@ openbabel_3d_formats = [
 ]
 
 
-def create_molecule(data_str, input_format, user, public):
+def create_molecule(data_str, input_format, user, public, gen3d=True):
 
     using_2d_format = (input_format in openbabel_2d_formats)
     smiles_format = 'smiles'
@@ -87,7 +87,8 @@ def create_molecule(data_str, input_format, user, public):
 
         if not cjson and using_2d_format:
             # Generate 3d coordinates in a background thread
-            schedule_3d_coords_gen(mol_dict, user)
+            if gen3d:
+                schedule_3d_coords_gen(mol_dict, user)
             # This will be complete other than the cjson
             return MoleculeModel().create(user, mol_dict, public)
         else:
