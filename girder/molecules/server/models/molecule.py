@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import re
+import datetime
 import json
+import re
 
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.constants import AccessType
@@ -23,7 +24,7 @@ class Molecule(AccessControlledModel):
     def findmol(self, search = None):
         limit = 25
         offset = 0
-        sort = [('name', 1)]
+        sort = [('created', -1)]
 
         query = {}
         if search:
@@ -90,6 +91,9 @@ class Molecule(AccessControlledModel):
         self.setUserAccess(mol, user=user, level=AccessType.ADMIN)
         if public:
             self.setPublic(mol, True)
+
+        mol['created'] = datetime.datetime.utcnow()
+
         self.save(mol)
         return mol
 

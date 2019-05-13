@@ -11,6 +11,7 @@ from girder.api.rest import Resource
 from girder.api.rest import RestException, loadmodel, getCurrentUser
 from girder.api import access
 from girder.constants import AccessType
+from girder.constants import SortDir
 from girder.constants import TerminalColor
 from girder.models.file import File
 from . import avogadro
@@ -80,7 +81,9 @@ class Molecule(Resource):
                    required=False)
             .param('smiles', 'The SMILES of the molecule', paramType='query',
                    required=False)
-            .pagingParams(defaultSort='lowerName', defaultLimit=25)
+            .pagingParams(defaultSort='created',
+                          defaultSortDir=SortDir.DESCENDING,
+                          defaultLimit=25)
             .errorResponse())
 
     @access.public
