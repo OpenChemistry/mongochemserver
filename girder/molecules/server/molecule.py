@@ -80,9 +80,7 @@ class Molecule(Resource):
                    required=False)
             .param('smiles', 'The SMILES of the molecule', paramType='query',
                    required=False)
-            .param('limit', 'Limit the search results (default: 25)',
-                   required=False)
-            .param('offset', 'Offset the search results', required=False)
+            .pagingParams(defaultSort='lowerName', defaultLimit=25)
             .errorResponse())
 
     @access.public

@@ -23,6 +23,7 @@ class Molecule(AccessControlledModel):
     def findmol(self, search = None):
         limit = 25
         offset = 0
+        sort = [('name', 1)]
 
         query = {}
         if search:
@@ -39,8 +40,10 @@ class Molecule(AccessControlledModel):
                 limit = int(search['limit'])
             if 'offset' in search:
                 offset = int(search['offset'])
+            if 'sort' in search and 'sortdir' in search:
+                sort = [(search['sort'], int(search['sortdir']))]
 
-        cursor = self.find(query, limit=limit, offset=offset)
+        cursor = self.find(query, limit=limit, offset=offset, sort=sort)
         mols = list()
         for mol in cursor:
             molecule = { '_id': mol['_id'], 'inchikey': mol.get('inchikey'),
