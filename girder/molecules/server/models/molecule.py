@@ -22,9 +22,7 @@ class Molecule(AccessControlledModel):
         return doc
 
     def findmol(self, search = None):
-        limit = 25
-        offset = 0
-        sort = [('created', -1)]
+        limit, offset, sort = self._parse_pagination_params(search)
 
         query = {}
         if search:
@@ -37,12 +35,6 @@ class Molecule(AccessControlledModel):
             if 'smiles' in search:
                 # Make sure it is canonical before searching
                 query['smiles'] = openbabel.to_smiles(search['smiles'], 'smi')
-            if 'limit' in search:
-                limit = int(search['limit'])
-            if 'offset' in search:
-                offset = int(search['offset'])
-            if 'sort' in search and 'sortdir' in search:
-                sort = [(search['sort'], int(search['sortdir']))]
 
         cursor = self.find(query, limit=limit, offset=offset, sort=sort)
         mols = list()
@@ -54,14 +46,7 @@ class Molecule(AccessControlledModel):
                 molecule['name'] = mol['name']
             mols.append(molecule)
 
-        results = {
-            'matches': len(mols),
-            'limit': limit,
-            'offset': offset,
-            'results': mols
-        }
-
-        return results
+        return self._get_search_results_dict(mols, limit, offset, sort)
 
     def find_inchi(self, inchi):
         query = { 'inchi': inchi }
@@ -73,14 +58,17 @@ class Molecule(AccessControlledModel):
         mol = self.findOne(query)
         return mol
 
-    def find_formula(self, formula, user):
+    def find_formula(self, formula, user, limit, offset, sort):
         formula_regx = re.compile('^%s$' % formula, re.IGNORECASE)
         query = {
             'properties.formula': formula_regx
         }
-        mols = self.find(query)
+        mols = self.find(query, limit=limit, offset=offset, sort=sort)
 
-        return self.filterResultsByPermission(mols, user, level=AccessType.READ)
+        mols = list(self.filterResultsByPermission(mols, user,
+                                                   level=AccessType.READ))
+
+        return self._get_search_results_dict(mols, limit, offset, sort)
 
     def create(self, user, mol, public=False):
 
@@ -122,3 +110,32 @@ class Molecule(AccessControlledModel):
             }
         }
         super(Molecule, self).update(query, update)
+
+    def _parse_pagination_params(self, params):
+        """Parse params and get (limit, offset, sort)
+
+        The defaults will be returned if not found in params.
+        """
+        # Defaults
+        limit = 25
+        offset = 0
+        sort = [('created', -1)]
+        if params:
+            if 'limit' in params:
+                limit = int(params['limit'])
+            if 'offset' in params:
+                offset = int(params['offset'])
+            if 'sort' in params and 'sortdir' in params:
+                sort = [(params['sort'], int(params['sortdir']))]
+
+        return limit, offset, sort
+
+    def _get_search_results_dict(self, mols, limit, offset, sort):
+        """This is for consistent search results"""
+        results = {
+            'matches': len(mols),
+            'limit': limit,
+            'offset': offset,
+            'results': mols
+        }
+        return results

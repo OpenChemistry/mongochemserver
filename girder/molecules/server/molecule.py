@@ -384,6 +384,7 @@ class Molecule(Resource):
 
     @access.public
     def search(self, params):
+        limit, offset, sort = MoleculeModel()._parse_pagination_params(params)
 
         query_string = params.get('q')
         formula = params.get('formula')
@@ -398,14 +399,20 @@ class Molecule(Resource):
                 raise RestException('Invalid query', 400)
 
             mols = []
-            for mol in MoleculeModel().find(query=mongo_query, fields = ['_id', 'inchikey', 'name']):
+            for mol in MoleculeModel().find(query=mongo_query,
+                                            fields=['_id', 'inchikey', 'name'],
+                                            limit=limit, offset=offset,
+                                            sort=sort):
                 mols.append(mol)
 
-            return mols
+            return MoleculeModel()._get_search_results_dict(mols, limit,
+                                                            offset, sort)
 
         elif formula:
             # Search using formula
-            return list(MoleculeModel().find_formula(formula, getCurrentUser()))
+            return MoleculeModel().find_formula(formula, getCurrentUser(),
+                                                limit=limit, offset=offset,
+                                                sort=sort)
         elif cactus:
             # Disable cert verification for now
             # TODO Ensure we have the right root certs so this just works.
@@ -419,11 +426,15 @@ class Molecule(Resource):
             sdf_data = r.content.decode('utf8')
             mol = create_molecule(sdf_data, 'sdf', getCurrentUser(), True)
 
-            return [mol]
+            return MoleculeModel()._get_search_results_dict([mol], limit,
+                                                            offset, sort)
 
 
     search.description = (
             Description('Search for molecules using a query string or formula')
             .param('q', 'The query string to use for this search', paramType='query', required=False)
             .param('formula', 'The formula (using the "Hill Order") to search for', paramType='query', required=False)
-            .param('cactus', 'The identifier to pass to cactus', paramType='query', required=False))
+            .param('cactus', 'The identifier to pass to cactus', paramType='query', required=False)
+            .pagingParams(defaultSort='created',
+                          defaultSortDir=SortDir.DESCENDING,
+                          defaultLimit=25))

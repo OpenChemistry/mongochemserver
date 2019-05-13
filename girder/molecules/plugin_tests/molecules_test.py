@@ -419,8 +419,8 @@ def test_search_molecule_formula(server, molecule, user):
     assertStatusOk(r)
 
     # Should just be one
-    assert len(r.json) == 1
-    mol = r.json[0]
+    assert r.json['matches'] == 1
+    mol = r.json['results'][0]
 
     # Everything should match
     assert mol.get('_id') == _id
