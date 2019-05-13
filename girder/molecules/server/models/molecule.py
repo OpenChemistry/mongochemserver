@@ -21,6 +21,9 @@ class Molecule(AccessControlledModel):
         return doc
 
     def findmol(self, search = None):
+        limit = 25
+        offset = 0
+
         query = {}
         if search:
             if 'name' in search:
@@ -32,7 +35,12 @@ class Molecule(AccessControlledModel):
             if 'smiles' in search:
                 # Make sure it is canonical before searching
                 query['smiles'] = openbabel.to_smiles(search['smiles'], 'smi')
-        cursor = self.find(query)
+            if 'limit' in search:
+                limit = int(search['limit'])
+            if 'offset' in search:
+                offset = int(search['offset'])
+
+        cursor = self.find(query, limit=limit, offset=offset)
         mols = list()
         for mol in cursor:
             molecule = { '_id': mol['_id'], 'inchikey': mol.get('inchikey'),
@@ -41,7 +49,15 @@ class Molecule(AccessControlledModel):
             if 'name' in mol:
                 molecule['name'] = mol['name']
             mols.append(molecule)
-        return mols
+
+        results = {
+            'matches': len(mols),
+            'limit': limit,
+            'offset': offset,
+            'results': mols
+        }
+
+        return results
 
     def find_inchi(self, inchi):
         query = { 'inchi': inchi }
