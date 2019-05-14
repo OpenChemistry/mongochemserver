@@ -3,7 +3,8 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, RestException
 from girder.constants import AccessType, TokenScope
 from girder.models.setting import Setting
-from .constants import Features
+from .constants import Features, Deployment, Branding
+
 
 class Configuration(Resource):
 
@@ -20,6 +21,17 @@ class Configuration(Resource):
         return {
             'features': {
                 'notebooks': Setting().get(Features.NOTEBOOKS, True)
+            },
+            'deployment': {
+                'site': Setting().get(Deployment.SITE, '')
+            },
+            'branding': {
+                'license': Setting().get(Branding.LICENSE),
+                'privacy': Setting().get(Branding.PRIVACY),
+                'headerLogoFileId': Setting().get(Branding.HEADER_LOGO_ID),
+                'footerLogoFileId': Setting().get(Branding.FOOTER_LOGO_ID),
+                'footerLogoUrl': Setting().get(Branding.FOOTER_LOGO_URL),
+                'faviconFileId': Setting().get(Branding.FAVICON_ID)
+
             }
         }
-
