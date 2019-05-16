@@ -1,7 +1,7 @@
 FROM girder/girder:latest-py3
 
 # Install cumulus
-RUN git clone -b migrate-to-girder-3.x https://github.com/Kitware/cumulus.git /cumulus && \
+RUN git clone https://github.com/Kitware/cumulus.git /cumulus && \
   pip install --no-cache-dir -r /cumulus/requirements.txt && \
   pip install --no-cache-dir -e /cumulus && \
   pip install --no-cache-dir -e /cumulus/girder/cumulus && \
