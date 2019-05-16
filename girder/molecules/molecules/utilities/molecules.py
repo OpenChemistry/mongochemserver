@@ -9,7 +9,7 @@ from .. import openbabel
 from .. import chemspider
 from .. import semantic
 from .. import constants
-from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
+from molecules.models.molecule import Molecule as MoleculeModel
 from girder.constants import TerminalColor
 
 

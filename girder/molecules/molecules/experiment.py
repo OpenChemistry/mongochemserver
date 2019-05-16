@@ -8,11 +8,12 @@ from girder.api import access
 from girder.api.rest import Resource
 from girder.api.rest import RestException, getBodyJson, getCurrentUser, \
     loadmodel
-from girder.models.model_base import ModelImporter, ValidationException
+from girder.models.model_base import ValidationException
 from girder.models.file import File
+from girder.utility.model_importer import ModelImporter
 from girder.constants import AccessType, TokenScope
 
-from girder.plugins.molecules.models.experimental import Experimental
+from molecules.models.experimental import Experimental
 
 
 class Experiment(Resource):
@@ -23,13 +24,13 @@ class Experiment(Resource):
         self.route('POST', (), self.create)
         self.route('GET', (), self.find_experiment)
 
-        self._model = self.model('experimental', 'molecules')
+        self._model = ModelImporter.model('experimental', 'molecules')
 
     def _process_experimental(self, doc):
         facility_used = parse('experiment.experimentalEnvironment.facilityUsed').find(doc)[0].value
         experiments = parse('experiment.experiments').find(doc)[0].value
 
-        experiment_model = self.model('experimental', 'molecules')
+        experiment_model = ModelImporter.model('experimental', 'molecules')
 
         experiments_list = []
         for experiment in experiments:

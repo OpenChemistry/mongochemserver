@@ -1,6 +1,7 @@
 from jsonschema import validate, ValidationError
 
 from girder.models.model_base import AccessControlledModel, ValidationException
+from girder.utility.model_importer import ModelImporter
 from girder.models.file import File
 from girder.models.item import Item
 from girder.models.folder import Folder
@@ -74,7 +75,7 @@ class Calculation(AccessControlledModel):
 
         # If we have a moleculeId check it valid
         if 'moleculeId' in doc:
-            mol = self.model('molecule', 'molecules').load(doc['moleculeId'],
+            mol = ModelImporter.model('molecule', 'molecules').load(doc['moleculeId'],
                                                            force=True)
             doc['moleculeId'] = mol['_id']
 

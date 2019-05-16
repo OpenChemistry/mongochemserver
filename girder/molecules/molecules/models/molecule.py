@@ -6,8 +6,8 @@ from jsonpath_rw import parse
 
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.constants import AccessType
-from girder.plugins.molecules import avogadro
-from girder.plugins.molecules import openbabel
+from molecules import avogadro
+from molecules import openbabel
 
 class Molecule(AccessControlledModel):
 

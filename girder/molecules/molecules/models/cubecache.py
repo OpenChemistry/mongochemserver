@@ -2,6 +2,7 @@ from jsonschema import validate, ValidationError
 from bson.objectid import ObjectId
 
 from girder.models.model_base import AccessControlledModel, ValidationException
+from girder.utility.model_importer import ModelImporter
 from girder.constants import AccessType
 
 class Cubecache(AccessControlledModel):
@@ -27,7 +28,7 @@ class Cubecache(AccessControlledModel):
     def validate(self, doc):
         # If we have a calculationId check it is valid.
         if 'calculationId' in doc:
-            calc = self.model('calculation', 'molecules').load(doc['calculationId'],
+            calc = ModelImporter.model('calculation', 'molecules').load(doc['calculationId'],
                                                                force=True)
             doc['calculationId'] = calc['_id']
 
