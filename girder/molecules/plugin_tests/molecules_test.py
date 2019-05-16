@@ -26,7 +26,7 @@ from pytest_girder.assertions import assertStatusOk, assertStatus
 
 @pytest.mark.plugin('molecules')
 def test_create_molecule_xyz(server, user):
-    from girder.plugins.molecules.models.molecule import Molecule
+    from molecules.models.molecule import Molecule
     from girder.constants import AccessType
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -72,7 +72,7 @@ def test_create_molecule_xyz(server, user):
 
 @pytest.mark.plugin('molecules')
 def test_create_molecule_file_id(server, user, fsAssetstore, make_girder_file):
-    from girder.plugins.molecules.models.molecule import Molecule
+    from molecules.models.molecule import Molecule
     from girder.constants import AccessType
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -128,7 +128,7 @@ def test_create_molecule_file_id(server, user, fsAssetstore, make_girder_file):
 
 @pytest.mark.plugin('molecules')
 def test_create_molecule_inchi(server, user):
-    from girder.plugins.molecules.models.molecule import Molecule
+    from molecules.models.molecule import Molecule
     from girder.constants import AccessType
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -180,7 +180,7 @@ def test_create_molecule_inchi(server, user):
 
 @pytest.mark.plugin('molecules')
 def test_create_molecule_smiles(server, user):
-    from girder.plugins.molecules.models.molecule import Molecule
+    from molecules.models.molecule import Molecule
     from girder.constants import AccessType
 
     dir_path = os.path.dirname(os.path.realpath(__file__))

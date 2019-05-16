@@ -9,9 +9,9 @@ from girder.constants import AccessType, TokenScope
 from girder.constants import TerminalColor
 from girder.models.file import File
 
-from girder.plugins.queues.models.queue import Queue as QueueModel
-from girder.plugins.queues.models.queue import QueueType, TaskStatus
-from girder.plugins.taskflow.models.taskflow import Taskflow as TaskflowModel
+from queues.models.queue import Queue as QueueModel
+from queues.models.queue import QueueType, TaskStatus
+from taskflow.models.taskflow import Taskflow as TaskflowModel
 
 from cumulus.taskflow import load_class
 import cumulus

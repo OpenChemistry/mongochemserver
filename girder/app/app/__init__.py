@@ -2,6 +2,7 @@ from .configuration import Configuration
 from girder.utility import setting_utilities
 from .constants import Features, Branding, Deployment
 
+from girder.plugin import GirderPlugin
 
 @setting_utilities.validator({
     Features.NOTEBOOKS,
@@ -16,5 +17,8 @@ from .constants import Features, Branding, Deployment
 def validateSettings(event):
     pass
 
-def load(info):
-    info['apiRoot'].configuration = Configuration()
+class AppPlugin(GirderPlugin):
+    DISPLAY_NAME = 'OpenChemistry App'
+
+    def load(self, info):
+        info['apiRoot'].configuration = Configuration()
