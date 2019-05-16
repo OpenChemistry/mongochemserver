@@ -14,6 +14,7 @@ class Molecule(AccessControlledModel):
     def __init__(self):
         super(Molecule, self).__init__()
         self.ensureIndex('properties.formula')
+        self.ensureIndex('created')
 
     def initialize(self):
         self.name = 'molecules'
