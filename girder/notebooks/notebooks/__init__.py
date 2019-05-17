@@ -3,6 +3,7 @@ import glob
 from bson.objectid import ObjectId
 
 from girder import events
+from girder.constants import TerminalColor
 from girder.exceptions import GirderException
 from girder.models.assetstore import Assetstore
 from girder.models.folder import Folder
@@ -18,7 +19,8 @@ def createNotebooks(event):
     try:
         Assetstore().getCurrent()
     except GirderException:
-        print('Warning: no current asset store. Notebook will not be created.')
+        print(TerminalColor.warning('WARNING: no current asset store. '
+                                    'Notebook will not be created.'))
         return
 
     user = event.info
