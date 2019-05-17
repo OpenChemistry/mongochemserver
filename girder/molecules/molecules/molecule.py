@@ -88,7 +88,7 @@ class Molecule(Resource):
                    required=False)
             .param('smiles', 'The SMILES of the molecule', paramType='query',
                    required=False)
-            .pagingParams(defaultSort='created',
+            .pagingParams(defaultSort='_id',
                           defaultSortDir=SortDir.DESCENDING,
                           defaultLimit=25)
             .errorResponse())
@@ -452,6 +452,6 @@ class Molecule(Resource):
             .param('q', 'The query string to use for this search', paramType='query', required=False)
             .param('formula', 'The formula (using the "Hill Order") to search for', paramType='query', required=False)
             .param('cactus', 'The identifier to pass to cactus', paramType='query', required=False)
-            .pagingParams(defaultSort='created',
+            .pagingParams(defaultSort='_id',
                           defaultSortDir=SortDir.DESCENDING,
                           defaultLimit=25))

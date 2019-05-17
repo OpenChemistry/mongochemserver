@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import datetime
 import json
 from jsonpath_rw import parse
 import re
@@ -15,7 +14,6 @@ class Molecule(AccessControlledModel):
     def __init__(self):
         super(Molecule, self).__init__()
         self.ensureIndex('properties.formula')
-        self.ensureIndex('created')
 
     def initialize(self):
         self.name = 'molecules'
@@ -82,8 +80,6 @@ class Molecule(AccessControlledModel):
         if public:
             self.setPublic(mol, True)
 
-        mol['created'] = datetime.datetime.utcnow()
-
         self.save(mol)
         return mol
 
@@ -135,7 +131,7 @@ class Molecule(AccessControlledModel):
         # Defaults
         limit = 25
         offset = 0
-        sort = [('created', -1)]
+        sort = [('_id', -1)]
         if params:
             if 'limit' in params:
                 limit = int(params['limit'])
