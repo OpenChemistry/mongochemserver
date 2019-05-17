@@ -22,6 +22,8 @@ from . import query
 from . import semantic
 from . import constants
 from molecules.utilities.molecules import create_molecule
+from molecules.utilities.pagination import parse_pagination_params
+from molecules.utilities.pagination import search_results_dict
 
 from molecules.models.molecule import Molecule as MoleculeModel
 
@@ -401,7 +403,7 @@ class Molecule(Resource):
 
     @access.public
     def search(self, params):
-        limit, offset, sort = MoleculeModel()._parse_pagination_params(params)
+        limit, offset, sort = parse_pagination_params(params)
 
         query_string = params.get('q')
         formula = params.get('formula')
@@ -422,8 +424,7 @@ class Molecule(Resource):
                                             sort=sort):
                 mols.append(mol)
 
-            return MoleculeModel()._get_search_results_dict(mols, limit,
-                                                            offset, sort)
+            return search_results_dict(mols, limit, offset, sort)
 
         elif formula:
             # Search using formula
@@ -443,8 +444,7 @@ class Molecule(Resource):
             sdf_data = r.content.decode('utf8')
             mol = create_molecule(sdf_data, 'sdf', getCurrentUser(), True)
 
-            return MoleculeModel()._get_search_results_dict([mol], limit,
-                                                            offset, sort)
+            return search_results_dict([mol], limit, offset, sort)
 
 
     search.description = (
