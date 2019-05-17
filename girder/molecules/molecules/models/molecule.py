@@ -9,6 +9,9 @@ from girder.constants import AccessType
 from molecules import avogadro
 from molecules import openbabel
 
+from molecules.utilities.pagination import parse_pagination_params
+from molecules.utilities.pagination import search_results_dict
+
 class Molecule(AccessControlledModel):
 
     def __init__(self):
@@ -22,7 +25,7 @@ class Molecule(AccessControlledModel):
         return doc
 
     def findmol(self, search = None):
-        limit, offset, sort = self._parse_pagination_params(search)
+        limit, offset, sort = parse_pagination_params(search)
 
         query = {}
         if search:
@@ -46,7 +49,7 @@ class Molecule(AccessControlledModel):
                 molecule['name'] = mol['name']
             mols.append(molecule)
 
-        return self._get_search_results_dict(mols, limit, offset, sort)
+        return search_results_dict(mols, limit, offset, sort)
 
     def find_inchi(self, inchi):
         query = { 'inchi': inchi }
@@ -68,7 +71,7 @@ class Molecule(AccessControlledModel):
         mols = list(self.filterResultsByPermission(mols, user,
                                                    level=AccessType.READ))
 
-        return self._get_search_results_dict(mols, limit, offset, sort)
+        return search_results_dict(mols, limit, offset, sort)
 
     def create(self, user, mol, public=False):
 
@@ -122,32 +125,3 @@ class Molecule(AccessControlledModel):
     def has_3d_coords(self, mol):
         # This functions properly if passed None
         return self.cjson_has_3d_coords(mol.get('cjson'))
-
-    def _parse_pagination_params(self, params):
-        """Parse params and get (limit, offset, sort)
-
-        The defaults will be returned if not found in params.
-        """
-        # Defaults
-        limit = 25
-        offset = 0
-        sort = [('_id', -1)]
-        if params:
-            if 'limit' in params:
-                limit = int(params['limit'])
-            if 'offset' in params:
-                offset = int(params['offset'])
-            if 'sort' in params and 'sortdir' in params:
-                sort = [(params['sort'], int(params['sortdir']))]
-
-        return limit, offset, sort
-
-    def _get_search_results_dict(self, mols, limit, offset, sort):
-        """This is for consistent search results"""
-        results = {
-            'matches': len(mols),
-            'limit': limit,
-            'offset': offset,
-            'results': mols
-        }
-        return results
