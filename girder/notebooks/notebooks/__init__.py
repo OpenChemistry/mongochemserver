@@ -3,6 +3,8 @@ import glob
 from bson.objectid import ObjectId
 
 from girder import events
+from girder.exceptions import GirderException
+from girder.models.assetstore import Assetstore
 from girder.models.folder import Folder
 from girder.models.upload import Upload
 from girder.plugin import GirderPlugin
@@ -11,6 +13,13 @@ from girder.utility.path import lookUpPath
 from .rest import Notebook
 
 def createNotebooks(event):
+
+    # If there is no current asset store, just return
+    try:
+        Assetstore().getCurrent()
+    except GirderException:
+        return
+
     user = event.info
     folder_model = Folder()
 
