@@ -18,6 +18,7 @@ def createNotebooks(event):
     try:
         Assetstore().getCurrent()
     except GirderException:
+        print('Warning: no current asset store. Notebook will not be created.')
         return
 
     user = event.info
