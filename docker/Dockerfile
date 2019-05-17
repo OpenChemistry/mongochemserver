@@ -22,7 +22,7 @@ RUN apt-get update && apt-get -y install \
   libopenbabel-dev
 
 # Enable proxy support
-COPY docker/girder.local.conf /girder/girder/conf/girder.local.cfg
+COPY docker/girder.local.conf /etc/girder.cfg
 
 # Copy over mongochemserver
 COPY . /mongochemserver
