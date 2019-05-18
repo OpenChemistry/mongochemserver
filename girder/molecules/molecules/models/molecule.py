@@ -79,6 +79,10 @@ class Molecule(AccessControlledModel):
             props = avogadro.molecule_properties(json.dumps(mol.get('cjson')), 'cjson')
             mol['properties'] = props
 
+        # This must be converted to a string, otherwise we will not be able to
+        # search for it via query in self.find()
+        mol['creatorId'] = str(user['_id'])
+
         self.setUserAccess(mol, user=user, level=AccessType.ADMIN)
         if public:
             self.setPublic(mol, True)
