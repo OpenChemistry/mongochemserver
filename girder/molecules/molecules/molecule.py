@@ -90,6 +90,8 @@ class Molecule(Resource):
                    required=False)
             .param('smiles', 'The SMILES of the molecule', paramType='query',
                    required=False)
+            .param('creatorId', 'The id of the user that created the molecule',
+                   paramType='query', required=False)
             .pagingParams(defaultSort='_id',
                           defaultSortDir=SortDir.DESCENDING,
                           defaultLimit=25)

@@ -38,6 +38,8 @@ class Molecule(AccessControlledModel):
             if 'smiles' in search:
                 # Make sure it is canonical before searching
                 query['smiles'] = openbabel.to_smiles(search['smiles'], 'smi')
+            if 'creatorId' in search:
+                query['creatorId'] = search['creatorId']
 
         cursor = self.find(query, limit=limit, offset=offset, sort=sort)
         mols = list()
