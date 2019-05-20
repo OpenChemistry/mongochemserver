@@ -37,7 +37,7 @@ def schedule_3d_coords_gen(mol, user):
         kwargs={
             'mol': job_mol
         },
-        async=True)
+        asynchronous=True)
     Job().scheduleJob(job)
     return job
 
