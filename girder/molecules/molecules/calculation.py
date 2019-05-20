@@ -425,7 +425,7 @@ class Calculation(Resource):
             query['input.geometryHash'] = inputGeometryHash
 
         if creatorId:
-            query['creatorId'] = creatorId
+            query['creatorId'] = ObjectId(creatorId)
 
         if pending is not None:
             pending = toBool(pending)
