@@ -5,7 +5,8 @@ from .. import avogadro
 from .. import openbabel
 from .. import chemspider
 from .. import semantic
-from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
+from .. import constants
+from molecules.models.molecule import Molecule as MoleculeModel
 from girder.constants import TerminalColor
 from girder.api.rest import RestException
 

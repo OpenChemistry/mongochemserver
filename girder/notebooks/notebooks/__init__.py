@@ -3,14 +3,26 @@ import glob
 from bson.objectid import ObjectId
 
 from girder import events
+from girder.constants import TerminalColor
+from girder.exceptions import GirderException
+from girder.models.assetstore import Assetstore
 from girder.models.folder import Folder
 from girder.models.upload import Upload
+from girder.plugin import GirderPlugin
 from girder.utility.path import lookUpPath
 
 from .rest import Notebook
 
-
 def createNotebooks(event):
+
+    # If there is no current asset store, just return
+    try:
+        Assetstore().getCurrent()
+    except GirderException:
+        print(TerminalColor.warning('WARNING: no current asset store. '
+                                    'Notebook will not be created.'))
+        return
+
     user = event.info
     folder_model = Folder()
 
@@ -41,8 +53,10 @@ def createNotebooks(event):
                 parent={'_id': ObjectId(notebook_folder['_id'])}, user=user,
                 mimeType='application/x-ipynb+json')
 
-def load(info):
-    events.bind('model.user.save.created', 'notebooks', createNotebooks)
+class NotebooksPlugin(GirderPlugin):
+    DISPLAY_NAME = 'Sample Open Chemistry Notebooks'
 
-    info['apiRoot'].notebooks = Notebook()
+    def load(self, info):
+        events.bind('model.user.save.created', 'notebooks', createNotebooks)
 
+        info['apiRoot'].notebooks = Notebook()

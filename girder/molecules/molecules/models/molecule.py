@@ -2,11 +2,12 @@
 
 import re
 import json
+from jsonpath_rw import parse
 
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.constants import AccessType
-from girder.plugins.molecules import avogadro
-from girder.plugins.molecules import openbabel
+from molecules import avogadro
+from molecules import openbabel
 
 class Molecule(AccessControlledModel):
 
@@ -99,3 +100,17 @@ class Molecule(AccessControlledModel):
             }
         }
         super(Molecule, self).update(query, update)
+
+    def cjson_has_3d_coords(self, cjson):
+        # jsonpath_rw won't let us parse "3d" because it has
+        # issues parsing keys that start with a number...
+        # If this changes in the future, fix this
+        coords = parse('atoms.coords').find(cjson)
+        if (coords and '3d' in coords[0].value and
+            len(coords[0].value['3d']) > 0):
+            return True
+        return False
+
+    def has_3d_coords(self, mol):
+        # This functions properly if passed None
+        return self.cjson_has_3d_coords(mol.get('cjson'))

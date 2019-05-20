@@ -9,6 +9,8 @@ import re
 
 from .avogadro import convert_str as avo_convert_str
 
+from .models.molecule import Molecule as MoleculeModel
+
 inchi_validator = re.compile('InChI=[0-9]S?\/')
 
 # This function only validates the first part. It does not guarantee
@@ -67,6 +69,10 @@ def cjson_to_ob_molecule(cjson):
     return mol
 
 def autodetect_bonds(cjson):
+    # Only autodetect bonds if we have 3D coordinates
+    if not MoleculeModel().cjson_has_3d_coords(cjson):
+        return cjson
+
     mol = cjson_to_ob_molecule(cjson)
     mol.ConnectTheDots()
     mol.PerceiveBondOrders()

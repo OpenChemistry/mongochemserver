@@ -11,13 +11,14 @@ from girder.api import access
 from girder.api.rest import Resource
 from girder.api.rest import RestException, getBodyJson, getCurrentUser, \
     loadmodel
-from girder.models.model_base import ModelImporter, ValidationException
+from girder.models.model_base import ValidationException
+from girder.utility.model_importer import ModelImporter
 from girder.models.file import File
 from girder.constants import AccessType, TokenScope
 from girder.utility import toBool
-from girder.plugins.molecules.models.calculation import Calculation as CalculationModel
-from girder.plugins.molecules.models.molecule import Molecule as MoleculeModel
-from girder.plugins.molecules.utilities.molecules import create_molecule
+from molecules.models.calculation import Calculation as CalculationModel
+from molecules.models.molecule import Molecule as MoleculeModel
+from molecules.utilities.molecules import create_molecule
 
 import openchemistry as oc
 
@@ -59,8 +60,8 @@ class Calculation(Resource):
         self.route('PATCH', (':id', 'notebooks'), self.add_notebooks)
 
 
-        self._model = self.model('calculation', 'molecules')
-        self._cube_model = self.model('cubecache', 'molecules')
+        self._model = ModelImporter.model('calculation', 'molecules')
+        self._cube_model = ModelImporter.model('cubecache', 'molecules')
 
     @access.public
     def get_calc_vibrational_modes(self, id, params):
