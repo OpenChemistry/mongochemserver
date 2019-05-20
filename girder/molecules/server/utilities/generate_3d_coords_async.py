@@ -30,7 +30,7 @@ def schedule_3d_coords_gen(mol, user):
                 callback_factory(inchikey, user))
 
     job = Job().createLocalJob(
-        module='girder.plugins.molecules.utilities.generate_3d_coords_async',
+        module='molecules.utilities.generate_3d_coords_async',
         title='Generate 3d coordinates for SMILES: %s' % smiles,
         user=user, type='molecules.generate_3d_coords', public=False,
         function='_run_3d_coords_gen',
