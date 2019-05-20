@@ -5,8 +5,8 @@ import traceback
 
 from girder import events
 from girder.constants import TerminalColor
-from girder.plugins.jobs.models.job import Job
-from girder.plugins.jobs.constants import JobStatus
+from girder_jobs.models.job import Job
+from girder_jobs.constants import JobStatus
 from girder.models.model_base import ValidationException
 
 from .whitelist_cjson import whitelist_cjson
