@@ -391,11 +391,14 @@ class Calculation(Resource):
         .param('imageName', 'The name of the Docker image that run this calculation', required=False)
         .param('inputParametersHash', 'The hash of the input parameters dictionary.', required=False)
         .param('inputGeometryHash', 'The hash of the input geometry.', required=False)
+        .param('creatorId', 'The id of the user that created the calculation',
+               required=False)
         .pagingParams(defaultSort='_id', defaultSortDir=SortDir.DESCENDING, defaultLimit=25)
     )
     def find_calc(self, moleculeId=None, imageName=None,
                   inputParametersHash=None, inputGeometryHash=None,
-                  pending=None, limit=None, offset=None, sort=None):
+                  creatorId=None, pending=None, limit=None, offset=None,
+                  sort=None):
         user = getCurrentUser()
 
         # Set these to their defaults if they are not already set
@@ -420,6 +423,9 @@ class Calculation(Resource):
 
         if inputGeometryHash:
             query['input.geometryHash'] = inputGeometryHash
+
+        if creatorId:
+            query['creatorId'] = creatorId
 
         if pending is not None:
             pending = toBool(pending)
