@@ -1,13 +1,21 @@
 
+def default_pagination_params(limit=None, offset=None, sort=None):
+    """Returns default params unless they are set"""
+    if limit is None:
+        limit = 25
+    if offset is None:
+        offset = 0
+    if sort is None:
+        sort = [('_id', -1)]
+
+    return limit, offset, sort
 
 def parse_pagination_params(params):
     """Parse params and get (limit, offset, sort)
     The defaults will be returned if not found in params.
     """
     # Defaults
-    limit = 25
-    offset = 0
-    sort = [('_id', -1)]
+    limit, offset, sort = default_pagination_params()
     if params:
         if 'limit' in params:
             limit = int(params['limit'])
