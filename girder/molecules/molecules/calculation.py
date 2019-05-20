@@ -14,11 +14,14 @@ from girder.api.rest import RestException, getBodyJson, getCurrentUser, \
 from girder.models.model_base import ValidationException
 from girder.utility.model_importer import ModelImporter
 from girder.models.file import File
-from girder.constants import AccessType, TokenScope
+from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import toBool
 from molecules.models.calculation import Calculation as CalculationModel
 from molecules.models.molecule import Molecule as MoleculeModel
 from molecules.utilities.molecules import create_molecule
+from molecules.utilities.pagination import default_pagination_params
+from molecules.utilities.pagination import parse_pagination_params
+from molecules.utilities.pagination import search_results_dict
 
 import openchemistry as oc
 
@@ -388,11 +391,21 @@ class Calculation(Resource):
         .param('imageName', 'The name of the Docker image that run this calculation', required=False)
         .param('inputParametersHash', 'The hash of the input parameters dictionary.', required=False)
         .param('inputGeometryHash', 'The hash of the input geometry.', required=False)
+        .pagingParams(defaultSort='_id', defaultSortDir=SortDir.DESCENDING, defaultLimit=25)
     )
-    def find_calc(self, moleculeId=None, imageName=None, inputParametersHash=None, inputGeometryHash=None, pending=None, offset=0, limit=None, sort=None):
+    def find_calc(self, moleculeId=None, imageName=None,
+                  inputParametersHash=None, inputGeometryHash=None,
+                  pending=None, limit=None, offset=None, sort=None):
         user = getCurrentUser()
 
-        query = { }
+        # Set these to their defaults if they are not already set
+        limit, offset, sort = default_pagination_params(limit, offset, sort)
+
+        query = {
+          'limit': limit,
+          'offset': offset,
+          'sort': sort
+        }
 
         if moleculeId:
             query['moleculeId'] = ObjectId(moleculeId)
@@ -427,7 +440,7 @@ class Calculation(Resource):
             AccessType.READ, limit=limit)
         calcs = [self._model.filter(x, user) for x in calcs]
 
-        return calcs
+        return search_results_dict(calcs, limit, offset, sort)
 
     @access.public
     def find_id(self, id, params):
