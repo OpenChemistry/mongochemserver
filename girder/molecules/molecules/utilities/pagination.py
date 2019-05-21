@@ -1,3 +1,4 @@
+from girder.constants import SortDir
 
 def default_pagination_params(limit=None, offset=None, sort=None):
     """Returns default params unless they are set"""
@@ -6,7 +7,7 @@ def default_pagination_params(limit=None, offset=None, sort=None):
     if offset is None:
         offset = 0
     if sort is None:
-        sort = [('_id', -1)]
+        sort = [('_id', SortDir.DESCENDING)]
 
     return limit, offset, sort
 
