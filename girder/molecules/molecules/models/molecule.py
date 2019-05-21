@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from bson.objectid import ObjectId
 import json
 from jsonpath_rw import parse
 import re
@@ -39,7 +40,7 @@ class Molecule(AccessControlledModel):
                 # Make sure it is canonical before searching
                 query['smiles'] = openbabel.to_smiles(search['smiles'], 'smi')
             if 'creatorId' in search:
-                query['creatorId'] = search['creatorId']
+                query['creatorId'] = ObjectId(search['creatorId'])
 
         cursor = self.find(query, limit=limit, offset=offset, sort=sort)
         mols = list()
@@ -81,9 +82,7 @@ class Molecule(AccessControlledModel):
             props = avogadro.molecule_properties(json.dumps(mol.get('cjson')), 'cjson')
             mol['properties'] = props
 
-        # This must be converted to a string, otherwise we will not be able to
-        # search for it via query in self.find()
-        mol['creatorId'] = str(user['_id'])
+        mol['creatorId'] = user['_id']
 
         self.setUserAccess(mol, user=user, level=AccessType.ADMIN)
         if public:

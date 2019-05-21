@@ -434,6 +434,9 @@ class Molecule(Resource):
                                                 limit=limit, offset=offset,
                                                 sort=sort)
         elif cactus:
+            if getCurrentUser() is None:
+                raise RestException('Must be logged in to search with cactus.')
+
             # Disable cert verification for now
             # TODO Ensure we have the right root certs so this just works.
             r = requests.get('https://cactus.nci.nih.gov/chemical/structure/%s/file?format=sdf' % cactus, verify=False)
