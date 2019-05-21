@@ -404,11 +404,7 @@ class Calculation(Resource):
         # Set these to their defaults if they are not already set
         limit, offset, sort = default_pagination_params(limit, offset, sort)
 
-        query = {
-          'limit': limit,
-          'offset': offset,
-          'sort': sort
-        }
+        query = {}
 
         if moleculeId:
             query['moleculeId'] = ObjectId(moleculeId)
@@ -441,7 +437,8 @@ class Calculation(Resource):
                   'cjson.vibrations.frequencies', 'properties', 'fileId', 'access',
                   'moleculeId', 'public']
 
-        calcs = self._model.find(query, fields=fields, sort=sort)
+        calcs = self._model.find(query, fields=fields, limit=limit,
+                                 offset=offset, sort=sort)
         calcs = self._model.filterResultsByPermission(calcs, user,
             AccessType.READ, limit=limit)
         calcs = [self._model.filter(x, user) for x in calcs]
