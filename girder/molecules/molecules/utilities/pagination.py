@@ -28,10 +28,10 @@ def parse_pagination_params(params):
     return limit, offset, sort
 
 
-def search_results_dict(results, limit, offset, sort):
+def search_results_dict(results, num_matches, limit, offset, sort):
     """This is for consistent search results"""
     ret = {
-        'matches': len(results),
+        'matches': num_matches,
         'limit': limit,
         'offset': offset,
         'results': results

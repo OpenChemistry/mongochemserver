@@ -439,11 +439,13 @@ class Calculation(Resource):
 
         calcs = self._model.find(query, fields=fields, limit=limit,
                                  offset=offset, sort=sort)
+        num_matches = calcs.collection.count_documents(query)
+
         calcs = self._model.filterResultsByPermission(calcs, user,
             AccessType.READ, limit=limit)
         calcs = [self._model.filter(x, user) for x in calcs]
 
-        return search_results_dict(calcs, limit, offset, sort)
+        return search_results_dict(calcs, num_matches, limit, offset, sort)
 
     @access.public
     def find_id(self, id, params):

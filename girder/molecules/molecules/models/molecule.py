@@ -47,6 +47,8 @@ class Molecule(AccessControlledModel):
                 query['creatorId'] = ObjectId(search['creatorId'])
 
         cursor = self.find(query, limit=limit, offset=offset, sort=sort)
+        num_matches = cursor.collection.count_documents(query)
+
         mols = list()
         for mol in cursor:
             molecule = { '_id': mol['_id'], 'inchikey': mol.get('inchikey'),
@@ -56,7 +58,7 @@ class Molecule(AccessControlledModel):
                 molecule['name'] = mol['name']
             mols.append(molecule)
 
-        return search_results_dict(mols, limit, offset, sort)
+        return search_results_dict(mols, num_matches, limit, offset, sort)
 
     def find_inchi(self, inchi):
         query = { 'inchi': inchi }

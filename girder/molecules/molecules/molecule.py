@@ -422,14 +422,14 @@ class Molecule(Resource):
             except query.InvalidQuery:
                 raise RestException('Invalid query', 400)
 
-            mols = []
-            for mol in MoleculeModel().find(query=mongo_query,
-                                            fields=['_id', 'inchikey', 'name'],
-                                            limit=limit, offset=offset,
-                                            sort=sort):
-                mols.append(mol)
+            cursor = MoleculeModel().find(query=mongo_query,
+                                          fields=['_id', 'inchikey', 'name'],
+                                          limit=limit, offset=offset,
+                                          sort=sort)
+            mols = [x for x in cursor]
+            num_matches = cursor.collection.count_documents(mongo_query)
 
-            return search_results_dict(mols, limit, offset, sort)
+            return search_results_dict(mols, num_matches, limit, offset, sort)
 
         elif formula:
             # Search using formula
@@ -451,7 +451,7 @@ class Molecule(Resource):
             sdf_data = r.content.decode('utf8')
             mol = create_molecule(sdf_data, 'sdf', getCurrentUser(), True)
 
-            return search_results_dict([mol], limit, offset, sort)
+            return search_results_dict([mol], 1, limit, offset, sort)
 
 
     search.description = (
