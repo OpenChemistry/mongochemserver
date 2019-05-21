@@ -90,6 +90,9 @@ class Molecule(Resource):
                    required=False)
             .param('smiles', 'The SMILES of the molecule', paramType='query',
                    required=False)
+            .param('formula',
+                   'The formula (using the "Hill Order") to search for',
+                   paramType='query', required=False)
             .param('creatorId', 'The id of the user that created the molecule',
                    paramType='query', required=False)
             .pagingParams(defaultSort='_id',
@@ -408,10 +411,9 @@ class Molecule(Resource):
         limit, offset, sort = parse_pagination_params(params)
 
         query_string = params.get('q')
-        formula = params.get('formula')
         cactus = params.get('cactus')
-        if query_string is None and formula is None and cactus is None:
-            raise RestException('Either \'q\', \'formula\' or \'cactus\' is required.')
+        if query_string is None and cactus is None:
+            raise RestException('Either \'q\' or \'cactus\' is required.')
 
         if query_string is not None:
             try:
@@ -428,11 +430,6 @@ class Molecule(Resource):
 
             return search_results_dict(mols, limit, offset, sort)
 
-        elif formula:
-            # Search using formula
-            return MoleculeModel().find_formula(formula, getCurrentUser(),
-                                                limit=limit, offset=offset,
-                                                sort=sort)
         elif cactus:
             if getCurrentUser() is None:
                 raise RestException('Must be logged in to search with cactus.')
@@ -453,9 +450,8 @@ class Molecule(Resource):
 
 
     search.description = (
-            Description('Search for molecules using a query string or formula')
+            Description('Search for molecules using a query string or cactus')
             .param('q', 'The query string to use for this search', paramType='query', required=False)
-            .param('formula', 'The formula (using the "Hill Order") to search for', paramType='query', required=False)
             .param('cactus', 'The identifier to pass to cactus', paramType='query', required=False)
             .pagingParams(defaultSort='_id',
                           defaultSortDir=SortDir.DESCENDING,
