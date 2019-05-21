@@ -11,6 +11,7 @@ from girder.api.rest import Resource
 from girder.api.rest import RestException, loadmodel, getCurrentUser
 from girder.api import access
 from girder.constants import AccessType
+from girder.constants import SortDir
 from girder.constants import TerminalColor
 from girder.models.file import File
 from girder.utility.model_importer import ModelImporter
@@ -21,6 +22,8 @@ from . import query
 from . import semantic
 from . import constants
 from molecules.utilities.molecules import create_molecule
+from molecules.utilities.pagination import parse_pagination_params
+from molecules.utilities.pagination import search_results_dict
 
 from molecules.models.molecule import Molecule as MoleculeModel
 
@@ -87,6 +90,11 @@ class Molecule(Resource):
                    required=False)
             .param('smiles', 'The SMILES of the molecule', paramType='query',
                    required=False)
+            .param('creatorId', 'The id of the user that created the molecule',
+                   paramType='query', required=False)
+            .pagingParams(defaultSort='_id',
+                          defaultSortDir=SortDir.DESCENDING,
+                          defaultLimit=25)
             .errorResponse())
 
     @access.public
@@ -397,6 +405,7 @@ class Molecule(Resource):
 
     @access.public
     def search(self, params):
+        limit, offset, sort = parse_pagination_params(params)
 
         query_string = params.get('q')
         formula = params.get('formula')
@@ -411,15 +420,23 @@ class Molecule(Resource):
                 raise RestException('Invalid query', 400)
 
             mols = []
-            for mol in MoleculeModel().find(query=mongo_query, fields = ['_id', 'inchikey', 'name']):
+            for mol in MoleculeModel().find(query=mongo_query,
+                                            fields=['_id', 'inchikey', 'name'],
+                                            limit=limit, offset=offset,
+                                            sort=sort):
                 mols.append(mol)
 
-            return mols
+            return search_results_dict(mols, limit, offset, sort)
 
         elif formula:
             # Search using formula
-            return list(MoleculeModel().find_formula(formula, getCurrentUser()))
+            return MoleculeModel().find_formula(formula, getCurrentUser(),
+                                                limit=limit, offset=offset,
+                                                sort=sort)
         elif cactus:
+            if getCurrentUser() is None:
+                raise RestException('Must be logged in to search with cactus.')
+
             # Disable cert verification for now
             # TODO Ensure we have the right root certs so this just works.
             r = requests.get('https://cactus.nci.nih.gov/chemical/structure/%s/file?format=sdf' % cactus, verify=False)
@@ -432,11 +449,14 @@ class Molecule(Resource):
             sdf_data = r.content.decode('utf8')
             mol = create_molecule(sdf_data, 'sdf', getCurrentUser(), True)
 
-            return [mol]
+            return search_results_dict([mol], limit, offset, sort)
 
 
     search.description = (
             Description('Search for molecules using a query string or formula')
             .param('q', 'The query string to use for this search', paramType='query', required=False)
             .param('formula', 'The formula (using the "Hill Order") to search for', paramType='query', required=False)
-            .param('cactus', 'The identifier to pass to cactus', paramType='query', required=False))
+            .param('cactus', 'The identifier to pass to cactus', paramType='query', required=False)
+            .pagingParams(defaultSort='_id',
+                          defaultSortDir=SortDir.DESCENDING,
+                          defaultLimit=25))

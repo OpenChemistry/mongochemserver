@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 
-import re
+from bson.objectid import ObjectId
 import json
 from jsonpath_rw import parse
+import re
 
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.constants import AccessType
 from molecules import avogadro
 from molecules import openbabel
+
+from molecules.utilities.pagination import parse_pagination_params
+from molecules.utilities.pagination import search_results_dict
 
 class Molecule(AccessControlledModel):
 
@@ -22,6 +26,8 @@ class Molecule(AccessControlledModel):
         return doc
 
     def findmol(self, search = None):
+        limit, offset, sort = parse_pagination_params(search)
+
         query = {}
         if search:
             if 'name' in search:
@@ -33,7 +39,10 @@ class Molecule(AccessControlledModel):
             if 'smiles' in search:
                 # Make sure it is canonical before searching
                 query['smiles'] = openbabel.to_smiles(search['smiles'], 'smi')
-        cursor = self.find(query)
+            if 'creatorId' in search:
+                query['creatorId'] = ObjectId(search['creatorId'])
+
+        cursor = self.find(query, limit=limit, offset=offset, sort=sort)
         mols = list()
         for mol in cursor:
             molecule = { '_id': mol['_id'], 'inchikey': mol.get('inchikey'),
@@ -42,7 +51,8 @@ class Molecule(AccessControlledModel):
             if 'name' in mol:
                 molecule['name'] = mol['name']
             mols.append(molecule)
-        return mols
+
+        return search_results_dict(mols, limit, offset, sort)
 
     def find_inchi(self, inchi):
         query = { 'inchi': inchi }
@@ -54,14 +64,17 @@ class Molecule(AccessControlledModel):
         mol = self.findOne(query)
         return mol
 
-    def find_formula(self, formula, user):
+    def find_formula(self, formula, user, limit, offset, sort):
         formula_regx = re.compile('^%s$' % formula, re.IGNORECASE)
         query = {
             'properties.formula': formula_regx
         }
-        mols = self.find(query)
+        mols = self.find(query, limit=limit, offset=offset, sort=sort)
 
-        return self.filterResultsByPermission(mols, user, level=AccessType.READ)
+        mols = list(self.filterResultsByPermission(mols, user,
+                                                   level=AccessType.READ))
+
+        return search_results_dict(mols, limit, offset, sort)
 
     def create(self, user, mol, public=False):
 
@@ -69,9 +82,12 @@ class Molecule(AccessControlledModel):
             props = avogadro.molecule_properties(json.dumps(mol.get('cjson')), 'cjson')
             mol['properties'] = props
 
+        mol['creatorId'] = user['_id']
+
         self.setUserAccess(mol, user=user, level=AccessType.ADMIN)
         if public:
             self.setPublic(mol, True)
+
         self.save(mol)
         return mol
 
