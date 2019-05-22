@@ -90,6 +90,9 @@ class Molecule(Resource):
                    required=False)
             .param('smiles', 'The SMILES of the molecule', paramType='query',
                    required=False)
+            .param('formula',
+                   'The formula (using the "Hill Order") to search for',
+                   paramType='query', required=False)
             .param('creatorId', 'The id of the user that created the molecule',
                    paramType='query', required=False)
             .pagingParams(defaultSort='_id',
@@ -430,9 +433,8 @@ class Molecule(Resource):
 
         elif formula:
             # Search using formula
-            return MoleculeModel().find_formula(formula, getCurrentUser(),
-                                                limit=limit, offset=offset,
-                                                sort=sort)
+            return MoleculeModel().findmol(params)
+
         elif cactus:
             if getCurrentUser() is None:
                 raise RestException('Must be logged in to search with cactus.')
@@ -453,7 +455,7 @@ class Molecule(Resource):
 
 
     search.description = (
-            Description('Search for molecules using a query string or formula')
+            Description('Search for molecules using a query string, formula, or cactus')
             .param('q', 'The query string to use for this search', paramType='query', required=False)
             .param('formula', 'The formula (using the "Hill Order") to search for', paramType='query', required=False)
             .param('cactus', 'The identifier to pass to cactus', paramType='query', required=False)

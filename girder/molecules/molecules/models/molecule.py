@@ -39,6 +39,10 @@ class Molecule(AccessControlledModel):
             if 'smiles' in search:
                 # Make sure it is canonical before searching
                 query['smiles'] = openbabel.to_smiles(search['smiles'], 'smi')
+            if 'formula' in search:
+                formula_regx = re.compile('^%s$' % search['formula'],
+                                          re.IGNORECASE)
+                query['properties.formula'] = formula_regx
             if 'creatorId' in search:
                 query['creatorId'] = ObjectId(search['creatorId'])
 
@@ -63,18 +67,6 @@ class Molecule(AccessControlledModel):
         query = { 'inchikey': inchikey }
         mol = self.findOne(query)
         return mol
-
-    def find_formula(self, formula, user, limit, offset, sort):
-        formula_regx = re.compile('^%s$' % formula, re.IGNORECASE)
-        query = {
-            'properties.formula': formula_regx
-        }
-        mols = self.find(query, limit=limit, offset=offset, sort=sort)
-
-        mols = list(self.filterResultsByPermission(mols, user,
-                                                   level=AccessType.READ))
-
-        return search_results_dict(mols, limit, offset, sort)
 
     def create(self, user, mol, public=False):
 
