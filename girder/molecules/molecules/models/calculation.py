@@ -102,6 +102,7 @@ class Calculation(AccessControlledModel):
             calc.setdefault('input', {})['parameters'] = input_parameters
             calc.setdefault('input', {})['parametersHash'] = oc.hash_object(input_parameters)
 
+        calc['creatorId'] = user['_id']
         self.setUserAccess(calc, user=user, level=AccessType.ADMIN)
         if public:
             self.setPublic(calc, True)

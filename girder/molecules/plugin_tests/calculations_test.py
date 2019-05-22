@@ -86,9 +86,9 @@ def test_get_calc(server, molecule, calculation, user):
     assertStatusOk(r)
 
     # Should just be one calculation
-    assert len(r.json) == 1
+    assert len(r.json['results']) == 1
 
-    calc = r.json[0]
+    calc = r.json['results'][0]
 
     assert '_id' in calc
     assert str(calc['_id']) == calc_id
@@ -99,9 +99,9 @@ def test_get_calc(server, molecule, calculation, user):
     assertStatusOk(r)
 
     # Should just be one calculation
-    assert len(r.json) == 1
+    assert len(r.json['results']) == 1
 
-    calc = r.json[0]
+    calc = r.json['results'][0]
 
     assert '_id' in calc
     assert str(calc['_id']) == calc_id
