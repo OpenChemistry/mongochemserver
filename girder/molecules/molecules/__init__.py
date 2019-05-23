@@ -14,7 +14,7 @@ from .models.cubecache import Cubecache as CubecacheModel
 from .models.experimental import Experimental as ExperimentalModel
 from .models.molecule import Molecule as MoleculeModel
 
-from molecules.user import get_orcid, set_orcid
+from molecules.user import get_orcid, set_orcid, get_twitter, set_twitter
 
 from girder.plugin import GirderPlugin
 
@@ -55,3 +55,5 @@ class MoleculesPlugin(GirderPlugin):
 
         info['apiRoot'].user.route('GET', (':id', 'orcid'), get_orcid)
         info['apiRoot'].user.route('POST', (':id', 'orcid'), set_orcid)
+        info['apiRoot'].user.route('GET', (':id', 'twitter'), get_twitter)
+        info['apiRoot'].user.route('POST', (':id', 'twitter'), set_twitter)

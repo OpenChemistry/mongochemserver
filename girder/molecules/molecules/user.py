@@ -6,7 +6,7 @@ from girder.models.user import User
 
 @access.public
 @autoDescribeRoute(
-    Description('Set the orcid of a user.')
+    Description('Get the orcid of a user.')
     .modelParam('id', 'The ID of the user.', model=User, level=AccessType.ADMIN)
 )
 def get_orcid(user):
@@ -14,7 +14,7 @@ def get_orcid(user):
 
 @access.user
 @autoDescribeRoute(
-    Description('Get the orcid of a user.')
+    Description('Set the orcid of a user.')
     .modelParam('id', 'The ID of the user.', model=User, level=AccessType.READ)
     .param('orcid', 'The orcid to set.')
     .param('public', 'Whether or not the orcid is public.', dataType='boolean',
@@ -28,6 +28,35 @@ def set_orcid(user, orcid, public):
     update = {
         '$set': {
             'orcid': orcid
+        }
+    }
+
+    User().update(query, update)
+
+@access.public
+@autoDescribeRoute(
+    Description('Get the twitter username of a user.')
+    .modelParam('id', 'The ID of the user.', model=User, level=AccessType.ADMIN)
+)
+def get_twitter(user):
+    return user.get('twitter')
+
+@access.user
+@autoDescribeRoute(
+    Description('Set the twitter username of a user.')
+    .modelParam('id', 'The ID of the user.', model=User, level=AccessType.READ)
+    .param('twitter', 'The twitter to set.')
+    .param('public', 'Whether or not the twitter is public.', dataType='boolean',
+           required=False)
+)
+def set_twitter(user, twitter, public):
+    query = {
+        '_id': user['_id']
+    }
+
+    update = {
+        '$set': {
+            'twitter': twitter
         }
     }
 
