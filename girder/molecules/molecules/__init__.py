@@ -14,6 +14,8 @@ from .models.cubecache import Cubecache as CubecacheModel
 from .models.experimental import Experimental as ExperimentalModel
 from .models.molecule import Molecule as MoleculeModel
 
+from molecules.user import get_orcid, set_orcid
+
 from girder.plugin import GirderPlugin
 
 
@@ -50,3 +52,6 @@ class MoleculesPlugin(GirderPlugin):
         info['apiRoot'].experiments = Experiment()
         events.bind('model.setting.validate', 'molecules',
                     validateSettings)
+
+        info['apiRoot'].user.route('GET', (':id', 'orcid'), get_orcid)
+        info['apiRoot'].user.route('POST', (':id', 'orcid'), set_orcid)
