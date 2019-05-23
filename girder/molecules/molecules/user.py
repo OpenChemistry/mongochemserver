@@ -4,6 +4,21 @@ from girder.api.rest import getCurrentUser
 from girder.models.model_base import AccessType
 from girder.models.user import User
 
+def _set_user_field(user, field_name, field_value):
+    query = {
+        '_id': user['_id']
+    }
+
+    update = {
+        '$set': {
+            field_name: field_value
+        }
+    }
+
+    User().update(query, update)
+
+    return User().load(user['_id'], user=getCurrentUser())
+
 @access.public
 @autoDescribeRoute(
     Description('Get the orcid of a user.')
@@ -21,17 +36,7 @@ def get_orcid(user):
            required=False)
 )
 def set_orcid(user, orcid, public):
-    query = {
-        '_id': user['_id']
-    }
-
-    update = {
-        '$set': {
-            'orcid': orcid
-        }
-    }
-
-    User().update(query, update)
+    return _set_user_field(user, 'orcid', orcid)
 
 @access.public
 @autoDescribeRoute(
@@ -50,14 +55,4 @@ def get_twitter(user):
            required=False)
 )
 def set_twitter(user, twitter, public):
-    query = {
-        '_id': user['_id']
-    }
-
-    update = {
-        '$set': {
-            'twitter': twitter
-        }
-    }
-
-    User().update(query, update)
+    return _set_user_field(user, 'twitter', twitter)
