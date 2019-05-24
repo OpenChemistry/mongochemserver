@@ -7,7 +7,10 @@ from molecules.constants import PluginSettings
 
 def upload_molecule(mol):
     settings = ModelImporter.model('setting')
-    uri_base = settings.get(PluginSettings.SEMANTIC_URI_BASE, 'http://localhost:8888')
+    uri_base = settings.get(PluginSettings.SEMANTIC_URI_BASE)
+    if uri_base is None:
+        uri_base = 'http://localhost:8888'
+
     uri_base = uri_base.rstrip('/')
 
     gainesville_graph = gainesville.create_molecule_graph(uri_base, mol)
