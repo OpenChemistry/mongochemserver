@@ -48,7 +48,7 @@ def get_orcid(user):
 )
 def set_orcid(user, orcid, public):
     if public is None:
-        public = False
+        public = True
 
     return _set_user_field(user, 'orcid', orcid)
 
@@ -78,7 +78,7 @@ def get_twitter(user):
 )
 def set_twitter(user, twitter, public):
     if public is None:
-        public = False
+        public = True
 
     _set_user_field(user, 'twitterPublic', public)
     return _set_user_field(user, 'twitter', twitter)
