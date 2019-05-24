@@ -19,6 +19,7 @@ def _set_user_field(user, field_name, field_value):
     User().update(query, update)
 
     # Get the updated user and return it
+    # The added field is included
     user = User().findOne(user['_id'])
     return User().filter(user, getCurrentUser(), [field_name])
 
@@ -29,8 +30,12 @@ def _set_user_field(user, field_name, field_value):
     .modelParam('id', 'The ID of the user.', model=User, level=AccessType.READ)
 )
 def get_orcid(user):
-    return user.get('orcid')
+    # Either orcidPublic must be true or the user has admin level access
+    if user.get('orcidPublic') != True:
+        if User().getAccessLevel(user, getCurrentUser()) != AccessType.ADMIN:
+            return None
 
+    return user.get('orcid')
 
 @access.user
 @autoDescribeRoute(
@@ -42,6 +47,9 @@ def get_orcid(user):
            required=False)
 )
 def set_orcid(user, orcid, public):
+    if public is None:
+        public = False
+
     return _set_user_field(user, 'orcid', orcid)
 
 
@@ -51,6 +59,11 @@ def set_orcid(user, orcid, public):
     .modelParam('id', 'The ID of the user.', model=User, level=AccessType.READ)
 )
 def get_twitter(user):
+    # Either twitterPublic must be true or the user has admin level access
+    if user.get('twitterPublic') != True:
+        if User().getAccessLevel(user, getCurrentUser()) != AccessType.ADMIN:
+            return None
+
     return user.get('twitter')
 
 
@@ -64,4 +77,8 @@ def get_twitter(user):
            dataType='boolean', required=False)
 )
 def set_twitter(user, twitter, public):
+    if public is None:
+        public = False
+
+    _set_user_field(user, 'twitterPublic', public)
     return _set_user_field(user, 'twitter', twitter)
