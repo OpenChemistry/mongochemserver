@@ -7,7 +7,7 @@ setup(
     packages=find_packages(),
     install_requires=[
       'girder>=3.0.0a5',
-      'girder_jobs',
+      'girder-jobs',
       'jsonpath-rw==1.4.0',
       'avogadro==1.92.1',
       'openbabel==2.4.1',
