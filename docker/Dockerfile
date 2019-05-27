@@ -27,6 +27,9 @@ COPY docker/girder.local.conf /etc/girder.cfg
 # Copy over mongochemserver
 COPY . /mongochemserver
 
+# Install girder jobs plugin (needed by mongochemserver)
+RUN pip install -e /girder/plugins/jobs
+
 # Install mongochemserver
 RUN pip install -e /mongochemserver/girder/molecules && \
   pip install -e /mongochemserver/girder/notebooks && \
