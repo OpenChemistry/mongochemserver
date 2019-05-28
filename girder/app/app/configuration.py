@@ -18,12 +18,21 @@ class Configuration(Resource):
         Description('Get the deployment configuration.')
     )
     def get(self):
+
+        notebooks = Setting().get(Features.NOTEBOOKS)
+        if notebooks is None:
+            notebooks = True
+
+        site = Setting().get(Deployment.SITE)
+        if site is None:
+            site = ''
+
         return {
             'features': {
-                'notebooks': Setting().get(Features.NOTEBOOKS, True)
+                'notebooks': notebooks
             },
             'deployment': {
-                'site': Setting().get(Deployment.SITE, '')
+                'site': site
             },
             'branding': {
                 'license': Setting().get(Branding.LICENSE),
