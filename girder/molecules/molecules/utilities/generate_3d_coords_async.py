@@ -81,6 +81,7 @@ def callback_factory(inchikey, user):
             }
             updates = {}
             updates.setdefault('$set', {})['cjson'] = kwargs.get('cjson')
+            updates.setdefault('$unset', {})['generating_3d_coords'] = ''
 
             update_result = super(MoleculeModel,
                                   MoleculeModel()).update(query, updates)
