@@ -255,8 +255,8 @@ def test_get_molecule(server, molecule, user):
     assertStatusOk(r)
 
     # There should be exactly one
-    assert len(r.json) == 1
-    mol = r.json[0]
+    assert len(r.json['results']) == 1
+    mol = r.json['results'][0]
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
@@ -271,8 +271,8 @@ def test_get_molecule(server, molecule, user):
     assertStatusOk(r)
 
     # There should be exactly one
-    assert len(r.json) == 1
-    mol = r.json[0]
+    assert len(r.json['results']) == 1
+    mol = r.json['results'][0]
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
@@ -286,8 +286,8 @@ def test_get_molecule(server, molecule, user):
     assertStatusOk(r)
 
     # There should be exactly one
-    assert len(r.json) == 1
-    mol = r.json[0]
+    assert len(r.json['results']) == 1
+    mol = r.json['results'][0]
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
@@ -301,8 +301,8 @@ def test_get_molecule(server, molecule, user):
     assertStatusOk(r)
 
     # There should be exactly one
-    assert len(r.json) == 1
-    mol = r.json[0]
+    assert len(r.json['results']) == 1
+    mol = r.json['results'][0]
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
@@ -316,8 +316,8 @@ def test_get_molecule(server, molecule, user):
     assertStatusOk(r)
 
     # There should be exactly one
-    assert len(r.json) == 1
-    mol = r.json[0]
+    assert len(r.json['results']) == 1
+    mol = r.json['results'][0]
 
     assert mol.get('_id') == _id
     assert mol.get('inchikey') == inchikey
@@ -393,7 +393,6 @@ def test_search_molecule_formula(server, molecule, user):
 
     # The molecule will have been created by the fixture
     assert '_id' in molecule
-    assert 'inchi' in molecule
     assert 'inchikey' in molecule
     assert 'smiles' in molecule
     assert 'properties' in molecule
@@ -403,7 +402,6 @@ def test_search_molecule_formula(server, molecule, user):
     assert 'name' in molecule
 
     _id = molecule['_id']
-    inchi = molecule['inchi']
     inchikey = molecule['inchikey']
     smiles = molecule['smiles']
     name = molecule['name']
@@ -414,17 +412,15 @@ def test_search_molecule_formula(server, molecule, user):
 
     # Find the molecule by its formula. Formula here is C2H6.
     params = {'formula': ethane_formula}
-    r = server.request('/molecules/search', method='GET', user=user,
-                       params=params)
+    r = server.request('/molecules', method='GET', user=user, params=params)
     assertStatusOk(r)
 
     # Should just be one
-    assert len(r.json) == 1
-    mol = r.json[0]
+    assert r.json['matches'] == 1
+    mol = r.json['results'][0]
 
     # Everything should match
     assert mol.get('_id') == _id
-    assert mol.get('inchi') == inchi
     assert mol.get('inchikey') == inchikey
     assert mol.get('smiles') == smiles
     assert mol.get('name') == name

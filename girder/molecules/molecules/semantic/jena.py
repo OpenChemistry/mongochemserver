@@ -6,7 +6,10 @@ from molecules.constants import PluginSettings
 def upload_rdf(_, rdf):
     settings = ModelImporter.model('setting')
 
-    base_url = settings.get(PluginSettings.JENA_BASE_URL, 'http://jena-fuseki:3030')
+    base_url = settings.get(PluginSettings.JENA_BASE_URL)
+    if base_url is None:
+        base_url = 'http://jena-fuseki:3030'
+
     user = settings.get(PluginSettings.JENA_USER)
     password = settings.get(PluginSettings.JENA_PASSWORD)
     dataset = settings.get(PluginSettings.JENA_DATASET)
