@@ -469,21 +469,18 @@ class Molecule(Resource):
     @access.user
     @autoDescribeRoute(
             Description('Generate 3D coordinates for a molecule.')
-            .param('id', 'The id of the molecule', paramType='path')
+            .modelParam('id', 'The id of the molecule', destName='mol',
+                        level=AccessType.WRITE, model=MoleculeModel)
             .errorResponse('Molecule not found.', 404)
     )
-    def generate_3d_coords(self, id):
+    def generate_3d_coords(self, mol):
         """Generate 3D coords if not present and not being generated"""
-        user = self.getCurrentUser()
-
-        mol = MoleculeModel().load(id, user=user, level=AccessType.WRITE)
-
-        if not mol:
-            raise RestException('Molecule not found.', code=404)
 
         if (MoleculeModel().has_3d_coords(mol) or
             mol.get('generating_3d_coords', False)):
             return self._clean(mol)
+
+        user = self.getCurrentUser()
 
         generate_3d_coords_async.schedule_3d_coords_gen(mol, user)
         return self._clean(mol)
