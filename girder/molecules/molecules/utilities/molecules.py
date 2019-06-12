@@ -90,7 +90,6 @@ def create_molecule(data_str, input_format, user, public, gen3d=True):
             # Generate 3d coordinates in a background thread
             if gen3d:
                 schedule_3d_coords_gen(mol_dict, user)
-                mol_dict['generating_3d_coords'] = True
             # This will be complete other than the cjson
             return MoleculeModel().create(user, mol_dict, public)
         else:

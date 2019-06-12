@@ -21,6 +21,7 @@ from . import chemspider
 from . import query
 from . import semantic
 from . import constants
+from molecules.utilities import generate_3d_coords_async
 from molecules.utilities.molecules import create_molecule
 from molecules.utilities.pagination import parse_pagination_params
 from molecules.utilities.pagination import search_results_dict
@@ -58,6 +59,7 @@ class Molecule(Resource):
         self.route('PATCH', (':id',), self.update)
         self.route('PATCH', (':id', 'notebooks'), self.add_notebooks)
         self.route('POST', ('conversions', ':output_format'), self.conversions)
+        self.route('POST', (':id', '3d'), self.generate_3d_coords)
 
     def _clean(self, doc, cjson=True):
         del doc['access']
@@ -463,3 +465,25 @@ class Molecule(Resource):
             .pagingParams(defaultSort='_id',
                           defaultSortDir=SortDir.DESCENDING,
                           defaultLimit=25))
+
+    @access.user
+    @autoDescribeRoute(
+            Description('Generate 3D coordinates for a molecule.')
+            .param('id', 'The id of the molecule', paramType='path')
+            .errorResponse('Molecule not found.', 404)
+    )
+    def generate_3d_coords(self, id):
+        """Generate 3D coords if not present and not being generated"""
+        user = self.getCurrentUser()
+
+        mol = MoleculeModel().load(id, user=user, level=AccessType.WRITE)
+
+        if not mol:
+            raise RestException('Molecule not found.', code=404)
+
+        if (MoleculeModel().has_3d_coords(mol) or
+            mol.get('generating_3d_coords', False)):
+            return self._clean(mol)
+
+        generate_3d_coords_async.schedule_3d_coords_gen(mol, user)
+        return self._clean(mol)

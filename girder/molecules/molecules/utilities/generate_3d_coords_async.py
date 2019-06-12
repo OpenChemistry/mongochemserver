@@ -19,6 +19,8 @@ from ..models.molecule import Molecule as MoleculeModel
 
 
 def schedule_3d_coords_gen(mol, user):
+    mol['generating_3d_coords'] = True
+
     # We only need a couple of entries for the job
     inchikey = mol['inchikey']
     smiles = mol['smiles']
