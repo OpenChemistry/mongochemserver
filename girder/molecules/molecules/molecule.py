@@ -126,6 +126,7 @@ class Molecule(Resource):
         return self._clean(mol, cjson)
     find_id.description = (
         Description('Get a specific molecule by id')
+        .param('id', 'The id of the molecule', paramType='path')
         .param('cjson', 'Attach the cjson data of the molecule to the response (Default: true)', paramType='query', required=False)
     )
 
