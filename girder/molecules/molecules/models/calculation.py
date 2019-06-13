@@ -1,4 +1,6 @@
+import sys
 from jsonschema import validate, ValidationError
+from bson.objectid import ObjectId
 
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.utility.model_importer import ModelImporter
@@ -6,6 +8,10 @@ from girder.models.file import File
 from girder.models.item import Item
 from girder.models.folder import Folder
 from girder.constants import AccessType
+from molecules.utilities.pagination import default_pagination_params
+from molecules.utilities.pagination import search_results_dict
+
+from molecules.models.molecule import Molecule as MoleculeModel
 
 import openchemistry as oc
 
@@ -80,6 +86,76 @@ class Calculation(AccessControlledModel):
             doc['moleculeId'] = mol['_id']
 
         return doc
+
+    def findcal(self, moleculeId=None, imageName=None,
+            inputParametersHash=None, inputGeometryHash=None,
+            name=None, inchi=None, inchikey=None, smiles=None, formula=None,
+            creatorId=None, pending=None, limit=None, offset=None,
+            sort=None, user=None):
+        # Set these to their defaults if they are not already set
+        limit, offset, sort = default_pagination_params(limit, offset, sort)
+
+        query = {}
+
+        # If a molecule id is specified it has higher priority
+        if moleculeId:
+            query['moleculeId'] = ObjectId(moleculeId)
+        # Otherwise, if query parameters for the molecules are specified, search for matching molecules first
+        elif any((name, inchi, inchikey, smiles, formula)):
+            params = {'offset': 0, 'limit': sys.maxsize}
+
+            if name:
+                params['name'] = name
+            if inchi:
+                params['inchi'] = inchi
+            if inchikey:
+                params['inchikey'] = inchikey
+            if smiles:
+                params['smiles'] = smiles
+            if formula:
+                params['formula'] = formula
+
+            molecules = MoleculeModel().findmol(params)['results']
+            moleculeIds = [molecule['_id'] for molecule in molecules]
+            query['moleculeId'] = {'$in': moleculeIds}
+
+        if imageName:
+            repository, tag = oc.parse_image_name(imageName)
+            query['image.repository'] = repository
+            query['image.tag'] = tag
+
+        if inputParametersHash:
+            query['input.parametersHash'] = inputParametersHash
+
+        if inputGeometryHash:
+            query['input.geometryHash'] = inputGeometryHash
+
+        if creatorId:
+            query['creatorId'] = ObjectId(creatorId)
+
+        if pending is not None:
+            pending = toBool(pending)
+            query['properties.pending'] = pending
+            # The absence of the field mean the calculation is not pending ...
+            if not pending:
+                query['properties.pending'] = {
+                    '$ne': True
+                }
+
+        fields = ['image', 'input',
+                  'cjson', 'cjson.vibrations.modes', 'cjson.vibrations.intensities',
+                  'cjson.vibrations.frequencies', 'properties', 'fileId', 'access',
+                  'moleculeId', 'public']
+
+        calcs = self.find(query, fields=fields, limit=limit,
+                                 offset=offset, sort=sort)
+        num_matches = calcs.collection.count_documents(query)
+
+        calcs = self.filterResultsByPermission(calcs, user,
+            AccessType.READ, limit=limit)
+        calcs = [self.filter(x, user) for x in calcs]
+
+        return search_results_dict(calcs, num_matches, limit, offset, sort)
 
     def create_cjson(self, user, cjson, props, molecule_id= None,
                      image=None, input_parameters=None,
