@@ -33,5 +33,8 @@ RUN pip install -e /mongochemserver/girder/molecules && \
   pip install -e /mongochemserver/girder/queues && \
   pip install -e /mongochemserver/girder/app
 
+# Install OAuth plugin
+RUN pip install -e /girder/plugins/oauth
+
 # Install clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
