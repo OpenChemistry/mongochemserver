@@ -21,6 +21,7 @@ from . import chemspider
 from . import query
 from . import semantic
 from . import constants
+from molecules.utilities import generate_3d_coords_async
 from molecules.utilities.molecules import create_molecule
 from molecules.utilities.pagination import parse_pagination_params
 from molecules.utilities.pagination import search_results_dict
@@ -58,6 +59,7 @@ class Molecule(Resource):
         self.route('PATCH', (':id',), self.update)
         self.route('PATCH', (':id', 'notebooks'), self.add_notebooks)
         self.route('POST', ('conversions', ':output_format'), self.conversions)
+        self.route('POST', (':id', '3d'), self.generate_3d_coords)
 
     def _clean(self, doc, cjson=True):
         del doc['access']
@@ -130,6 +132,7 @@ class Molecule(Resource):
         return self._clean(mol, cjson)
     find_id.description = (
         Description('Get a specific molecule by id')
+        .param('id', 'The id of the molecule', paramType='path')
         .param('cjson', 'Attach the cjson data of the molecule to the response (Default: true)', paramType='query', required=False)
     )
 
@@ -138,6 +141,7 @@ class Molecule(Resource):
         body = self.getBodyJson()
         user = self.getCurrentUser()
         public = body.get('public', False)
+        gen3d = body.get('generate3D', True)
         mol = None
         if 'fileId' in body:
             file_id = body['fileId']
@@ -152,20 +156,20 @@ class Molecule(Resource):
             with File().open(file) as f:
                 data_str = f.read().decode()
 
-            mol = create_molecule(data_str, input_format, user, public)
+            mol = create_molecule(data_str, input_format, user, public, gen3d)
         elif 'inchi' in body:
             input_format = 'inchi'
             data = body['inchi']
             if not data.startswith('InChI='):
                 data = 'InChI=' + data
 
-            mol = create_molecule(data, input_format, user, public)
+            mol = create_molecule(data, input_format, user, public, gen3d)
 
         for key in body:
             if key in Molecule.input_formats:
                 input_format = key
                 data = body[input_format]
-                mol = create_molecule(data, input_format,  user, public)
+                mol = create_molecule(data, input_format,  user, public, gen3d)
                 break
 
         if not mol:
@@ -468,3 +472,22 @@ class Molecule(Resource):
             .pagingParams(defaultSort='_id',
                           defaultSortDir=SortDir.DESCENDING,
                           defaultLimit=25))
+
+    @access.user
+    @autoDescribeRoute(
+            Description('Generate 3D coordinates for a molecule.')
+            .modelParam('id', 'The id of the molecule', destName='mol',
+                        level=AccessType.WRITE, model=MoleculeModel)
+            .errorResponse('Molecule not found.', 404)
+    )
+    def generate_3d_coords(self, mol):
+        """Generate 3D coords if not present and not being generated"""
+
+        if (MoleculeModel().has_3d_coords(mol) or
+            mol.get('generating_3d_coords', False)):
+            return self._clean(mol)
+
+        user = self.getCurrentUser()
+
+        generate_3d_coords_async.schedule_3d_coords_gen(mol, user)
+        return self._clean(mol)
