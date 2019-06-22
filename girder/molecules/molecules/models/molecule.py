@@ -5,8 +5,9 @@ import json
 from jsonpath_rw import parse
 import re
 
-from girder.models.model_base import AccessControlledModel, ValidationException
+from girder.models.model_base import AccessControlledModel
 from girder.constants import AccessType
+from girder.exceptions import RestException, ValidationException
 from molecules import avogadro
 from molecules import openbabel
 
@@ -46,6 +47,26 @@ class Molecule(AccessControlledModel):
             if 'creatorId' in search:
                 query['creatorId'] = ObjectId(search['creatorId'])
 
+            if 'minValues' in search:
+                try:
+                    minValues = json.loads(search['minValues'])
+                    for key in minValues:
+                        if key not in query:
+                            query[key] = {}
+                        query[key]['$gte'] = minValues[key]
+                except:
+                    raise RestException('Failed to parse minValues')
+
+            if 'maxValues' in search:
+                try:
+                    maxValues = json.loads(search['maxValues'])
+                    for key in maxValues:
+                        if key not in query:
+                            query[key] = {}
+                        query[key]['$lte'] = maxValues[key]
+                except:
+                    raise RestException('Failed to parse maxValues')
+
         fields = [
           'inchikey',
           'smiles',
@@ -55,6 +76,7 @@ class Molecule(AccessControlledModel):
 
         cursor = self.find(query, fields=fields, limit=limit, offset=offset,
                            sort=sort)
+
         num_matches = cursor.collection.count_documents(query)
 
         mols = [x for x in cursor]
