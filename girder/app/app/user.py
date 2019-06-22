@@ -50,6 +50,7 @@ def set_orcid(user, orcid, public):
     if public is None:
         public = True
 
+    _set_user_field(user, 'orcidPublic', public)
     return _set_user_field(user, 'orcid', orcid)
 
 
