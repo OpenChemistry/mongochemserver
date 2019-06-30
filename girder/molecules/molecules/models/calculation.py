@@ -87,20 +87,21 @@ class Calculation(AccessControlledModel):
 
         return doc
 
-    def findcal(self, moleculeId=None, imageName=None,
-            inputParametersHash=None, inputGeometryHash=None,
-            name=None, inchi=None, inchikey=None, smiles=None, formula=None,
-            creatorId=None, pending=None, limit=None, offset=None,
-            sort=None, user=None):
+    def findcal(self, molecule_id=None, image_name=None,
+                input_parameters_hash=None, input_geometry_hash=None,
+                name=None, inchi=None, inchikey=None, smiles=None,
+                formula=None, creator_id=None, pending=None, limit=None,
+                offset=None, sort=None, user=None):
         # Set these to their defaults if they are not already set
         limit, offset, sort = default_pagination_params(limit, offset, sort)
 
         query = {}
 
         # If a molecule id is specified it has higher priority
-        if moleculeId:
-            query['moleculeId'] = ObjectId(moleculeId)
-        # Otherwise, if query parameters for the molecules are specified, search for matching molecules first
+        if molecule_id:
+            query['moleculeId'] = ObjectId(molecule_id)
+        # Otherwise, if query parameters for the molecules are
+        # specified, search for matching molecules first
         elif any((name, inchi, inchikey, smiles, formula)):
             params = {'offset': 0, 'limit': sys.maxsize}
 
@@ -116,22 +117,22 @@ class Calculation(AccessControlledModel):
                 params['formula'] = formula
 
             molecules = MoleculeModel().findmol(params)['results']
-            moleculeIds = [molecule['_id'] for molecule in molecules]
-            query['moleculeId'] = {'$in': moleculeIds}
+            molecule_ids = [molecule['_id'] for molecule in molecules]
+            query['moleculeId'] = {'$in': molecule_ids}
 
-        if imageName:
-            repository, tag = oc.parse_image_name(imageName)
+        if image_name:
+            repository, tag = oc.parse_image_name(image_name)
             query['image.repository'] = repository
             query['image.tag'] = tag
 
-        if inputParametersHash:
-            query['input.parametersHash'] = inputParametersHash
+        if input_parameters_hash:
+            query['input.parametersHash'] = input_parameters_hash
 
-        if inputGeometryHash:
-            query['input.geometryHash'] = inputGeometryHash
+        if input_geometry_hash:
+            query['input.geometryHash'] = input_geometry_hash
 
-        if creatorId:
-            query['creatorId'] = ObjectId(creatorId)
+        if creator_id:
+            query['creatorId'] = ObjectId(creator_id)
 
         if pending is not None:
             pending = toBool(pending)

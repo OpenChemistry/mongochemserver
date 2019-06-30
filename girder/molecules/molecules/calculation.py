@@ -404,14 +404,16 @@ class Calculation(Resource):
     )
     def find_calc(self, moleculeId=None, imageName=None,
                   inputParametersHash=None, inputGeometryHash=None,
-                  name=None, inchi=None, inchikey=None, smiles=None, formula=None,
-                  creatorId=None, pending=None, limit=None, offset=None,
-                  sort=None):
-        return CalculationModel().findcal(moleculeId=moleculeId, imageName=imageName,
-                                inputParametersHash=inputParametersHash, inputGeometryHash=inputGeometryHash,
-                                name=name, inchi=inchi, inchikey=inchikey, smiles=smiles, formula=formula,
-                                creatorId=creatorId, pending=pending, limit=limit, offset=offset,
-                                sort=sort, user=getCurrentUser())
+                  name=None, inchi=None, inchikey=None, smiles=None,
+                  formula=None, creatorId=None, pending=None, limit=None,
+                  offset=None, sort=None):
+        return CalculationModel().findcal(
+            molecule_id=moleculeId, image_name=imageName,
+            input_parameters_hash=inputParametersHash,
+            input_geometry_hash=inputGeometryHash, name=name, inchi=inchi,
+            inchikey=inchikey, smiles=smiles, formula=formula,
+            creator_id=creatorId, pending=pending, limit=limit, offset=offset,
+            sort=sort, user=getCurrentUser())
 
     @access.public
     def find_id(self, id, params):
