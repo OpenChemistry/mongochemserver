@@ -5,23 +5,23 @@ from girder.models.model_base import AccessType
 from girder.models.user import User
 
 
-def _set_user_field(user, field_name, field_value):
+def _set_user_fields(user, field_names, field_values):
     query = {
         '_id': user['_id']
     }
 
     update = {
-        '$set': {
-            field_name: field_value
-        }
+        '$set': {}
     }
+    for name, val in zip(field_names, field_values):
+        update['$set'][name] = val
 
     User().update(query, update)
 
     # Get the updated user and return it
     # The added field is included
     user = User().findOne(user['_id'])
-    return User().filter(user, getCurrentUser(), [field_name])
+    return User().filter(user, getCurrentUser(), field_names)
 
 
 @access.public
@@ -31,11 +31,12 @@ def _set_user_field(user, field_name, field_value):
 )
 def get_orcid(user):
     # Either orcidPublic must be true or the user has admin level access
-    if user.get('orcidPublic') != True:
+    if user.get('orcidPublic') is not True:
         if User().getAccessLevel(user, getCurrentUser()) != AccessType.ADMIN:
             return None
 
     return user.get('orcid')
+
 
 @access.user
 @autoDescribeRoute(
@@ -50,8 +51,9 @@ def set_orcid(user, orcid, public):
     if public is None:
         public = True
 
-    _set_user_field(user, 'orcidPublic', public)
-    return _set_user_field(user, 'orcid', orcid)
+    fields = 'orcidPublic', 'orcid'
+    values = public, orcid
+    return _set_user_fields(user, fields, values)
 
 
 @access.public
@@ -61,7 +63,7 @@ def set_orcid(user, orcid, public):
 )
 def get_twitter(user):
     # Either twitterPublic must be true or the user has admin level access
-    if user.get('twitterPublic') != True:
+    if user.get('twitterPublic') is not True:
         if User().getAccessLevel(user, getCurrentUser()) != AccessType.ADMIN:
             return None
 
@@ -81,5 +83,6 @@ def set_twitter(user, twitter, public):
     if public is None:
         public = True
 
-    _set_user_field(user, 'twitterPublic', public)
-    return _set_user_field(user, 'twitter', twitter)
+    fields = 'twitterPublic', 'twitter'
+    values = public, twitter
+    return _set_user_fields(user, fields, values)
