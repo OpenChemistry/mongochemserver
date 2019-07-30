@@ -5,11 +5,13 @@ import json
 from jsonpath_rw import parse
 import re
 
-from girder.models.model_base import AccessControlledModel, ValidationException
+from girder.models.model_base import AccessControlledModel
 from girder.constants import AccessType
+from girder.exceptions import RestException, ValidationException
 from molecules import avogadro
 from molecules import openbabel
 
+from molecules import query as mol_query
 from molecules.utilities.pagination import parse_pagination_params
 from molecules.utilities.pagination import search_results_dict
 
@@ -28,10 +30,22 @@ class Molecule(AccessControlledModel):
     def findmol(self, search = None):
         limit, offset, sort = parse_pagination_params(search)
 
+        if search is None:
+            search = {}
+
         query = {}
-        if search:
+        if 'queryString' in search:
+            # queryString takes precedence over all other search params
+            query_string = search['queryString']
+            try:
+                query = mol_query.to_mongo_query(query_string)
+            except mol_query.InvalidQuery:
+                raise RestException('Invalid query', 400)
+        elif search:
+            # If the search dict is not empty, perform a search
             if 'name' in search:
-                query['name'] = { '$regex': '^' + search['name'], '$options': 'i' }
+                query['name'] = { '$regex': '^' + search['name'],
+                                  '$options': 'i' }
             if 'inchi' in search:
                 query['inchi'] = search['inchi']
             if 'inchikey' in search:
@@ -46,6 +60,26 @@ class Molecule(AccessControlledModel):
             if 'creatorId' in search:
                 query['creatorId'] = ObjectId(search['creatorId'])
 
+            if 'minValues' in search:
+                try:
+                    minValues = json.loads(search['minValues'])
+                    for key in minValues:
+                        if key not in query:
+                            query[key] = {}
+                        query[key]['$gte'] = minValues[key]
+                except:
+                    raise RestException('Failed to parse minValues')
+
+            if 'maxValues' in search:
+                try:
+                    maxValues = json.loads(search['maxValues'])
+                    for key in maxValues:
+                        if key not in query:
+                            query[key] = {}
+                        query[key]['$lte'] = maxValues[key]
+                except:
+                    raise RestException('Failed to parse maxValues')
+
         fields = [
           'inchikey',
           'smiles',
@@ -55,6 +89,7 @@ class Molecule(AccessControlledModel):
 
         cursor = self.find(query, fields=fields, limit=limit, offset=offset,
                            sort=sort)
+
         num_matches = cursor.collection.count_documents(query)
 
         mols = [x for x in cursor]

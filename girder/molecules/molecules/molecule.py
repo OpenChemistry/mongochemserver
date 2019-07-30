@@ -97,6 +97,15 @@ class Molecule(Resource):
                    paramType='query', required=False)
             .param('creatorId', 'The id of the user that created the molecule',
                    paramType='query', required=False)
+            .jsonParam('minValues', 'A dict of { key: minValue } representing '
+                       'minimum allowable values', requireObject=True,
+                       required=False)
+            .jsonParam('maxValues', 'A dict of { key: maxValue } representing '
+                       'maximum allowable values', requireObject=True,
+                       required=False)
+            .param('queryString', 'The query string to use for this search '
+                                  '(supercedes all other search parameters)',
+                   paramType='query', required=False)
             .pagingParams(defaultSort='_id',
                           defaultSortDir=SortDir.DESCENDING,
                           defaultLimit=25)
@@ -426,8 +435,13 @@ class Molecule(Resource):
             except query.InvalidQuery:
                 raise RestException('Invalid query', 400)
 
-            cursor = MoleculeModel().find(query=mongo_query,
-                                          fields=['_id', 'inchikey', 'name'],
+            fields = [
+              'inchikey',
+              'smiles',
+              'properties',
+              'name'
+            ]
+            cursor = MoleculeModel().find(query=mongo_query, fields=fields,
                                           limit=limit, offset=offset,
                                           sort=sort)
             mols = [x for x in cursor]
