@@ -172,6 +172,9 @@ class Molecule(Resource):
             if key in Molecule.input_formats:
                 input_format = key
                 data = body[input_format]
+                # Convert to str if necessary
+                if isinstance(data, dict):
+                    data = json.dumps(data)
                 mol = create_molecule(data, input_format,  user, public, gen3d)
                 break
 
