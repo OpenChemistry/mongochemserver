@@ -145,6 +145,7 @@ class Molecule(Resource):
         user = self.getCurrentUser()
         public = body.get('public', False)
         gen3d = body.get('generate3D', True)
+        provenance = body.get('provenance', 'uploaded by user')
         mol = None
         if 'fileId' in body:
             file_id = body['fileId']
@@ -159,14 +160,16 @@ class Molecule(Resource):
             with File().open(file) as f:
                 data_str = f.read().decode()
 
-            mol = create_molecule(data_str, input_format, user, public, gen3d)
+            mol = create_molecule(data_str, input_format, user, public, gen3d,
+                                  provenance)
         elif 'inchi' in body:
             input_format = 'inchi'
             data = body['inchi']
             if not data.startswith('InChI='):
                 data = 'InChI=' + data
 
-            mol = create_molecule(data, input_format, user, public, gen3d)
+            mol = create_molecule(data, input_format, user, public, gen3d,
+                                  provenance)
 
         for key in body:
             if key in Molecule.input_formats:
@@ -175,7 +178,8 @@ class Molecule(Resource):
                 # Convert to str if necessary
                 if isinstance(data, dict):
                     data = json.dumps(data)
-                mol = create_molecule(data, input_format,  user, public, gen3d)
+                mol = create_molecule(data, input_format,  user, public, gen3d,
+                                      provenance)
                 break
 
         if not mol:
@@ -470,7 +474,9 @@ class Molecule(Resource):
                 r.raise_for_status()
 
             sdf_data = r.content.decode('utf8')
-            mol = create_molecule(sdf_data, 'sdf', getCurrentUser(), True)
+            provenance = 'cactus: ' + cactus
+            mol = create_molecule(sdf_data, 'sdf', getCurrentUser(), True,
+                                  provenance=provenance)
 
             return search_results_dict([mol], 1, limit, offset, sort)
 
