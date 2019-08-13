@@ -17,11 +17,7 @@ from girder.models.file import File
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import toBool
 from molecules.models.calculation import Calculation as CalculationModel
-from molecules.models.molecule import Molecule as MoleculeModel
 from molecules.utilities.molecules import create_molecule
-from molecules.utilities.pagination import default_pagination_params
-from molecules.utilities.pagination import parse_pagination_params
-from molecules.utilities.pagination import search_results_dict
 
 import openchemistry as oc
 
@@ -391,61 +387,33 @@ class Calculation(Resource):
         .param('imageName', 'The name of the Docker image that run this calculation', required=False)
         .param('inputParametersHash', 'The hash of the input parameters dictionary.', required=False)
         .param('inputGeometryHash', 'The hash of the input geometry.', required=False)
+        .param('name', 'The name of the molecule', paramType='query',
+                   required=False)
+        .param('inchi', 'The InChI of the molecule', paramType='query',
+                required=False)
+        .param('inchikey', 'The InChI key of the molecule', paramType='query',
+                required=False)
+        .param('smiles', 'The SMILES of the molecule', paramType='query',
+                required=False)
+        .param('formula',
+                'The formula (using the "Hill Order") to search for',
+                paramType='query', required=False)
         .param('creatorId', 'The id of the user that created the calculation',
                required=False)
         .pagingParams(defaultSort='_id', defaultSortDir=SortDir.DESCENDING, defaultLimit=25)
     )
     def find_calc(self, moleculeId=None, imageName=None,
                   inputParametersHash=None, inputGeometryHash=None,
-                  creatorId=None, pending=None, limit=None, offset=None,
-                  sort=None):
-        user = getCurrentUser()
-
-        # Set these to their defaults if they are not already set
-        limit, offset, sort = default_pagination_params(limit, offset, sort)
-
-        query = {}
-
-        if moleculeId:
-            query['moleculeId'] = ObjectId(moleculeId)
-
-        if imageName:
-            repository, tag = oc.parse_image_name(imageName)
-            query['image.repository'] = repository
-            query['image.tag'] = tag
-
-        if inputParametersHash:
-            query['input.parametersHash'] = inputParametersHash
-
-        if inputGeometryHash:
-            query['input.geometryHash'] = inputGeometryHash
-
-        if creatorId:
-            query['creatorId'] = ObjectId(creatorId)
-
-        if pending is not None:
-            pending = toBool(pending)
-            query['properties.pending'] = pending
-            # The absence of the field mean the calculation is not pending ...
-            if not pending:
-                query['properties.pending'] = {
-                    '$ne': True
-                }
-
-        fields = ['image', 'input',
-                  'cjson', 'cjson.vibrations.modes', 'cjson.vibrations.intensities',
-                  'cjson.vibrations.frequencies', 'properties', 'fileId', 'access',
-                  'moleculeId', 'public']
-
-        calcs = self._model.find(query, fields=fields, limit=limit,
-                                 offset=offset, sort=sort)
-        num_matches = calcs.collection.count_documents(query)
-
-        calcs = self._model.filterResultsByPermission(calcs, user,
-            AccessType.READ, limit=limit)
-        calcs = [self._model.filter(x, user) for x in calcs]
-
-        return search_results_dict(calcs, num_matches, limit, offset, sort)
+                  name=None, inchi=None, inchikey=None, smiles=None,
+                  formula=None, creatorId=None, pending=None, limit=None,
+                  offset=None, sort=None):
+        return CalculationModel().findcal(
+            molecule_id=moleculeId, image_name=imageName,
+            input_parameters_hash=inputParametersHash,
+            input_geometry_hash=inputGeometryHash, name=name, inchi=inchi,
+            inchikey=inchikey, smiles=smiles, formula=formula,
+            creator_id=creatorId, pending=pending, limit=limit, offset=offset,
+            sort=sort, user=getCurrentUser())
 
     @access.public
     def find_id(self, id, params):
