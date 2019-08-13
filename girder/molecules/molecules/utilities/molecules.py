@@ -26,7 +26,8 @@ openbabel_3d_formats = [
 ]
 
 
-def create_molecule(data_str, input_format, user, public, gen3d=True):
+def create_molecule(data_str, input_format, user, public, gen3d=True,
+                    provenance='uploaded by user'):
 
     using_2d_format = (input_format in openbabel_2d_formats)
     smiles_format = 'smiles'
@@ -74,7 +75,8 @@ def create_molecule(data_str, input_format, user, public, gen3d=True):
             'smiles': smiles,
             'properties': props,
             'atomCounts': atomCounts,
-            'svg': svg_data
+            'svg': svg_data,
+            'provenance': provenance
         }
 
         # Set a name if we find one
