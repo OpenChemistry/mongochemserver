@@ -12,7 +12,7 @@ RUN git clone https://github.com/Kitware/cumulus.git /cumulus && \
 # Set the broker URL
 RUN sed -i s/localhost/rabbitmq/g /cumulus/cumulus/celery/commonconfig.py
 
-COPY docker/config.json /cumulus/cumulus/conf/config.json
+COPY docker/girder/config.json /cumulus/cumulus/conf/config.json
 
 RUN git clone https://github.com/OpenChemistry/openchemistrypy.git /openchemistrypy
 
@@ -22,7 +22,7 @@ RUN apt-get update && apt-get -y install \
   libopenbabel-dev
 
 # Enable proxy support
-COPY docker/girder.local.conf /etc/girder.cfg
+COPY docker/girder/girder.local.conf /etc/girder.cfg
 
 # Copy over mongochemserver
 COPY . /mongochemserver
