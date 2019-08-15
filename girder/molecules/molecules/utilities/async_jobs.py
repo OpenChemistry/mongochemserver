@@ -1,3 +1,4 @@
+import functools
 import json
 import requests
 import sys
@@ -43,38 +44,36 @@ def schedule_svg_gen(mol, user):
         'data': mol['smiles']
     }
 
-    hooks = {
-        'response': _finish_svg_gen_factory(mol['inchikey'], user)
+    future = session.post(url, json=data)
+
+    inchikey = mol['inchikey']
+    future.add_done_callback(functools.partial(_finish_svg_gen,
+                                               inchikey, user))
+
+
+def _finish_svg_gen(inchikey, user, future):
+
+    resp = future.result()
+
+    query = {
+        'inchikey': inchikey
     }
 
-    future = session.post(url, hooks=hooks, json=data)
+    updates = {}
+    updates.setdefault('$unset', {})['generating_svg'] = ''
 
+    if resp.status_code == 200:
+        updates.setdefault('$set', {})['svg'] = resp.text
+    else:
+        print('Generating SVG failed!')
+        print('Status code was:', resp.status_code)
+        print('Reason was:', resp.reason)
 
-def _finish_svg_gen_factory(inchikey, user):
-    def _finish_svg_gen(resp, *args, **kwargs):
+    update_result = super(MoleculeModel,
+                          MoleculeModel()).update(query, updates)
 
-        query = {
-            'inchikey': inchikey
-        }
-
-        updates = {}
-        updates.setdefault('$unset', {})['generating_svg'] = ''
-
-        if resp.status_code == 200:
-            updates.setdefault('$set', {})['svg'] = resp.text
-        else:
-            print('Generating SVG failed!')
-            print('Status code was:', resp.status_code)
-            print('Reason was:', resp.reason)
-
-        update_result = super(MoleculeModel,
-                              MoleculeModel()).update(query, updates)
-        if update_result.matched_count == 0:
-            raise ValidationException('Invalid inchikey (%s)' % inchikey)
-
-        return resp
-
-    return _finish_svg_gen
+    if update_result.matched_count == 0:
+        raise ValidationException('Invalid inchikey (%s)' % inchikey)
 
 
 def schedule_3d_coords_gen(mol, user):
