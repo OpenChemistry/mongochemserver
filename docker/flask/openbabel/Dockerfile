@@ -14,4 +14,4 @@ COPY flask/openbabel/src/* /app/
 
 WORKDIR /app
 
-ENTRYPOINT ["python3", "main.py"]
+ENTRYPOINT ["python3", "server.py"]
