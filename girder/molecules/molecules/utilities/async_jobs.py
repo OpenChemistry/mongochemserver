@@ -3,19 +3,78 @@ import requests
 import sys
 import traceback
 
+from requests_futures.sessions import FuturesSession
+
 from girder import events
 from girder.constants import TerminalColor
+from girder.models.model_base import ValidationException
+from girder.models.setting import Setting
+
 from girder_jobs.models.job import Job
 from girder_jobs.constants import JobStatus
-from girder.models.model_base import ValidationException
 
 from .whitelist_cjson import whitelist_cjson
+
+from molecules.constants import PluginSettings
 
 from .. import avogadro
 from .. import openbabel
 from .. import semantic
 
 from ..models.molecule import Molecule as MoleculeModel
+
+
+def schedule_svg_gen(mol, user):
+    mol['generating_svg'] = True
+
+    session = FuturesSession()
+
+    base_url = Setting().get(PluginSettings.OPENBABEL_BASE_URL)
+    if base_url is None:
+        base_url = 'http://localhost:5000'
+
+    path = 'convert'
+    output_format = 'svg'
+
+    url = '/'.join([base_url, path, output_format])
+
+    data = {
+        'format': 'smi',
+        'data': mol['smiles']
+    }
+
+    hooks = {
+        'response': _finish_svg_gen_factory(mol['inchikey'], user)
+    }
+
+    future = session.post(url, hooks=hooks, json=data)
+
+
+def _finish_svg_gen_factory(inchikey, user):
+    def _finish_svg_gen(resp, *args, **kwargs):
+
+        query = {
+            'inchikey': inchikey
+        }
+
+        updates = {}
+        updates.setdefault('$unset', {})['generating_svg'] = ''
+
+        if resp.status_code == 200:
+            updates.setdefault('$set', {})['svg'] = resp.text
+        else:
+            print('Generating SVG failed!')
+            print('Status code was:', resp.status_code)
+            print('Reason was:', resp.reason)
+
+        update_result = super(MoleculeModel,
+                              MoleculeModel()).update(query, updates)
+        if update_result.matched_count == 0:
+            raise ValidationException('Invalid inchikey (%s)' % inchikey)
+
+        return resp
+
+    return _finish_svg_gen
 
 
 def schedule_3d_coords_gen(mol, user):
@@ -32,7 +91,7 @@ def schedule_3d_coords_gen(mol, user):
                 callback_factory(inchikey, user))
 
     job = Job().createLocalJob(
-        module='molecules.utilities.generate_3d_coords_async',
+        module='molecules.utilities.async_jobs',
         title='Generate 3d coordinates for SMILES: %s' % smiles,
         user=user, type='molecules.generate_3d_coords', public=False,
         function='_run_3d_coords_gen',

@@ -17,7 +17,8 @@ setup(
       'openchemistry',
       'beautifulsoup4',
       'jcamp',
-      'requests'
+      'requests',
+      'requests-futures'
     ],
     entry_points={
       'girder.plugin': [

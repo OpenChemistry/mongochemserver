@@ -10,7 +10,7 @@ from molecules.models.molecule import Molecule as MoleculeModel
 from girder.constants import TerminalColor
 from girder.api.rest import RestException
 
-from .generate_3d_coords_async import schedule_3d_coords_gen
+from .async_jobs import schedule_3d_coords_gen, schedule_svg_gen
 from .whitelist_cjson import whitelist_cjson
 
 openbabel_2d_formats = [
@@ -66,18 +66,17 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
         for i in range(0, int(len(pieces) / 2)):
             atomCounts[pieces[2 * i]] = int(pieces[2 * i + 1])
 
-        # Generate an svg file for an image
-        svg_data = openbabel.to_svg(smiles, smiles_format)
-
         mol_dict = {
             'inchi': inchi,
             'inchikey': inchikey,
             'smiles': smiles,
             'properties': props,
             'atomCounts': atomCounts,
-            'svg': svg_data,
             'provenance': provenance
         }
+
+        # Generate an svg file for an image
+        schedule_svg_gen(mol_dict, user)
 
         # Set a name if we find one
         name = chemspider.find_common_name(inchikey)
