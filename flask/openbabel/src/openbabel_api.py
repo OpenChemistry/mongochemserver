@@ -74,7 +74,7 @@ def to_smiles(str_data, in_format):
     # all of these.
     # Use canonical smiles
     smiles, mime = convert_str(str_data, in_format, 'can')
-    smiles = smiles.strip().split[0]
+    smiles = smiles.strip().split()[0]
     return (smiles, mime)
 
 
