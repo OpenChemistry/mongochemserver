@@ -6,11 +6,10 @@ from requests_futures.sessions import FuturesSession
 
 from girder.constants import TerminalColor
 from girder.models.model_base import ValidationException
-from girder.models.setting import Setting
 
 from .whitelist_cjson import whitelist_cjson
 
-from molecules.constants import PluginSettings
+from molecules.openbabel_api import openbabel_base_url
 
 from .. import avogadro
 from .. import semantic
@@ -21,12 +20,7 @@ from ..models.molecule import Molecule as MoleculeModel
 def schedule_svg_gen(mol, user):
     mol['generating_svg'] = True
 
-    session = FuturesSession()
-
-    base_url = Setting().get(PluginSettings.OPENBABEL_BASE_URL)
-    if base_url is None:
-        base_url = 'http://localhost:5000'
-
+    base_url = openbabel_base_url()
     path = 'convert'
     output_format = 'svg'
 
@@ -37,6 +31,7 @@ def schedule_svg_gen(mol, user):
         'data': mol['smiles']
     }
 
+    session = FuturesSession()
     future = session.post(url, json=data)
 
     inchikey = mol['inchikey']
@@ -72,12 +67,7 @@ def _finish_svg_gen(inchikey, user, future):
 def schedule_3d_coords_gen(mol, user):
     mol['generating_3d_coords'] = True
 
-    session = FuturesSession()
-
-    base_url = Setting().get(PluginSettings.OPENBABEL_BASE_URL)
-    if base_url is None:
-        base_url = 'http://localhost:5000'
-
+    base_url = openbabel_base_url()
     path = 'convert'
     output_format = 'sdf'
 
@@ -89,6 +79,7 @@ def schedule_3d_coords_gen(mol, user):
         'gen3d': True
     }
 
+    session = FuturesSession()
     future = session.post(url, json=data)
 
     inchikey = mol['inchikey']
