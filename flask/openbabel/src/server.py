@@ -18,6 +18,7 @@ def convert(output_format):
 
         gen3d (bool): should we generate 3d coordinates?
         addHydrogens (bool): should we add hydrogens?
+        perceiveBonds (bool): should we perceive bonds?
         outOptions (dict): what extra output options are there?
 
     Special cases are:
@@ -52,11 +53,13 @@ def convert(output_format):
         # Check for a few specific arguments
         gen3d = json_data.get('gen3d', False)
         add_hydrogens = json_data.get('addHydrogens', False)
+        perceive_bonds = json_data.get('perceiveBonds', False)
         out_options = json_data.get('outOptions', {})
 
         data, mime = openbabel.convert_str(data, input_format, output_format,
                                            gen3d=gen3d,
                                            add_hydrogens=add_hydrogens,
+                                           perceive_bonds=perceive_bonds,
                                            out_options=out_options)
     return Response(data, mimetype=mime)
 
