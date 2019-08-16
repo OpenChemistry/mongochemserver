@@ -1,7 +1,4 @@
-import json
-
-from flask import Flask
-from flask import request
+from flask import Flask, jsonify, request, Response
 
 import openbabel_api as openbabel
 
@@ -41,25 +38,27 @@ def convert(output_format):
     # Treat special cases with special functions
     out_lower = output_format.lower()
     if out_lower == 'svg':
-        return openbabel.to_svg(data, input_format)
+        data, mime = openbabel.to_svg(data, input_format)
     elif out_lower in ['smiles', 'smi']:
-        return openbabel.to_smiles(data, input_format)
+        data, mime = openbabel.to_smiles(data, input_format)
     elif out_lower == 'inchi':
         inchi, inchikey = openbabel.to_inchi(data, input_format)
         d = {
             'inchi': inchi,
             'inchikey': inchikey
         }
-        return json.dumps(d)
+        return jsonify(d)
+    else:
+        # Check for a few specific arguments
+        gen3d = json_data.get('gen3d', False)
+        add_hydrogens = json_data.get('addHydrogens', False)
+        out_options = json_data.get('outOptions', {})
 
-    # Check for a few specific arguments
-    gen3d = json_data.get('gen3d', False)
-    add_hydrogens = json_data.get('addHydrogens', False)
-    out_options = json_data.get('outOptions', {})
-
-    return openbabel.convert_str(data, input_format, output_format,
-                                 gen3d=gen3d, add_hydrogens=add_hydrogens,
-                                 out_options=out_options)
+        data, mime = openbabel.convert_str(data, input_format, output_format,
+                                           gen3d=gen3d,
+                                           add_hydrogens=add_hydrogens,
+                                           out_options=out_options)
+    return Response(data, mimetype=mime)
 
 
 if __name__ == '__main__':
