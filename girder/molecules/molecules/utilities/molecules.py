@@ -95,7 +95,8 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
             return MoleculeModel().create(user, mol_dict, public)
         else:
             if input_format in openbabel_3d_formats:
-                sdf_data = openbabel.convert_str(data_str, input_format, 'sdf')
+                sdf_data, mime = openbabel.convert_str(data_str, input_format,
+                                                       'sdf')
                 cjson = json.loads(avogadro.convert_str(sdf_data, 'sdf',
                                                         'cjson'))
             else:

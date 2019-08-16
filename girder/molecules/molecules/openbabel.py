@@ -1,150 +1,96 @@
-from girder.api.rest import RestException
-
 import json
-from openbabel import OBMol, OBConversion
+import requests
 
-import pybel
+from girder.models.setting import Setting
 
-import re
+from molecules.avogadro import convert_str as avo_convert_str
+from molecules.constants import PluginSettings
+from molecules.utilities.has_3d_coords import cjson_has_3d_coords
 
-from .avogadro import convert_str as avo_convert_str
+def openbabel_base_url():
+    base_url = Setting().get(PluginSettings.OPENBABEL_BASE_URL)
+    if base_url is None:
+        base_url = 'http://localhost:5000'
 
-from .models.molecule import Molecule as MoleculeModel
+    return base_url
 
-inchi_validator = re.compile('InChI=[0-9]S?\/')
 
-# This function only validates the first part. It does not guarantee
-# that the entire InChI is valid.
-def validate_start_of_inchi(inchi):
-    if not inchi_validator.match(inchi):
-        raise RestException('Invalid InChI: "' + inchi +'"', 400)
+def convert_str(data_str, input_format, output_format, extra_options=None):
 
-# gen3d should be true for 2D input formats such as inchi or smiles
-def convert_str(str_data, in_format, out_format, gen3d=False, out_options=None):
+    if extra_options is None:
+        extra_options = {}
 
-    # Make sure that the start of InChI is valid before passing it to
-    # Open Babel, or Open Babel will crash the server.
-    if in_format.lower() == 'inchi':
-        validate_start_of_inchi(str_data)
+    base_url = openbabel_base_url()
+    path = 'convert'
+    url = '/'.join([base_url, path, output_format])
 
-    if out_options is None:
-        out_options = {}
+    data = {
+        'format': input_format,
+        'data': data_str,
+    }
+    data.update(extra_options)
 
-    obMol = OBMol()
-    conv = OBConversion()
-    conv.SetInFormat(in_format)
-    conv.SetOutFormat(out_format)
-    conv.ReadString(obMol, str_data)
+    r = requests.post(url, json=data)
 
-    if gen3d:
-        # Generate 3D coordinates for the input
-        mol = pybel.Molecule(obMol)
-        mol.make3D()
+    if r.headers and 'content-type' in r.headers:
+        mimetype = r.headers['content-type']
+    else:
+        mimetype = None
 
-    for option, value in out_options.items():
-        conv.AddOption(option, conv.OUTOPTIONS, value)
+    return r.text, mimetype
 
-    return (conv.WriteString(obMol), conv.GetOutFormat().GetMIMEType())
 
-def gen_sdf_no_3d(str_data, in_format):
+def to_inchi(data_str, input_format):
 
-    obMol = OBMol()
-    conv = OBConversion()
-    conv.SetInFormat(in_format)
-    conv.SetOutFormat('sdf')
-    conv.ReadString(obMol, str_data)
+    result, mime = convert_str(data_str, input_format, 'inchi')
+    result = json.loads(result)
 
-    obMol.AddHydrogens()
+    return result.get('inchi'), result.get('inchikey')
 
-    return (conv.WriteString(obMol), conv.GetOutFormat().GetMIMEType())
 
-def cjson_to_ob_molecule(cjson):
-    cjson_str = json.dumps(cjson)
-    sdf_str = avo_convert_str(cjson_str, 'cjson', 'sdf')
-    conv = OBConversion()
-    conv.SetInFormat('sdf')
-    conv.SetOutFormat('sdf')
-    mol = OBMol()
-    conv.ReadString(mol, sdf_str)
-    return mol
+def to_smiles(data_str, input_format):
+
+    result, mime = convert_str(data_str, input_format, 'smi')
+    return result
+
+
+def gen_sdf_no_3d(data_str, input_format):
+
+    extra_options = {
+        'addHydrogens': True
+    }
+
+    return convert_str(data_str, input_format, 'sdf')
+
+
+def atom_count(data_str, input_format):
+
+    base_url = openbabel_base_url()
+    path = 'atom_count'
+    url = '/'.join([base_url, path])
+
+    data = {
+        'format': input_format,
+        'data': data_str,
+    }
+
+    r = requests.post(url, json=data)
+
+    return int(r.text)
+
 
 def autodetect_bonds(cjson):
     # Only autodetect bonds if we have 3D coordinates
-    if not MoleculeModel().cjson_has_3d_coords(cjson):
+    if not cjson_has_3d_coords(cjson):
         return cjson
 
-    mol = cjson_to_ob_molecule(cjson)
-    mol.ConnectTheDots()
-    mol.PerceiveBondOrders()
-    conv = OBConversion()
-    conv.SetInFormat('sdf')
-    conv.SetOutFormat('sdf')
-    sdf_str = conv.WriteString(mol)
+    cjson_str = json.dumps(cjson)
+    sdf_str = avo_convert_str(cjson_str, 'cjson', 'sdf')
+
+    extra_options = {
+        'perceiveBonds': True
+    }
+    sdf_str, mime = convert_str(sdf_str, 'sdf', 'sdf', extra_options)
+
     cjson_str = avo_convert_str(sdf_str, 'sdf', 'cjson')
     return json.loads(cjson_str)
-
-def to_inchi(str_data, in_format):
-    mol = OBMol()
-    conv = OBConversion()
-    conv.SetInFormat(in_format)
-    # Hackish for now, convert to xyz first...
-    conv.SetOutFormat('xyz')
-    conv.ReadString(mol, str_data)
-    xyz = conv.WriteString(mol)
-
-    # Now convert to inchi and inchikey.
-    mol = OBMol()
-    conv.SetInFormat('xyz')
-    conv.ReadString(mol, xyz)
-
-    conv.SetOutFormat('inchi')
-    inchi = conv.WriteString(mol).rstrip()
-    conv.SetOptions("K", conv.OUTOPTIONS)
-    inchikey = conv.WriteString(mol).rstrip()
-
-    return (inchi, inchikey)
-
-def from_inchi(str_data, out_format):
-    return convert_str(str_data, 'inchi', out_format, True)
-
-def to_smiles(str_data, in_format):
-    # This returns ["<smiles>", "chemical/x-daylight-smiles"]
-    # Keep only the first part.
-    # The smiles has returns at the end of it, and may contain
-    # a return in the middle with a common name. Get rid of
-    # all of these.
-    # Use canonical smiles
-    smiles = convert_str(str_data, in_format, 'can')[0].strip()
-    return smiles.split()[0]
-
-def from_smiles(str_data, out_format):
-    return convert_str(str_data, 'smi', out_format, True)
-
-def atom_count(str_data, in_format):
-    mol = OBMol()
-    conv = OBConversion()
-    conv.SetInFormat(in_format)
-    conv.ReadString(mol, str_data)
-
-    return mol.NumAtoms()
-
-def get_formula(str_data, in_format):
-    # Inchi must start with 'InChI='
-    if in_format == 'inchi' and not str_data.startswith('InChI='):
-        str_data = 'InChI=' + str_data
-        validate_start_of_inchi(str_data)
-    # Get the molecule using the "Hill Order" - i. e., C first, then H,
-    # and then alphabetical.
-    mol = OBMol()
-    conv = OBConversion()
-    conv.SetInFormat(in_format)
-    conv.ReadString(mol, str_data)
-
-    return mol.GetFormula()
-
-def to_svg(str_data, in_format):
-    out_options = {
-        'b': 'none', # transparent background color
-        'B': 'black' # black bonds color
-    }
-    return convert_str(str_data, in_format, 'svg', out_options=out_options)[0]

@@ -9,7 +9,7 @@ from girder.models.model_base import ValidationException
 
 from .whitelist_cjson import whitelist_cjson
 
-from molecules.openbabel_api import openbabel_base_url
+from molecules.openbabel import openbabel_base_url
 
 from .. import avogadro
 from .. import semantic

@@ -336,9 +336,11 @@ class Molecule(Resource):
             output = ''
             mime = 'text/plain'
             if input_format == 'pdb':
-                (output, mime) = openbabel.convert_str(data_str, input_format, output_format)
+                (output, mime) = openbabel.convert_str(data_str, input_format,
+                                                       output_format)
             else:
-                output = avogadro.convert_str(data_str, input_format, output_format)
+                output = avogadro.convert_str(data_str, input_format,
+                                              output_format)
 
             def stream():
                 cherrypy.response.headers['Content-Type'] = mime
