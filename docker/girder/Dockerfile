@@ -16,11 +16,6 @@ COPY docker/girder/config.json /cumulus/cumulus/conf/config.json
 
 RUN git clone https://github.com/OpenChemistry/openchemistrypy.git /openchemistrypy
 
-# Install deps for pybel
-RUN apt-get update && apt-get -y install \
-  swig \
-  libopenbabel-dev
-
 # Enable proxy support
 COPY docker/girder/girder.local.conf /etc/girder.cfg
 
