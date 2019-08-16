@@ -26,7 +26,8 @@ from girder.plugin import GirderPlugin
     PluginSettings.JENA_BASE_URL,
     PluginSettings.JENA_USER,
     PluginSettings.JENA_PASSWORD,
-    PluginSettings.JENA_DATASET
+    PluginSettings.JENA_DATASET,
+    PluginSettings.OPENBABEL_BASE_URL
 })
 def validateSettings(event):
     pass
