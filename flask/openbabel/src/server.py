@@ -60,6 +60,24 @@ def convert(output_format):
                                            out_options=out_options)
     return Response(data, mimetype=mime)
 
+@app.route('/atom_count', methods=['POST'])
+def atom_count():
+    """Get the number of atoms in a molecule
+
+    The input format and the data are specified in the body (in json
+    format) as the keys "format" and "data", respectively.
+
+    Curl example:
+    curl -X POST 'http://localhost:5000/atom_count' \
+      -H "Content-Type: application/json" \
+      -d '{"format": "smiles", "data": "CCO"}'
+    """
+    json_data = request.get_json()
+    input_format = json_data['format']
+    data = json_data['data']
+
+    # int output is not accepted
+    return str(openbabel.atom_count(data, input_format))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
