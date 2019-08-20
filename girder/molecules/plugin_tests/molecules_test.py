@@ -86,7 +86,7 @@ def test_create_molecule_file_id(server, user, fsAssetstore, make_girder_file):
     file_id = str(girder_file['_id'])
 
     body = {
-        'fileId': file_id,
+        'fileId': file_id
     }
 
     r = server.request('/molecules', method='POST', type='application/json',
@@ -138,7 +138,8 @@ def test_create_molecule_inchi(server, user):
 
     body = {
         'name': 'water',
-        'inchi': inchi_data
+        'inchi': inchi_data,
+        'generate3D': False
     }
 
     r = server.request('/molecules', method='POST', type='application/json',
@@ -190,7 +191,8 @@ def test_create_molecule_smiles(server, user):
 
     body = {
         'name': 'water',
-        'smi': smi_data
+        'smi': smi_data,
+        'generate3D': False
     }
 
     r = server.request('/molecules', method='POST', type='application/json',
