@@ -1,7 +1,7 @@
 from jsonpath_rw import parse
 
 
-def cjson_has_3d_coords(self, cjson):
+def cjson_has_3d_coords(cjson):
     # jsonpath_rw won't let us parse "3d" because it has
     # issues parsing keys that start with a number...
     # If this changes in the future, fix this
