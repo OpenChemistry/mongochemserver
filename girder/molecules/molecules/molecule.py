@@ -314,7 +314,8 @@ class Molecule(Resource):
         if output_format.startswith('inchi'):
             atom_count = 0
             if input_format == 'pdb':
-                atom_count = openbabel.atom_count(data_str, input_format)
+                props = openbabel.properties(data_str, input_format)
+                atom_count = props['atomCount']
             else:
                 atom_count = avogadro.atom_count(data_str, input_format)
 

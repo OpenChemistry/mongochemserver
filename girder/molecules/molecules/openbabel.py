@@ -54,29 +54,30 @@ def to_smiles(data_str, input_format):
     return result
 
 
-def gen_sdf_no_3d(data_str, input_format):
+def gen_sdf_no_3d(data_str, input_format, add_hydrogens=True):
 
     extra_options = {
-        'addHydrogens': True
+        'addHydrogens': add_hydrogens
     }
 
-    return convert_str(data_str, input_format, 'sdf')
+    return convert_str(data_str, input_format, 'sdf', extra_options)
 
 
-def atom_count(data_str, input_format):
+def properties(data_str, input_format, add_hydrogens=True):
 
     base_url = openbabel_base_url()
-    path = 'atom_count'
+    path = 'properties'
     url = '/'.join([base_url, path])
 
     data = {
         'format': input_format,
         'data': data_str,
+        'addHydrogens': add_hydrogens
     }
 
     r = requests.post(url, json=data)
 
-    return int(r.text)
+    return r.json()
 
 
 def autodetect_bonds(cjson):

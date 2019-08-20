@@ -106,6 +106,31 @@ def get_formula(str_data, in_format):
     return mol.GetFormula()
 
 
+def properties(str_data, in_format, add_hydrogens=False):
+    # Returns a dict with the atom count, formula, heavy atom count,
+    # mass, and spaced formula.
+    if in_format == 'inchi' and not str_data.startswith('InChI='):
+        # Inchi must start with 'InChI='
+        str_data = 'InChI=' + str_data
+        validate_start_of_inchi(str_data)
+    mol = OBMol()
+    conv = OBConversion()
+    conv.SetInFormat(in_format)
+    conv.ReadString(mol, str_data)
+
+    if add_hydrogens:
+        mol.AddHydrogens()
+
+    props = {}
+    props['atomCount'] = mol.NumAtoms()
+    props['formula'] = mol.GetFormula()
+    props['heavyAtomCount'] = mol.NumHvyAtoms()
+    props['mass'] = mol.GetMolWt()
+    props['spacedFormula'] = mol.GetSpacedFormula()
+
+    return props
+
+
 def to_svg(str_data, in_format):
     out_options = {
         'b': 'none',  # transparent background color

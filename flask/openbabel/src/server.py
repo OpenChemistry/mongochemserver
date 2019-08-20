@@ -63,24 +63,34 @@ def convert(output_format):
                                            out_options=out_options)
     return Response(data, mimetype=mime)
 
-@app.route('/atom_count', methods=['POST'])
-def atom_count():
-    """Get the number of atoms in a molecule
+
+@app.route('/properties', methods=['POST'])
+def properties():
+    """Get the properties of a molecule
 
     The input format and the data are specified in the body (in json
     format) as the keys "format" and "data", respectively.
 
+    There is additionally one option, listed below, that can be added
+    as a key to the json.
+
+        addHydrogens (bool): should we add hydrogens?
+
+    Returns json containing the atom count, formula, heavy atom count,
+    mass, and spaced formula.
+
     Curl example:
-    curl -X POST 'http://localhost:5000/atom_count' \
+    curl -X POST 'http://localhost:5000/properties' \
       -H "Content-Type: application/json" \
       -d '{"format": "smiles", "data": "CCO"}'
     """
     json_data = request.get_json()
     input_format = json_data['format']
     data = json_data['data']
+    add_hydrogens = json_data.get('addHydrogens', False)
 
-    # int output is not accepted
-    return str(openbabel.atom_count(data, input_format))
+    props = openbabel.properties(data, input_format, add_hydrogens)
+    return jsonify(props)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')

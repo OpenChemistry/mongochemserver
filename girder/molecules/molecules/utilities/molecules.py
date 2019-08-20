@@ -38,7 +38,8 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
         sdf_data = avogadro.convert_str(data_str, input_format, 'sdf')
         smiles = openbabel.to_smiles(sdf_data, 'sdf')
 
-    atom_count = openbabel.atom_count(smiles, smiles_format)
+    props = openbabel.properties(smiles, smiles_format)
+    atom_count = props['atomCount']
 
     if atom_count > 1024:
         raise RestException('Unable to generate inchi, '
