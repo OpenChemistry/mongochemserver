@@ -21,7 +21,7 @@ from . import chemspider
 from . import query
 from . import semantic
 from . import constants
-from molecules.utilities import async_jobs
+from molecules.utilities import async_requests
 from molecules.utilities.molecules import create_molecule
 from molecules.utilities.pagination import parse_pagination_params
 from molecules.utilities.pagination import search_results_dict
@@ -509,5 +509,5 @@ class Molecule(Resource):
 
         user = self.getCurrentUser()
 
-        async_jobs.schedule_3d_coords_gen(mol, user)
+        async_requests.schedule_3d_coords_gen(mol, user)
         return self._clean(mol)

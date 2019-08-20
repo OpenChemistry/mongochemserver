@@ -10,7 +10,7 @@ from molecules.models.molecule import Molecule as MoleculeModel
 from girder.constants import TerminalColor
 from girder.api.rest import RestException
 
-from .async_jobs import schedule_3d_coords_gen, schedule_svg_gen
+from .async_requests import schedule_3d_coords_gen, schedule_svg_gen
 from .whitelist_cjson import whitelist_cjson
 
 openbabel_2d_formats = [
