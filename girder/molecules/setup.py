@@ -10,14 +10,14 @@ setup(
       'girder-jobs',
       'jsonpath-rw==1.4.0',
       'avogadro==1.92.1',
-      'openbabel==2.4.1',
       'chemspipy==1.0.4',
       'pyparsing==2.0.5',
       'rdflib==4.2.1',
       'openchemistry',
       'beautifulsoup4',
       'jcamp',
-      'requests'
+      'requests',
+      'requests-futures'
     ],
     entry_points={
       'girder.plugin': [

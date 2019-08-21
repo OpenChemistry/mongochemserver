@@ -21,7 +21,7 @@ from . import chemspider
 from . import query
 from . import semantic
 from . import constants
-from molecules.utilities import generate_3d_coords_async
+from molecules.utilities import async_requests
 from molecules.utilities.molecules import create_molecule
 from molecules.utilities.pagination import parse_pagination_params
 from molecules.utilities.pagination import search_results_dict
@@ -314,7 +314,8 @@ class Molecule(Resource):
         if output_format.startswith('inchi'):
             atom_count = 0
             if input_format == 'pdb':
-                atom_count = openbabel.atom_count(data_str, input_format)
+                props = openbabel.properties(data_str, input_format)
+                atom_count = props['atomCount']
             else:
                 atom_count = avogadro.atom_count(data_str, input_format)
 
@@ -336,9 +337,11 @@ class Molecule(Resource):
             output = ''
             mime = 'text/plain'
             if input_format == 'pdb':
-                (output, mime) = openbabel.convert_str(data_str, input_format, output_format)
+                (output, mime) = openbabel.convert_str(data_str, input_format,
+                                                       output_format)
             else:
-                output = avogadro.convert_str(data_str, input_format, output_format)
+                output = avogadro.convert_str(data_str, input_format,
+                                              output_format)
 
             def stream():
                 cherrypy.response.headers['Content-Type'] = mime
@@ -506,5 +509,5 @@ class Molecule(Resource):
 
         user = self.getCurrentUser()
 
-        generate_3d_coords_async.schedule_3d_coords_gen(mol, user)
+        async_requests.schedule_3d_coords_gen(mol, user)
         return self._clean(mol)

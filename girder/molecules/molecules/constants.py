@@ -8,6 +8,7 @@ class PluginSettings:
     JENA_USER = 'molecules.jena.user'
     JENA_PASSWORD = 'molecules.jena.password'
     JENA_DATASET = 'molecules.jena.dataset'
+    OPENBABEL_BASE_URL = 'molecules.openbabel.url'
 
 theory_priority = {
     'mm': 10, # (molecular mechanics)

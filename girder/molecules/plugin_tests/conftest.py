@@ -22,11 +22,8 @@ def molecule(user):
     name = 'ethane'
 
     (inchi, inchikey) = openbabel.to_inchi(data, input_format)
-    formula = openbabel.get_formula(data, input_format)
-
     smiles = openbabel.to_smiles(data, input_format)
-
-    properties = {'formula': formula}
+    properties = openbabel.properties(data, input_format)
 
     mol = {
         'inchi': inchi,

@@ -10,7 +10,7 @@ from molecules.models.molecule import Molecule as MoleculeModel
 from girder.constants import TerminalColor
 from girder.api.rest import RestException
 
-from .generate_3d_coords_async import schedule_3d_coords_gen
+from .async_requests import schedule_3d_coords_gen, schedule_svg_gen
 from .whitelist_cjson import whitelist_cjson
 
 openbabel_2d_formats = [
@@ -38,7 +38,8 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
         sdf_data = avogadro.convert_str(data_str, input_format, 'sdf')
         smiles = openbabel.to_smiles(sdf_data, 'sdf')
 
-    atom_count = openbabel.atom_count(smiles, smiles_format)
+    props = openbabel.properties(smiles, smiles_format)
+    atom_count = props['atomCount']
 
     if atom_count > 1024:
         raise RestException('Unable to generate inchi, '
@@ -66,18 +67,17 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
         for i in range(0, int(len(pieces) / 2)):
             atomCounts[pieces[2 * i]] = int(pieces[2 * i + 1])
 
-        # Generate an svg file for an image
-        svg_data = openbabel.to_svg(smiles, smiles_format)
-
         mol_dict = {
             'inchi': inchi,
             'inchikey': inchikey,
             'smiles': smiles,
             'properties': props,
             'atomCounts': atomCounts,
-            'svg': svg_data,
             'provenance': provenance
         }
+
+        # Generate an svg file for an image
+        schedule_svg_gen(mol_dict, user)
 
         # Set a name if we find one
         name = chemspider.find_common_name(inchikey)
@@ -96,7 +96,8 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
             return MoleculeModel().create(user, mol_dict, public)
         else:
             if input_format in openbabel_3d_formats:
-                sdf_data = openbabel.convert_str(data_str, input_format, 'sdf')
+                sdf_data, mime = openbabel.convert_str(data_str, input_format,
+                                                       'sdf')
                 cjson = json.loads(avogadro.convert_str(sdf_data, 'sdf',
                                                         'cjson'))
             else:

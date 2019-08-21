@@ -2,7 +2,6 @@
 
 from bson.objectid import ObjectId
 import json
-from jsonpath_rw import parse
 import re
 
 from girder.models.model_base import AccessControlledModel
@@ -14,6 +13,7 @@ from molecules import openbabel
 from molecules import query as mol_query
 from molecules.utilities.pagination import parse_pagination_params
 from molecules.utilities.pagination import search_results_dict
+from molecules.utilities.has_3d_coords import cjson_has_3d_coords
 
 class Molecule(AccessControlledModel):
 
@@ -146,16 +146,6 @@ class Molecule(AccessControlledModel):
         }
         super(Molecule, self).update(query, update)
 
-    def cjson_has_3d_coords(self, cjson):
-        # jsonpath_rw won't let us parse "3d" because it has
-        # issues parsing keys that start with a number...
-        # If this changes in the future, fix this
-        coords = parse('atoms.coords').find(cjson)
-        if (coords and '3d' in coords[0].value and
-            len(coords[0].value['3d']) > 0):
-            return True
-        return False
-
     def has_3d_coords(self, mol):
         # This functions properly if passed None
-        return self.cjson_has_3d_coords(mol.get('cjson'))
+        return cjson_has_3d_coords(mol.get('cjson'))
