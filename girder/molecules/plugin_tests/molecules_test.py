@@ -49,6 +49,8 @@ def test_create_molecule_xyz(server, user):
     assert 'inchikey' in mol
     assert 'smiles' in mol
     assert mol['smiles'] == 'CC'
+    assert mol['inchi'] == 'InChI=1S/C2H6/c1-2/h1-2H3'
+    assert mol['inchikey'] == 'OTMSDBZUPAUEDD-UHFFFAOYSA-N'
 
     # Double check and make sure it exists
     id = mol['_id']
@@ -99,6 +101,8 @@ def test_create_molecule_file_id(server, user, fsAssetstore, make_girder_file):
     assert 'inchikey' in mol
     assert 'smiles' in mol
     assert mol['smiles'] == 'CC'
+    assert mol['inchi'] == 'InChI=1S/C2H6/c1-2/h1-2H3'
+    assert mol['inchikey'] == 'OTMSDBZUPAUEDD-UHFFFAOYSA-N'
     assert 'properties' in mol
     assert 'formula' in mol['properties']
     assert mol['properties']['formula'] == 'C2H6'
@@ -152,6 +156,8 @@ def test_create_molecule_inchi(server, user):
     assert 'inchikey' in mol
     assert 'smiles' in mol
     assert mol['smiles'] == 'O'
+    assert mol['inchi'] == 'InChI=1S/H2O/h1H2'
+    assert mol['inchikey'] == 'XLYOFNOQVPJJNP-UHFFFAOYSA-N'
     assert 'properties' in mol
     assert 'formula' in mol['properties']
     assert mol['properties']['formula'] == 'H2O'
@@ -205,6 +211,8 @@ def test_create_molecule_smiles(server, user):
     assert 'inchikey' in mol
     assert 'smiles' in mol
     assert mol['smiles'] == 'O'
+    assert mol['inchi'] == 'InChI=1S/H2O/h1H2'
+    assert mol['inchikey'] == 'XLYOFNOQVPJJNP-UHFFFAOYSA-N'
     assert 'properties' in mol
     assert 'formula' in mol['properties']
     assert mol['properties']['formula'] == 'H2O'
