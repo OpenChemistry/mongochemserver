@@ -3,6 +3,8 @@ from bson.objectid import ObjectId
 from girder.models.model_base import AccessControlledModel
 from girder.constants import AccessType
 
+from .molecule import Molecule as MoleculeModel
+
 
 class Geometry(AccessControlledModel):
 
@@ -27,8 +29,7 @@ class Geometry(AccessControlledModel):
     def validate(self, doc):
         # If we have a moleculeId ensure it is valid.
         if 'moleculeId' in doc:
-            mol = self.model('molecule', 'molecules').load(doc['moleculeId'],
-                                                           force=True)
+            mol = MoleculeModel().load(doc['moleculeId'], force=True)
             doc['moleculeId'] = mol['_id']
 
         return doc
