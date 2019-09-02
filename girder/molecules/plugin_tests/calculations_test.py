@@ -26,7 +26,7 @@ from pytest_girder.assertions import assertStatusOk, assertStatus
 
 @pytest.mark.plugin('molecules')
 def test_create_calc(server, molecule, user):
-    from girder.plugins.molecules.models.calculation import Calculation
+    from molecules.models.calculation import Calculation
     from girder.constants import AccessType
 
     assert '_id' in molecule
@@ -86,9 +86,9 @@ def test_get_calc(server, molecule, calculation, user):
     assertStatusOk(r)
 
     # Should just be one calculation
-    assert len(r.json) == 1
+    assert len(r.json['results']) == 1
 
-    calc = r.json[0]
+    calc = r.json['results'][0]
 
     assert '_id' in calc
     assert str(calc['_id']) == calc_id
@@ -99,9 +99,9 @@ def test_get_calc(server, molecule, calculation, user):
     assertStatusOk(r)
 
     # Should just be one calculation
-    assert len(r.json) == 1
+    assert len(r.json['results']) == 1
 
-    calc = r.json[0]
+    calc = r.json['results'][0]
 
     assert '_id' in calc
     assert str(calc['_id']) == calc_id
@@ -118,7 +118,7 @@ def test_get_calc(server, molecule, calculation, user):
 
 @pytest.mark.plugin('molecules')
 def test_put_properties(server, molecule, calculation, user):
-    from girder.plugins.molecules.models.calculation import Calculation
+    from molecules.models.calculation import Calculation
     from girder.constants import AccessType
 
     assert '_id' in calculation
@@ -257,7 +257,7 @@ def test_ingest_pending(server, molecule, user, make_girder_file, fsAssetstore):
 
 @pytest.mark.plugin('molecules')
 def test_ingest_with_molecule(server, molecule, user, make_girder_file, fsAssetstore):
-    from girder.plugins.molecules.models.calculation import Calculation
+    from molecules.models.calculation import Calculation
     # Upload simulation result
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -286,7 +286,7 @@ def test_ingest_with_molecule(server, molecule, user, make_girder_file, fsAssets
 
 @pytest.mark.plugin('molecules')
 def test_ingest_without_molecule(server, molecule, user, make_girder_file, fsAssetstore):
-    from girder.plugins.molecules.models.calculation import Calculation
+    from molecules.models.calculation import Calculation
     # Upload simulation result
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
