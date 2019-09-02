@@ -52,7 +52,7 @@ def molecule(user):
 @pytest.fixture
 def geometry(user, molecule):
     """Our method for creating a geometry within girder."""
-    from girder.plugins.molecules.models.geometry import Geometry
+    from molecules.models.geometry import Geometry
 
     # The molecule will have been created by the fixture
     assert '_id' in molecule
