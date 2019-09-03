@@ -97,12 +97,6 @@ class Molecule(Resource):
                    paramType='query', required=False)
             .param('creatorId', 'The id of the user that created the molecule',
                    paramType='query', required=False)
-            .jsonParam('minValues', 'A dict of { key: minValue } representing '
-                       'minimum allowable values', requireObject=True,
-                       required=False)
-            .jsonParam('maxValues', 'A dict of { key: maxValue } representing '
-                       'maximum allowable values', requireObject=True,
-                       required=False)
             .param('queryString', 'The query string to use for this search '
                                   '(supercedes all other search parameters)',
                    paramType='query', required=False)
