@@ -269,6 +269,7 @@ class Calculation(Resource):
         cjson = body.get('cjson')
         props = body.get('properties', {})
         molecule_id = body.get('moleculeId', None)
+        geometry_id = body.get('geometryId', None)
         public = body.get('public', False)
         notebooks = body.get('notebooks', [])
         image = body.get('image')
@@ -286,6 +287,7 @@ class Calculation(Resource):
             molecule_id = mol['_id']
 
         calc = CalculationModel().create_cjson(user, cjson, props, molecule_id,
+                                               geometry_id=geometry_id,
                                                image=image,
                                                input_parameters=input_parameters,
                                                file_id=file_id,
@@ -384,6 +386,7 @@ class Calculation(Resource):
     @autoDescribeRoute(
         Description('Search for particular calculation')
         .param('moleculeId', 'The molecule ID linked to this calculation', required=False)
+        .param('geometryId', 'The geometry ID linked to this calculation', required=False)
         .param('imageName', 'The name of the Docker image that run this calculation', required=False)
         .param('inputParametersHash', 'The hash of the input parameters dictionary.', required=False)
         .param('inputGeometryHash', 'The hash of the input geometry.', required=False)
@@ -402,14 +405,14 @@ class Calculation(Resource):
                required=False)
         .pagingParams(defaultSort='_id', defaultSortDir=SortDir.DESCENDING, defaultLimit=25)
     )
-    def find_calc(self, moleculeId=None, imageName=None,
+    def find_calc(self, moleculeId=None, geometryId=None, imageName=None,
                   inputParametersHash=None, inputGeometryHash=None,
                   name=None, inchi=None, inchikey=None, smiles=None,
                   formula=None, creatorId=None, pending=None, limit=None,
                   offset=None, sort=None):
         return CalculationModel().findcal(
-            molecule_id=moleculeId, image_name=imageName,
-            input_parameters_hash=inputParametersHash,
+            molecule_id=moleculeId, geometry_id=geometryId,
+            image_name=imageName, input_parameters_hash=inputParametersHash,
             input_geometry_hash=inputGeometryHash, name=name, inchi=inchi,
             inchikey=inchikey, smiles=smiles, formula=formula,
             creator_id=creatorId, pending=pending, limit=limit, offset=offset,

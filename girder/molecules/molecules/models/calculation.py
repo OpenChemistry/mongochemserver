@@ -62,7 +62,8 @@ class Calculation(AccessControlledModel):
         ])
 
         self.exposeFields(level=AccessType.READ, fields=(
-            '_id', 'moleculeId', 'fileId', 'properties', 'notebooks', 'input', 'image'))
+            '_id', 'moleculeId', 'geometryId', 'fileId', 'properties',
+            'notebooks', 'input', 'image'))
 
     def filter(self, calc, user):
         calc = super(Calculation, self).filter(doc=calc, user=user)
@@ -87,7 +88,7 @@ class Calculation(AccessControlledModel):
 
         return doc
 
-    def findcal(self, molecule_id=None, image_name=None,
+    def findcal(self, molecule_id=None, geometry_id=None, image_name=None,
                 input_parameters_hash=None, input_geometry_hash=None,
                 name=None, inchi=None, inchikey=None, smiles=None,
                 formula=None, creator_id=None, pending=None, limit=None,
@@ -119,6 +120,9 @@ class Calculation(AccessControlledModel):
             molecules = MoleculeModel().findmol(params)['results']
             molecule_ids = [molecule['_id'] for molecule in molecules]
             query['moleculeId'] = {'$in': molecule_ids}
+
+        if geometry_id:
+            query['geometryId'] = ObjectId(geometry_id)
 
         if image_name:
             repository, tag = oc.parse_image_name(image_name)
@@ -158,8 +162,8 @@ class Calculation(AccessControlledModel):
 
         return search_results_dict(calcs, num_matches, limit, offset, sort)
 
-    def create_cjson(self, user, cjson, props, molecule_id= None,
-                     image=None, input_parameters=None,
+    def create_cjson(self, user, cjson, props, molecule_id=None,
+                     geometry_id=None, image=None, input_parameters=None,
                      file_id = None, public=False, notebooks=None):
         if notebooks is None:
             notebooks = []
@@ -171,6 +175,8 @@ class Calculation(AccessControlledModel):
         }
         if molecule_id:
             calc['moleculeId'] = molecule_id
+        if geometry_id:
+            calc['geometryId'] = geometry_id
         if file_id:
             calc['fileId'] = file_id
         if image is not None:
