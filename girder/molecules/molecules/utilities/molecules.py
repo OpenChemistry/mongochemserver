@@ -39,7 +39,7 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
         inchi, inchikey = openbabel.to_inchi(sdf_data, 'sdf')
 
     if not inchi:
-        raise RestException('Unable to extract inchi', code=400)
+        raise RestException('Unable to extract InChI', code=400)
 
     # Check if the molecule exists, only create it if it does.
     molExists = MoleculeModel().find_inchikey(inchikey)
