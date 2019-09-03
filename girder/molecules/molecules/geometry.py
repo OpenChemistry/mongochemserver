@@ -36,10 +36,9 @@ class Geometry(Resource):
         user = getCurrentUser()
 
         moleculeId = params['moleculeId']
-        geometries = self._model.find_geometries(moleculeId)
+        geometries = self._model.find_geometries(moleculeId, user)
 
-        # Filter based upon access level.
-        return [self._clean(self._model.filter(x, user)) for x in geometries]
+        return [self._clean(x) for x in geometries]
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(

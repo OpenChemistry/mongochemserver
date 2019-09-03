@@ -18,14 +18,6 @@ class Geometry(AccessControlledModel):
         self.exposeFields(level=AccessType.READ, fields=(
             '_id', 'moleculeId', 'cjson', 'provenanceType', 'provenanceId'))
 
-    def filter(self, geometry, user):
-        geometry = super(Geometry, self).filter(doc=geometry, user=user)
-
-        del geometry['_accessLevel']
-        del geometry['_modelType']
-
-        return geometry
-
     def validate(self, doc):
         # If we have a moleculeId ensure it is valid.
         if 'moleculeId' in doc:
@@ -53,9 +45,9 @@ class Geometry(AccessControlledModel):
 
         return self.save(geometry)
 
-    def find_geometries(self, moleculeId):
+    def find_geometries(self, moleculeId, user=None):
         query = {
             'moleculeId': ObjectId(moleculeId)
         }
 
-        return self.find(query)
+        return self.findWithPermissions(query, user=user)
