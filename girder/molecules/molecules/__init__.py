@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from .molecule import Molecule
-from .geometry import Geometry
 from .calculation import Calculation
 from .experiment import Experiment
 from girder import events
@@ -50,7 +49,6 @@ class MoleculesPlugin(GirderPlugin):
         ModelImporter.registerModel('molecule', MoleculeModel, 'molecules')
 
         info['apiRoot'].molecules = Molecule()
-        info['apiRoot'].geometry = Geometry()
         info['apiRoot'].calculations = Calculation()
         info['apiRoot'].experiments = Experiment()
         events.bind('model.setting.validate', 'molecules',

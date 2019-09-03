@@ -45,10 +45,10 @@ def test_create_geometry(server, molecule, user):
 
     # Create a geometry
     params = {
-        'moleculeId': _id,
         'cjson': json.dumps(cjson)
     }
-    r = server.request('/geometry', method='POST', params=params, user=user)
+    path = '/molecules/%s/geometries' % _id
+    r = server.request(path, method='POST', params=params, user=user)
     assertStatusOk(r)
 
     output = r.json
@@ -62,7 +62,8 @@ def test_create_geometry(server, molecule, user):
     id = output['_id']
 
     # Delete the geometry
-    r = server.request('/geometry/%s' % id, method='DELETE', user=user)
+    path = '/molecules/%s/geometries/%s' % (_id, id)
+    r = server.request(path, method='DELETE', user=user)
     assertStatusOk(r)
 
 
@@ -85,9 +86,8 @@ def test_get_geometry(server, geometry, user):
     provenance_id = geometry['provenanceId']
 
     # Find the geometry by its parent molecule.
-    params = {'moleculeId': molecule_id}
-    r = server.request('/geometry', method='GET', user=user,
-                       params=params)
+    path = '/molecules/%s/geometries' % molecule_id
+    r = server.request(path, method='GET', user=user)
     assertStatusOk(r)
 
     # Should just be one
