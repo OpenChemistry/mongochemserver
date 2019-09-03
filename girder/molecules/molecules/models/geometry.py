@@ -13,7 +13,7 @@ class Geometry(AccessControlledModel):
 
     def initialize(self):
         self.name = 'geometry'
-        self.ensureIndices(['moleculeId', 'cjson'])
+        self.ensureIndex('moleculeId')
 
         self.exposeFields(level=AccessType.READ, fields=(
             '_id', 'moleculeId', 'cjson', 'provenanceType', 'provenanceId'))
