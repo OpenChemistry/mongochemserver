@@ -30,7 +30,8 @@ class Geometry(AccessControlledModel):
                provenanceId=None, public=False):
         geometry = {
             'moleculeId': moleculeId,
-            'cjson': cjson
+            'cjson': cjson,
+            'creatorId': user['_id']
         }
 
         if provenanceType is not None:
