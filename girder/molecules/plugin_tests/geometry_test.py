@@ -45,7 +45,9 @@ def test_create_geometry(server, molecule, user):
 
     # Create a geometry
     params = {
-        'cjson': json.dumps(cjson)
+        'cjson': json.dumps(cjson),
+        'provenanceType': 'upload',
+        'provenanceId': user['_id']
     }
     path = '/molecules/%s/geometries' % _id
     r = server.request(path, method='POST', params=params, user=user)
@@ -56,7 +58,7 @@ def test_create_geometry(server, molecule, user):
     assert '_id' in output
     assert 'moleculeId' in output and output['moleculeId'] == _id
     assert 'cjson' in output and output['cjson'] == cjson
-    assert 'provenanceType' in output and output['provenanceType'] == 'user'
+    assert 'provenanceType' in output and output['provenanceType'] == 'upload'
     assert 'provenanceId' in output and len(output['provenanceId']) > 0
 
     id = output['_id']

@@ -576,11 +576,18 @@ class Molecule(Resource):
         .param('moleculeId', 'The id of the parent molecule.')
         .jsonParam('cjson', 'The chemical json of the geometry.',
                    paramType='body')
+        .param('provenanceType', 'The type of provenance.', required=False)
+        .param('provenanceId', 'The ID of the provnenace.', required=False)
     )
-    def create_geometry(self, moleculeId, cjson):
+    def create_geometry(self, moleculeId, cjson, provenanceType, provenanceId):
         user = getCurrentUser()
-        return self._clean(GeometryModel().create(user, moleculeId, cjson,
-                                                  'user', user['_id']))
+
+        if provenanceType is None:
+            provenanceType = 'user uploaded'
+
+        geometry = GeometryModel().create(user, moleculeId, cjson,
+                                          provenanceType, provenanceId)
+        return self._clean(geometry)
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
