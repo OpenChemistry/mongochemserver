@@ -62,15 +62,11 @@ class Geometry(Resource):
     @autoDescribeRoute(
         Description('Create a geometry.')
         .param('moleculeId', 'The id of the parent molecule.')
-        .jsonParam('cjson', 'The chemical json of the geometry.')
+        .jsonParam('cjson', 'The chemical json of the geometry.',
+                   paramType='body')
     )
-    def create(self, params):
-        self.requireParams(['moleculeId', 'cjson'], params)
-
+    def create(self, moleculeId, cjson):
         user = getCurrentUser()
-
-        moleculeId = params['moleculeId']
-        cjson = params['cjson']
 
         return self._clean(self._model.create(user, moleculeId, cjson, 'user',
                                               user['_id']))
