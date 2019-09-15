@@ -1,11 +1,17 @@
 import functools
 import json
 import requests
+import datetime
+
+import openchemistry as oc
 
 from requests_futures.sessions import FuturesSession
 
+from girder.api.rest import getCurrentUser
 from girder.constants import TerminalColor
+from girder.models.notification import Notification
 from girder.models.model_base import ValidationException
+from girder.utility.model_importer import ModelImporter
 
 from .whitelist_cjson import whitelist_cjson
 
@@ -120,3 +126,31 @@ def _finish_3d_coords_gen(inchikey, user, future):
         semantic.upload_molecule(MoleculeModel().findOne(query))
     except requests.ConnectionError:
         print(TerminalColor.warning('WARNING: Couldn\'t connect to Jena.'))
+
+def schedule_orbital_gen(cjson, mo, id, orig_mo):
+    cjson['generating_orbital'] = True
+
+    url = 'http://avogadro:5000/calculate'
+    data = {
+        'cjson': cjson,
+        'mo': mo,
+    }
+
+    session = FuturesSession()
+    future = session.post(url, json=data)
+
+    future.add_done_callback(functools.partial(_finish_orbital_gen, mo, id, getCurrentUser(), orig_mo))
+
+def _finish_orbital_gen(mo, id, user, orig_mo, future):
+    resp = future.result()
+    cjson = json.loads(resp.text)
+    
+    if 'vibrations' in cjson:
+        del cjson['vibrations']
+
+    # Add cube to cache
+    ModelImporter.model('cubecache', 'molecules').create(id, mo, cjson)
+    
+    # #Create notification to indicate cube can be retrieved now
+    data = {'id':id, 'mo':orig_mo}
+    Notification().createNotification(type='cube.status', data=data, user=user, expires=datetime.datetime.utcnow() + datetime.timedelta(seconds=30))

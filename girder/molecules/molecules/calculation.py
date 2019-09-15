@@ -5,6 +5,7 @@ from jsonpath_rw import parse
 from bson.objectid import ObjectId
 import json
 
+from girder import events
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
 from girder.api import access
@@ -18,8 +19,7 @@ from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import toBool
 from molecules.models.calculation import Calculation as CalculationModel
 from molecules.utilities.molecules import create_molecule
-
-import openchemistry as oc
+from molecules.utilities import async_requests
 
 from . import avogadro
 from . import constants
@@ -194,6 +194,7 @@ class Calculation(Resource):
 
     @access.public
     def get_calc_cube(self, id, mo, params):
+        orig_mo = mo
         try:
             mo = int(mo)
         except ValueError:
@@ -225,7 +226,7 @@ class Calculation(Resource):
                 raise ValidationException('mo number be an integer or \'homo\'/\'lumo\'', 'mode')
 
         cached = self._cube_model.find_mo(id, mo)
-
+        
         # If we have a cached cube file use that.
         if cached:
             return cached['cjson']
@@ -236,7 +237,9 @@ class Calculation(Resource):
         calc =  self._model.load(id, fields=fields, force=True)
 
         # This is where the cube gets calculated, should be cached in future.
-        cjson = avogadro.calculate_mo(calc['cjson'], mo)
+        async_requests.schedule_orbital_gen(calc['cjson'], mo, id, orig_mo)
+        calc['cjson']['cube']={}
+        return calc['cjson']
 
 
         # cjson = avogadro.calculate_mo(calc['cjson'], mo)
