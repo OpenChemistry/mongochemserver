@@ -2,6 +2,7 @@ from avogadro.core import *
 from avogadro.io import *
 import json
 from jsonpath_rw import parse
+import requests
 
 def convert_str(str_data, in_format, out_format):
     mol = Molecule()
@@ -103,22 +104,12 @@ def calculation_properties(json_data):
 
 # This is far from ideal as it is a CPU intensive task blocking the main thread.
 def calculate_mo(cjson, mo):
-    mol = Molecule()
-    conv = FileFormatManager()
-    conv.read_string(mol, json.dumps(cjson), 'cjson')
-    # Do some scaling of our spacing based on the size of the molecule.
-    atom_count = mol.atom_count()
-    spacing = 0.30
-    if atom_count > 50:
-        spacing = 0.5
-    elif atom_count > 30:
-        spacing = 0.4
-    elif atom_count > 10:
-        spacing = 0.33
-    cube = mol.add_cube()
-    # Hard wiring spacing/padding for now, this could be exposed in future too.
-    cube.set_limits(mol, spacing, 4)
-    gaussian = GaussianSetTools(mol)
-    gaussian.calculate_molecular_orbital(cube, mo)
+    url = 'http://avogadro:5000/calculate'
+    data = {
+        'cjson': cjson,
+        'mo': mo,
+    }
 
-    return json.loads(conv.write_string(mol, "cjson"))
+    r = requests.post(url, json=data)
+
+    return json.loads(r.text)

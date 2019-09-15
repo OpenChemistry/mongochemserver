@@ -238,14 +238,17 @@ class Calculation(Resource):
         # This is where the cube gets calculated, should be cached in future.
         cjson = avogadro.calculate_mo(calc['cjson'], mo)
 
-        # Remove the vibrational mode data from the cube - big, not needed here.
-        if 'vibrations' in cjson:
-            del cjson['vibrations']
 
-        # Cache this cube for the next time, they can take a while to generate.
-        self._cube_model.create(id, mo, cjson)
+        # cjson = avogadro.calculate_mo(calc['cjson'], mo)
 
-        return cjson
+        # # Remove the vibrational mode data from the cube - big, not needed here.
+        # if 'vibrations' in cjson:
+        #     del cjson['vibrations']
+
+        # # Cache this cube for the next time, they can take a while to generate.
+        # self._cube_model.create(id, mo, cjson)
+
+        # return cjson
 
     get_calc_cube.description = (
         Description('Get the cube for the supplied MO of the calculation in CJSON format')
