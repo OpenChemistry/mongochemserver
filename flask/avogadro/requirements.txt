@@ -1,0 +1,2 @@
+Flask
+avogadro==1.92.1
