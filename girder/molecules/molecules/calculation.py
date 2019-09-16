@@ -1,11 +1,11 @@
 import cherrypy
-import functools
 import tempfile
 from jsonpath_rw import parse
 from bson.objectid import ObjectId
 import json
 
-from girder import events
+import openchemistry as oc
+
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
 from girder.api import access
@@ -16,16 +16,13 @@ from girder.models.model_base import ValidationException
 from girder.utility.model_importer import ModelImporter
 from girder.models.file import File
 from girder.constants import AccessType, SortDir, TokenScope
-from girder.utility import toBool
 from molecules.models.calculation import Calculation as CalculationModel
 from molecules.utilities.molecules import create_molecule
 from molecules.utilities import async_requests
 
 from . import avogadro
-from . import constants
 from . import openbabel
 from .molecule import Molecule
-import pymongo
 
 
 class Calculation(Resource):
@@ -58,7 +55,6 @@ class Calculation(Resource):
             self.update_properties)
         self.route('PATCH', (':id', 'notebooks'), self.add_notebooks)
 
-
         self._model = ModelImporter.model('calculation', 'molecules')
         self._cube_model = ModelImporter.model('cubecache', 'molecules')
 
@@ -69,7 +65,7 @@ class Calculation(Resource):
         fields = ['cjson', 'cjson.vibrations.modes', 'cjson.vibrations.intensities',
                  'cjson.vibrations.frequencies', 'access']
 
-        calc =  self._model.load(id, fields=fields, user=getCurrentUser(),
+        calc = self._model.load(id, fields=fields, user=getCurrentUser(),
                                  level=AccessType.READ)
 
         del calc['access']
@@ -96,7 +92,7 @@ class Calculation(Resource):
 
         # TODO: remove 'cjson' once girder issue #2883 is resolved
         fields = ['cjson', 'cjson.vibrations.modes', 'access']
-        calc =  self._model.load(id, fields=fields, user=getCurrentUser(),
+        calc = self._model.load(id, fields=fields, user=getCurrentUser(),
                                  level=AccessType.READ)
 
         vibrational_modes = calc['cjson']['vibrations']
@@ -131,7 +127,6 @@ class Calculation(Resource):
         mode = self._model.findOne(query, fields=projection)
 
         return mode['cjson']['vibrations']
-
 
     get_calc_vibrational_mode.description = (
         Description('Get a vibrational mode associated with a calculation')
@@ -226,7 +221,7 @@ class Calculation(Resource):
                 raise ValidationException('mo number be an integer or \'homo\'/\'lumo\'', 'mode')
 
         cached = self._cube_model.find_mo(id, mo)
-        
+
         # If we have a cached cube file use that.
         if cached:
             return cached['cjson']
@@ -234,13 +229,12 @@ class Calculation(Resource):
         fields = ['cjson', 'access', 'fileId']
 
         # Ignoring access control on file/data for now, all public.
-        calc =  self._model.load(id, fields=fields, force=True)
+        calc = self._model.load(id, fields=fields, force=True)
 
         # This is where the cube gets calculated, should be cached in future.
         async_requests.schedule_orbital_gen(calc['cjson'], mo, id, orig_mo)
-        calc['cjson']['cube']={}
+        calc['cjson']['cube'] = {}
         return calc['cjson']
-
 
         # cjson = avogadro.calculate_mo(calc['cjson'], mo)
 
@@ -267,7 +261,7 @@ class Calculation(Resource):
     @access.user
     def create_calc(self, params):
         body = getBodyJson()
-        if 'cjson' not in  body and ('fileId' not in body or 'format' not in body):
+        if 'cjson' not in body and ('fileId' not in body or 'format' not in body):
             raise RestException('Either cjson or fileId is required.')
 
         user = getCurrentUser()
@@ -329,7 +323,7 @@ class Calculation(Resource):
 
         # SpooledTemporaryFile doesn't implement next(),
         # workaround in case any reader needs it
-        tempfile.SpooledTemporaryFile.__next__ = lambda self : self.__iter__().__next__()
+        tempfile.SpooledTemporaryFile.__next__ = lambda self: self.__iter__().__next__()
 
         with tempfile.SpooledTemporaryFile(mode='w+', max_size=10*1024*1024) as tf:
             tf.write(calc_data)
@@ -455,7 +449,7 @@ class Calculation(Resource):
     def find_calc_types(self, params):
         fields = ['access', 'properties.calculationTypes']
 
-        query = { }
+        query = {}
         if 'moleculeId' in params:
             query['moleculeId'] = ObjectId(params['moleculeId'])
 

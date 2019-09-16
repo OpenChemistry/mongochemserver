@@ -3,8 +3,6 @@ import json
 import requests
 import datetime
 
-import openchemistry as oc
-
 from requests_futures.sessions import FuturesSession
 
 from girder.api.rest import getCurrentUser
@@ -127,6 +125,7 @@ def _finish_3d_coords_gen(inchikey, user, future):
     except requests.ConnectionError:
         print(TerminalColor.warning('WARNING: Couldn\'t connect to Jena.'))
 
+
 def schedule_orbital_gen(cjson, mo, id, orig_mo):
     cjson['generating_orbital'] = True
 
@@ -139,18 +138,24 @@ def schedule_orbital_gen(cjson, mo, id, orig_mo):
     session = FuturesSession()
     future = session.post(url, json=data)
 
-    future.add_done_callback(functools.partial(_finish_orbital_gen, mo, id, getCurrentUser(), orig_mo))
+    future.add_done_callback(functools.partial(
+        _finish_orbital_gen, mo, id, getCurrentUser(), orig_mo))
+
 
 def _finish_orbital_gen(mo, id, user, orig_mo, future):
     resp = future.result()
     cjson = json.loads(resp.text)
-    
+
     if 'vibrations' in cjson:
         del cjson['vibrations']
 
     # Add cube to cache
     ModelImporter.model('cubecache', 'molecules').create(id, mo, cjson)
-    
+
     # #Create notification to indicate cube can be retrieved now
-    data = {'id':id, 'mo':orig_mo}
-    Notification().createNotification(type='cube.status', data=data, user=user, expires=datetime.datetime.utcnow() + datetime.timedelta(seconds=30))
+    data = {'id': id, 'mo': orig_mo}
+    Notification().createNotification(
+        type='cube.status',
+        data=data,
+        user=user,
+        expires=datetime.datetime.utcnow() + datetime.timedelta(seconds=30))

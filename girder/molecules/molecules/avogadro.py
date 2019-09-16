@@ -1,8 +1,9 @@
-from avogadro.core import *
-from avogadro.io import *
+from avogadro.core import Molecule
+from avogadro.io import FileFormatManager
 import json
 from jsonpath_rw import parse
 import requests
+
 
 def convert_str(str_data, in_format, out_format):
     mol = Molecule()
@@ -11,12 +12,14 @@ def convert_str(str_data, in_format, out_format):
 
     return conv.write_string(mol, out_format)
 
+
 def atom_count(str_data, in_format):
     mol = Molecule()
     conv = FileFormatManager()
     conv.read_string(mol, str_data, in_format)
 
     return mol.atom_count()
+
 
 def molecule_properties(str_data, in_format):
     mol = Molecule()
@@ -31,6 +34,7 @@ def molecule_properties(str_data, in_format):
         }
     return properties
 
+
 # We expect JSON input here, using the NWChem format
 def calculation_properties(json_data):
     properties = {}
@@ -42,7 +46,7 @@ def calculation_properties(json_data):
     firstCalc = calcs[0]
     waveFunctionTypes = {
         'Density Functional Theory': 'DFT',
-        'Hartree-Fock': 'HF' }
+        'Hartree-Fock': 'HF'}
     if 'calculationSetup' in firstCalc:
         setup = firstCalc['calculationSetup']
         # Use a lookup, probably needs to be extended to cover all types...
@@ -53,8 +57,8 @@ def calculation_properties(json_data):
         if 'exchangeCorrelationFunctional' in setup:
             for piece in setup['exchangeCorrelationFunctional']:
                 if 'xcName' in piece:
-                     properties['functional'] = piece['xcName']
-                     calcName += ' - ' + properties['functional']
+                    properties['functional'] = piece['xcName']
+                    calcName += ' - ' + properties['functional']
         calcName += ')'
         properties['friendlyName'] = calcName
 
@@ -76,7 +80,7 @@ def calculation_properties(json_data):
         'energyCalculation': 'energy',
         'geometryOptimization': 'optimization',
         'vibrationalModes': 'vibrational',
-        'molecularProperties': 'properties' }
+        'molecularProperties': 'properties'}
     calculationTypes = []
     calculations = []
     for calc in calcs:
@@ -102,7 +106,7 @@ def calculation_properties(json_data):
 
     return properties
 
-# This is far from ideal as it is a CPU intensive task blocking the main thread.
+
 def calculate_mo(cjson, mo):
     url = 'http://avogadro:5000/calculate'
     data = {
