@@ -1,5 +1,5 @@
-from avogadro.core import *
-from avogadro.io import *
+from avogadro.core import Molecule, GaussianSetTools
+from avogadro.io import FileFormatManager
 import json
 
 def calculate_mo(cjson, mo):
@@ -22,3 +22,32 @@ def calculate_mo(cjson, mo):
     gaussian.calculate_molecular_orbital(cube, mo)
 
     return conv.write_string(mol, "cjson")
+
+def convert_str(str_data, in_format, out_format):
+    mol = Molecule()
+    conv = FileFormatManager()
+    conv.read_string(mol, str_data, in_format)
+
+    return conv.write_string(mol, out_format)
+
+
+def atom_count(str_data, in_format):
+    mol = Molecule()
+    conv = FileFormatManager()
+    conv.read_string(mol, str_data, in_format)
+
+    return mol.atom_count()
+
+
+def molecule_properties(str_data, in_format):
+    mol = Molecule()
+    conv = FileFormatManager()
+    conv.read_string(mol, str_data, in_format)
+    properties = {
+        'atomCount': mol.atom_count(),
+        'heavyAtomCount': mol.atom_count() - mol.atom_count(1),
+        'mass': mol.mass(),
+        'spacedFormula': mol.formula(' ', 0),
+        'formula': mol.formula('', 1)
+        }
+    return properties

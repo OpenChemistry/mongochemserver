@@ -10,7 +10,32 @@ python src/server.py
 
 It will, by default, be available at `http://localhost:5000`.
 
-You can then test it with curl commands such as:
+You can then test it with curl commands:
+
+
+To convert a string:
+```
+curl -X POST 'http://localhost:5000/convert-str/sdf' \
+  -H "Content-Type: application/json" \
+  -d "@path/to/file.json"
+```
+
+To get all molecule properties or just the atom count:
+```
+curl -X POST 'http://localhost:5000/properties/<type>' \
+  -H "Content-Type: application/json" \
+  -d "@path/to/file.json"
+```
+Where type = 'molecule' or 'atom', and file.json contains the format:
+    '{
+        "data": {
+            /*molecule cjson*/
+        },
+        "format": "cjson"
+    }'
+
+
+To calculate MO:
 ```
 curl -X POST 'http://localhost:5000/calculate' \
   -H "Content-Type: application/json" \
@@ -19,9 +44,9 @@ curl -X POST 'http://localhost:5000/calculate' \
 Where file.json contains the format:
     '{
         "cjson": {
-            /*cjson data*/
+            /*calculation cjson*/
         },
-        "mo": mo
+        "mo": "homo"
     }'
 
 The server may also be started using a production WSGI server. For

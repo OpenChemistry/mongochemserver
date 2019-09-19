@@ -317,7 +317,7 @@ class Molecule(Resource):
                 props = openbabel.properties(data_str, input_format)
                 atom_count = props['atomCount']
             else:
-                atom_count = avogadro.atom_count(data_str, input_format)
+                atom_count = int(avogadro.atom_count(data_str, input_format))
 
             if atom_count > 1024:
                 raise RestException('Unable to generate InChI, molecule has more than 1024 atoms.', code=400)
