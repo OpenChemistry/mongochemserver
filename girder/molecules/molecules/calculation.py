@@ -232,20 +232,26 @@ class Calculation(Resource):
         calc = self._model.load(id, fields=fields, force=True)
 
         # This is where the cube gets calculated, should be cached in future.
-        async_requests.schedule_orbital_gen(calc['cjson'], mo, id, orig_mo)
-        calc['cjson']['cube'] = {}
-        return calc['cjson']
+        if 'async' in params and params['async']:
+            calc_running = calc['cjson'].setdefault('generating_cube', False)
+            if not calc_running:
+                async_requests.schedule_orbital_gen(calc['cjson'], mo, id, orig_mo)
+            calc['cjson']['cube'] = {
+                'dimensions': [0, 0, 0],
+                'scalars': []
+            }
+            return calc['cjson']
+        else:
+            cjson = avogadro.calculate_mo(calc['cjson'], mo)
 
-        # cjson = avogadro.calculate_mo(calc['cjson'], mo)
+            # Remove the vibrational mode data from the cube - big, not needed here.
+            if 'vibrations' in cjson:
+                del cjson['vibrations']
 
-        # # Remove the vibrational mode data from the cube - big, not needed here.
-        # if 'vibrations' in cjson:
-        #     del cjson['vibrations']
+            # Cache this cube for the next time, they can take a while to generate.
+            self._cube_model.create(id, mo, cjson)
 
-        # # Cache this cube for the next time, they can take a while to generate.
-        # self._cube_model.create(id, mo, cjson)
-
-        # return cjson
+            return cjson
 
     get_calc_cube.description = (
         Description('Get the cube for the supplied MO of the calculation in CJSON format')

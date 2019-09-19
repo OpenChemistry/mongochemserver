@@ -145,6 +145,7 @@ def schedule_orbital_gen(cjson, mo, id, orig_mo):
 def _finish_orbital_gen(mo, id, user, orig_mo, future):
     resp = future.result()
     cjson = json.loads(resp.text)
+    cjson['generating_orbital'] = False
 
     if 'vibrations' in cjson:
         del cjson['vibrations']
