@@ -1,8 +1,22 @@
+import json
+import requests
+
 from avogadro.core import Molecule
 from avogadro.io import FileFormatManager
-import json
+
+from girder.models.setting import Setting
+
 from jsonpath_rw import parse
-import requests
+
+from molecules.constants import PluginSettings
+
+
+def avogadro_base_url():
+    base_url = Setting().get(PluginSettings.AVOGADRO_BASE_URL)
+    if base_url is None:
+        base_url = 'http://localhost:5000'
+
+    return base_url
 
 
 def convert_str(str_data, in_format, out_format):
@@ -14,25 +28,33 @@ def convert_str(str_data, in_format, out_format):
 
 
 def atom_count(str_data, in_format):
-    mol = Molecule()
-    conv = FileFormatManager()
-    conv.read_string(mol, str_data, in_format)
+    base_url = avogadro_base_url()
+    path = 'properties'
+    url = '/'.join([base_url, path, 'atom'])
 
-    return mol.atom_count()
+    data = {
+        'format': in_format,
+        'data': str_data,
+    }
+
+    r = requests.post(url, json=data)
+
+    return int(r.text)
 
 
 def molecule_properties(str_data, in_format):
-    mol = Molecule()
-    conv = FileFormatManager()
-    conv.read_string(mol, str_data, in_format)
-    properties = {
-        'atomCount': mol.atom_count(),
-        'heavyAtomCount': mol.atom_count() - mol.atom_count(1),
-        'mass': mol.mass(),
-        'spacedFormula': mol.formula(' ', 0),
-        'formula': mol.formula('', 1)
-        }
-    return properties
+    base_url = avogadro_base_url()
+    path = 'properties'
+    url = '/'.join([base_url, path, 'molecule'])
+
+    data = {
+        'format': in_format,
+        'data': str_data,
+    }
+
+    r = requests.post(url, json=data)
+
+    return r.text
 
 
 # We expect JSON input here, using the NWChem format
@@ -108,7 +130,10 @@ def calculation_properties(json_data):
 
 
 def calculate_mo(cjson, mo):
-    url = 'http://avogadro:5000/calculate'
+    base_url = avogadro_base_url()
+    path = 'calculate'
+    url = '/'.join([base_url, path])
+
     data = {
         'cjson': cjson,
         'mo': mo,
