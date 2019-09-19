@@ -1,10 +1,11 @@
 import json
 
-from flask import Flask, jsonify, request, Response
+from flask import Flask, request
 
 import avogadro_api as avogadro
 
 app = Flask(__name__)
+
 
 @app.route('/calculate', methods=['POST'])
 def calculate():
@@ -14,6 +15,7 @@ def calculate():
 
     return avogadro.calculate_mo(cjson, mo)
 
+
 @app.route('/convert-str/<output>', methods=['POST'])
 def convert_string(output):
     json_data = request.get_json()
@@ -21,6 +23,7 @@ def convert_string(output):
     data = json.dumps(json_data['data'])
 
     return avogadro.convert_str(data, input_format, output)
+
 
 @app.route('/properties/<property_type>', methods=['POST'])
 def get_properties(property_type):
@@ -32,6 +35,7 @@ def get_properties(property_type):
         return avogadro.molecule_properties(data, input_format)
     elif property_type == 'atom':
         return str(avogadro.atom_count(data, input_format))
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')

@@ -235,7 +235,8 @@ class Calculation(Resource):
         if 'async' in params and params['async']:
             calc_running = calc['cjson'].setdefault('generating_cube', False)
             if not calc_running:
-                async_requests.schedule_orbital_gen(calc['cjson'], mo, id, orig_mo)
+                async_requests.schedule_orbital_gen(
+                    calc['cjson'], mo, id, orig_mo)
             calc['cjson']['cube'] = {
                 'dimensions': [0, 0, 0],
                 'scalars': []

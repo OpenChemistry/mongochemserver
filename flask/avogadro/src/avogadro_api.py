@@ -2,6 +2,7 @@ from avogadro.core import Molecule, GaussianSetTools
 from avogadro.io import FileFormatManager
 import json
 
+
 def calculate_mo(cjson, mo):
     mol = Molecule()
     conv = FileFormatManager()
@@ -22,6 +23,7 @@ def calculate_mo(cjson, mo):
     gaussian.calculate_molecular_orbital(cube, mo)
 
     return conv.write_string(mol, "cjson")
+
 
 def convert_str(str_data, in_format, out_format):
     mol = Molecule()
