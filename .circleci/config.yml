@@ -8,6 +8,7 @@ jobs:
           - CIRCLE_BUILD_NUM: ${CIRCLE_BUILD_NUM}
       - image: mongo:latest
       - image: openchemistry/openbabel:latest
+      - image: openchemistry/avogadro:latest
     working_directory: /mongochemserver
     steps:
       - checkout
