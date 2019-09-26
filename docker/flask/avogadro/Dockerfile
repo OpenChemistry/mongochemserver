@@ -14,4 +14,4 @@ COPY flask/avogadro/src/* /app/
 
 WORKDIR /app
 
-ENTRYPOINT ["gunicorn", "-w",  "4", "-t", "600", "server:app", "-b", "0.0.0.0:5000"]
+ENTRYPOINT ["gunicorn", "-w",  "4", "-t", "600", "server:app", "-b", "0.0.0.0:5001"]

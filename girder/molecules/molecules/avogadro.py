@@ -14,7 +14,7 @@ from molecules.constants import PluginSettings
 def avogadro_base_url():
     base_url = Setting().get(PluginSettings.AVOGADRO_BASE_URL)
     if base_url is None:
-        base_url = 'http://localhost:5000'
+        base_url = 'http://localhost:5001'
 
     return base_url
 
