@@ -20,7 +20,7 @@ def calculate():
 def convert_string(output):
     json_data = request.get_json()
     input_format = json_data['format']
-    data = json.dumps(json_data['data'])
+    data = json_data['data']
 
     return avogadro.convert_str(data, input_format, output)
 
@@ -29,7 +29,7 @@ def convert_string(output):
 def get_properties(property_type):
     json_data = request.get_json()
     input_format = json_data['format']
-    data = json.dumps(json_data['data'])
+    data = json_data['data']
 
     if property_type == 'molecule':
         return avogadro.molecule_properties(data, input_format)
