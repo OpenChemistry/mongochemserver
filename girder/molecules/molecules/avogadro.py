@@ -54,7 +54,7 @@ def molecule_properties(str_data, in_format):
 
     r = requests.post(url, json=data)
 
-    return r.text
+    return r.json()
 
 
 # We expect JSON input here, using the NWChem format
@@ -141,4 +141,4 @@ def calculate_mo(cjson, mo):
 
     r = requests.post(url, json=data)
 
-    return json.loads(r.text)
+    return r.json()
