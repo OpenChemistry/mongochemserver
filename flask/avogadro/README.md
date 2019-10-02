@@ -37,7 +37,7 @@ Where type = 'molecule' or 'atom', and file.json contains the format:
 
 To calculate MO:
 ```
-curl -X POST 'http://localhost:5001/calculate' \
+curl -X POST 'http://localhost:5001/calculate-mo' \
   -H "Content-Type: application/json" \
   -d "@path/to/file.json"
 ```

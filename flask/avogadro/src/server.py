@@ -7,7 +7,7 @@ import avogadro_api as avogadro
 app = Flask(__name__)
 
 
-@app.route('/calculate', methods=['POST'])
+@app.route('/calculate-mo', methods=['POST'])
 def calculate():
     json_data = request.get_json()
     cjson = json_data['cjson']

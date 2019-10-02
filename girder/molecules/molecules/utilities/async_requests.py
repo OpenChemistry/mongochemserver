@@ -131,7 +131,7 @@ def schedule_orbital_gen(cjson, mo, id, orig_mo):
     cjson['generating_orbital'] = True
 
     base_url = avogadro_base_url()
-    path = 'calculate'
+    path = 'calculate-mo'
     url = '/'.join([base_url, path])
 
     data = {

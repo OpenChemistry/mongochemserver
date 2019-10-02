@@ -138,7 +138,7 @@ def calculation_properties(json_data):
 
 def calculate_mo(cjson, mo):
     base_url = avogadro_base_url()
-    path = 'calculate'
+    path = 'calculate-mo'
     url = '/'.join([base_url, path])
 
     data = {
