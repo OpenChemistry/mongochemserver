@@ -13,6 +13,7 @@ from girder.utility.model_importer import ModelImporter
 
 from .whitelist_cjson import whitelist_cjson
 
+from molecules.avogadro import avogadro_base_url
 from molecules.openbabel import openbabel_base_url
 
 from .. import avogadro
@@ -129,7 +130,10 @@ def _finish_3d_coords_gen(inchikey, user, future):
 def schedule_orbital_gen(cjson, mo, id, orig_mo):
     cjson['generating_orbital'] = True
 
-    url = 'http://avogadro:5000/calculate'
+    base_url = avogadro_base_url()
+    path = 'calculate'
+    url = '/'.join([base_url, path])
+
     data = {
         'cjson': cjson,
         'mo': mo,

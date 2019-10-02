@@ -20,11 +20,18 @@ def avogadro_base_url():
 
 
 def convert_str(str_data, in_format, out_format):
-    mol = Molecule()
-    conv = FileFormatManager()
-    conv.read_string(mol, str_data, in_format)
+    base_url = avogadro_base_url()
+    path = 'convert-str'
+    url = '/'.join([base_url, path, out_format])
 
-    return conv.write_string(mol, out_format)
+    data = {
+        'format': in_format,
+        'data': str_data,
+    }
+
+    r = requests.post(url, json=data)
+
+    return r.json()
 
 
 def atom_count(str_data, in_format):
