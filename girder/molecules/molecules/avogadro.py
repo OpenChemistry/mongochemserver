@@ -30,6 +30,7 @@ def convert_str(str_data, in_format, out_format):
     }
 
     r = requests.post(url, json=data)
+    r.raise_for_status()
 
     return r.json()
 
@@ -45,6 +46,7 @@ def atom_count(str_data, in_format):
     }
 
     r = requests.post(url, json=data)
+    r.raise_for_status()
 
     return int(r.text)
 
@@ -60,6 +62,7 @@ def molecule_properties(str_data, in_format):
     }
 
     r = requests.post(url, json=data)
+    r.raise_for_status()
 
     return r.json()
 
@@ -147,5 +150,6 @@ def calculate_mo(cjson, mo):
     }
 
     r = requests.post(url, json=data)
+    r.raise_for_status()
 
     return r.json()
