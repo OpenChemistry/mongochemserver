@@ -32,7 +32,7 @@ def convert_str(str_data, in_format, out_format):
     r = requests.post(url, json=data)
     r.raise_for_status()
 
-    return r.json()
+    return r.text
 
 
 def atom_count(str_data, in_format):

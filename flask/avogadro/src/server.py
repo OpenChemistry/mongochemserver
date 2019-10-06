@@ -38,7 +38,7 @@ def convert_string(output):
         return Response(json_data, status=400, mimetype='application/json')
     else:
         input_format = json_data['format']
-        data = json.dumps(json_data['data'])
+        data = json_data['data']
         if not input_format or not data:
             return Response(json_data, status=400, mimetype='application/json')
 
@@ -54,7 +54,7 @@ def get_properties(property_type):
         return Response(json_data, status=400, mimetype='application/json')
     else:
         input_format = json_data['format']
-        data = json.dumps(json_data['data'])
+        data = json_data['data']
         if not input_format or not data:
             return Response(json_data, status=400, mimetype='application/json')
 
