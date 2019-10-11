@@ -1,6 +1,9 @@
 import sys
+import json
 from jsonschema import validate, ValidationError
 from bson.objectid import ObjectId
+import urllib
+import urllib.parse
 
 from girder.models.model_base import AccessControlledModel, ValidationException
 from girder.utility.model_importer import ModelImporter
@@ -88,7 +91,7 @@ class Calculation(AccessControlledModel):
         return doc
 
     def findcal(self, molecule_id=None, image_name=None,
-                input_parameters_hash=None, input_geometry_hash=None,
+                input_parameters=None, input_geometry_hash=None,
                 name=None, inchi=None, inchikey=None, smiles=None,
                 formula=None, creator_id=None, pending=None, limit=None,
                 offset=None, sort=None, user=None):
@@ -125,8 +128,9 @@ class Calculation(AccessControlledModel):
             query['image.repository'] = repository
             query['image.tag'] = tag
 
-        if input_parameters_hash:
-            query['input.parametersHash'] = input_parameters_hash
+        if input_parameters:
+            input_json = json.loads(urllib.parse.unquote(input_parameters))
+            query['input.parametersHash'] = oc.hash_object(input_json)
 
         if input_geometry_hash:
             query['input.geometryHash'] = input_geometry_hash
