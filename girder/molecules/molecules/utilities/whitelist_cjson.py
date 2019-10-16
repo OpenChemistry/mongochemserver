@@ -13,7 +13,10 @@ def whitelist_cjson(cjson):
     # Whitelist parts of the CJSON that we store at the top level.
     cjsonmol = {}
     cjsonmol['atoms'] = cjson['atoms']
-    cjsonmol['bonds'] = cjson['bonds']
     cjsonmol['chemicalJson'] = cjson[version_key]
+
+    if 'bonds' in cjson:
+        # The bonds are important, but just in case they are missing...
+        cjsonmol['bonds'] = cjson['bonds']
 
     return cjsonmol
