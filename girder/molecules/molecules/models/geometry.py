@@ -3,8 +3,8 @@ from bson.objectid import ObjectId
 from girder.models.model_base import AccessControlledModel
 from girder.constants import AccessType
 
-from .molecule import Molecule as MoleculeModel
-
+from molecules.models.molecule import Molecule as MoleculeModel
+from molecules.utilities.whitelist_cjson import whitelist_cjson
 
 class Geometry(AccessControlledModel):
 
@@ -28,9 +28,11 @@ class Geometry(AccessControlledModel):
 
     def create(self, user, moleculeId, cjson, provenanceType=None,
                provenanceId=None, public=False):
+
+        # We will whitelist the cjson to only include the geometry parts
         geometry = {
             'moleculeId': moleculeId,
-            'cjson': cjson,
+            'cjson': whitelist_cjson(cjson),
             'creatorId': user['_id']
         }
 
