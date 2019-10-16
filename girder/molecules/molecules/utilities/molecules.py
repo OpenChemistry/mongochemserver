@@ -30,25 +30,16 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
                     provenance='uploaded by user'):
 
     using_2d_format = (input_format in openbabel_2d_formats)
-    smiles_format = 'smiles'
+    inchi_format = 'inchi'
 
     if using_2d_format or input_format in openbabel_3d_formats:
-        smiles = openbabel.to_smiles(data_str, input_format)
+        inchi, inchikey = openbabel.to_inchi(data_str, input_format)
     else:
         sdf_data = avogadro.convert_str(data_str, input_format, 'sdf')
-        smiles = openbabel.to_smiles(sdf_data, 'sdf')
-
-    props = openbabel.properties(smiles, smiles_format)
-    atom_count = props['atomCount']
-
-    if atom_count > 1024:
-        raise RestException('Unable to generate inchi, '
-                            'molecule has more than 1024 atoms .', code=400)
-
-    (inchi, inchikey) = openbabel.to_inchi(smiles, smiles_format)
+        inchi, inchikey = openbabel.to_inchi(sdf_data, 'sdf')
 
     if not inchi:
-        raise RestException('Unable to extract inchi', code=400)
+        raise RestException('Unable to extract InChI', code=400)
 
     # Check if the molecule exists, only create it if it does.
     molExists = MoleculeModel().find_inchikey(inchikey)
@@ -59,8 +50,9 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
         # Get some basic molecular properties we want to add to the
         # database.
         # Use sdf without 3d generation for avogadro's molecule properties
-        sdf_no_3d = openbabel.gen_sdf_no_3d(smiles, smiles_format)[0]
+        sdf_no_3d = openbabel.gen_sdf_no_3d(inchi, inchi_format)[0]
         props = avogadro.molecule_properties(sdf_no_3d, 'sdf')
+        smiles = openbabel.to_smiles(inchi, inchi_format)
 
         pieces = props['spacedFormula'].strip().split(' ')
         atomCounts = {}

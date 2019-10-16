@@ -108,12 +108,6 @@ class Molecule(Resource):
                    paramType='query', required=False)
             .param('creatorId', 'The id of the user that created the molecule',
                    paramType='query', required=False)
-            .jsonParam('minValues', 'A dict of { key: minValue } representing '
-                       'minimum allowable values', requireObject=True,
-                       required=False)
-            .jsonParam('maxValues', 'A dict of { key: maxValue } representing '
-                       'maximum allowable values', requireObject=True,
-                       required=False)
             .param('queryString', 'The query string to use for this search '
                                   '(supercedes all other search parameters)',
                    paramType='query', required=False)
@@ -328,7 +322,7 @@ class Molecule(Resource):
                 props = openbabel.properties(data_str, input_format)
                 atom_count = props['atomCount']
             else:
-                atom_count = avogadro.atom_count(data_str, input_format)
+                atom_count = int(avogadro.atom_count(data_str, input_format))
 
             if atom_count > 1024:
                 raise RestException('Unable to generate InChI, molecule has more than 1024 atoms.', code=400)

@@ -20,6 +20,7 @@ class Molecule(AccessControlledModel):
     def __init__(self):
         super(Molecule, self).__init__()
         self.ensureIndex('properties.formula')
+        self.ensureIndex('inchikey')
 
     def initialize(self):
         self.name = 'molecules'
@@ -59,26 +60,6 @@ class Molecule(AccessControlledModel):
                 query['properties.formula'] = formula_regx
             if 'creatorId' in search:
                 query['creatorId'] = ObjectId(search['creatorId'])
-
-            if 'minValues' in search:
-                try:
-                    minValues = json.loads(search['minValues'])
-                    for key in minValues:
-                        if key not in query:
-                            query[key] = {}
-                        query[key]['$gte'] = minValues[key]
-                except:
-                    raise RestException('Failed to parse minValues')
-
-            if 'maxValues' in search:
-                try:
-                    maxValues = json.loads(search['maxValues'])
-                    for key in maxValues:
-                        if key not in query:
-                            query[key] = {}
-                        query[key]['$lte'] = maxValues[key]
-                except:
-                    raise RestException('Failed to parse maxValues')
 
         fields = [
           'inchikey',

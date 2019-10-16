@@ -29,6 +29,8 @@ def test_create_calc(server, molecule, user):
     from molecules.models.calculation import Calculation
     from girder.constants import AccessType
 
+    molecule = molecule(user)
+
     assert '_id' in molecule
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -74,6 +76,8 @@ def test_create_calc(server, molecule, user):
 
 @pytest.mark.plugin('molecules')
 def test_get_calc(server, molecule, calculation, user):
+    molecule = molecule(user)
+    calculation = calculation(user, molecule)
 
     assert '_id' in calculation
     assert 'moleculeId' in calculation
@@ -120,6 +124,9 @@ def test_get_calc(server, molecule, calculation, user):
 def test_put_properties(server, molecule, calculation, user):
     from molecules.models.calculation import Calculation
     from girder.constants import AccessType
+
+    molecule = molecule(user)
+    calculation = calculation(user, molecule)
 
     assert '_id' in calculation
     assert 'moleculeId' in calculation
@@ -179,7 +186,9 @@ def test_put_properties(server, molecule, calculation, user):
 
 
 @pytest.mark.plugin('molecules')
-def test_get_cjson(server, calculation, user):
+def test_get_cjson(server, molecule, calculation, user):
+    molecule = molecule(user)
+    calculation = calculation(user, molecule)
 
     assert '_id' in calculation
     assert 'moleculeId' in calculation
@@ -192,7 +201,7 @@ def test_get_cjson(server, calculation, user):
         calc_id, method='GET', user=user)
     assertStatusOk(r)
 
-    cjson = json.loads(r.json)
+    cjson = r.json
 
     # Should have all the needed cjson components
     assert 'atoms' in cjson
@@ -214,6 +223,7 @@ def test_get_cjson(server, calculation, user):
 
 @pytest.mark.plugin('molecules')
 def test_ingest_pending(server, molecule, user, make_girder_file, fsAssetstore):
+    molecule = molecule(user)
     body = {
         'moleculeId': molecule['_id'],
         'cjson': None,
@@ -257,6 +267,7 @@ def test_ingest_pending(server, molecule, user, make_girder_file, fsAssetstore):
 
 @pytest.mark.plugin('molecules')
 def test_ingest_with_molecule(server, molecule, user, make_girder_file, fsAssetstore):
+    molecule = molecule(user)
     from molecules.models.calculation import Calculation
     # Upload simulation result
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -286,6 +297,7 @@ def test_ingest_with_molecule(server, molecule, user, make_girder_file, fsAssets
 
 @pytest.mark.plugin('molecules')
 def test_ingest_without_molecule(server, molecule, user, make_girder_file, fsAssetstore):
+    molecule = molecule(user)
     from molecules.models.calculation import Calculation
     # Upload simulation result
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -314,3 +326,31 @@ def test_ingest_without_molecule(server, molecule, user, make_girder_file, fsAss
 
     # Molecule should be created
     assert calculation['moleculeId'] is not None
+
+@pytest.mark.plugin('molecules')
+def test_get_cube(server, molecule, calculation, user):
+    molecule = molecule(user, 'water')
+    calculation_water = calculation(user, molecule, 'water')
+    assert '_id' in calculation_water
+    assert 'moleculeId' in calculation_water
+    assert 'properties' in calculation_water
+    calc_id = str(calculation_water['_id'])
+
+    r = server.request(
+            '/calculations/%s/cube/%s' %
+            (calc_id, 'homo'), method='GET', user=user)
+    assertStatusOk(r)
+
+    cjson = r.json
+
+    # Should now have a new cube field with orbital data
+    assert 'cube' in cjson
+    assert 'dimensions' in cjson['cube']
+    assert 'origin' in cjson['cube']
+    assert 'scalars' in cjson['cube']
+    assert 'spacing' in cjson['cube']
+
+    calc_dims = cjson['cube']['dimensions']
+    calc_dims_prod = calc_dims[0] * calc_dims[1] * calc_dims[2]
+    calc_scalars_len = len(cjson['cube']['scalars'])
+    assert calc_dims_prod == calc_scalars_len

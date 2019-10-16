@@ -1,34 +1,71 @@
-from avogadro.core import *
-from avogadro.io import *
 import json
+import requests
+
+from avogadro.core import Molecule
+from avogadro.io import FileFormatManager
+
+from girder.models.setting import Setting
+
 from jsonpath_rw import parse
 
-def convert_str(str_data, in_format, out_format):
-    mol = Molecule()
-    conv = FileFormatManager()
-    conv.read_string(mol, str_data, in_format)
+from molecules.constants import PluginSettings
 
-    return conv.write_string(mol, out_format)
+
+def avogadro_base_url():
+    base_url = Setting().get(PluginSettings.AVOGADRO_BASE_URL)
+    if base_url is None:
+        base_url = 'http://localhost:5001'
+
+    return base_url
+
+
+def convert_str(str_data, in_format, out_format):
+    base_url = avogadro_base_url()
+    path = 'convert-str'
+    url = '/'.join([base_url, path, out_format])
+
+    data = {
+        'format': in_format,
+        'data': str_data,
+    }
+
+    r = requests.post(url, json=data)
+    r.raise_for_status()
+
+    return r.text
+
 
 def atom_count(str_data, in_format):
-    mol = Molecule()
-    conv = FileFormatManager()
-    conv.read_string(mol, str_data, in_format)
+    base_url = avogadro_base_url()
+    path = 'properties'
+    url = '/'.join([base_url, path, 'atom'])
 
-    return mol.atom_count()
+    data = {
+        'format': in_format,
+        'data': str_data,
+    }
+
+    r = requests.post(url, json=data)
+    r.raise_for_status()
+
+    return int(r.text)
+
 
 def molecule_properties(str_data, in_format):
-    mol = Molecule()
-    conv = FileFormatManager()
-    conv.read_string(mol, str_data, in_format)
-    properties = {
-        'atomCount': mol.atom_count(),
-        'heavyAtomCount': mol.atom_count() - mol.atom_count(1),
-        'mass': mol.mass(),
-        'spacedFormula': mol.formula(' ', 0),
-        'formula': mol.formula('', 1)
-        }
-    return properties
+    base_url = avogadro_base_url()
+    path = 'properties'
+    url = '/'.join([base_url, path, 'molecule'])
+
+    data = {
+        'format': in_format,
+        'data': str_data,
+    }
+
+    r = requests.post(url, json=data)
+    r.raise_for_status()
+
+    return r.json()
+
 
 # We expect JSON input here, using the NWChem format
 def calculation_properties(json_data):
@@ -41,7 +78,7 @@ def calculation_properties(json_data):
     firstCalc = calcs[0]
     waveFunctionTypes = {
         'Density Functional Theory': 'DFT',
-        'Hartree-Fock': 'HF' }
+        'Hartree-Fock': 'HF'}
     if 'calculationSetup' in firstCalc:
         setup = firstCalc['calculationSetup']
         # Use a lookup, probably needs to be extended to cover all types...
@@ -52,8 +89,8 @@ def calculation_properties(json_data):
         if 'exchangeCorrelationFunctional' in setup:
             for piece in setup['exchangeCorrelationFunctional']:
                 if 'xcName' in piece:
-                     properties['functional'] = piece['xcName']
-                     calcName += ' - ' + properties['functional']
+                    properties['functional'] = piece['xcName']
+                    calcName += ' - ' + properties['functional']
         calcName += ')'
         properties['friendlyName'] = calcName
 
@@ -75,7 +112,7 @@ def calculation_properties(json_data):
         'energyCalculation': 'energy',
         'geometryOptimization': 'optimization',
         'vibrationalModes': 'vibrational',
-        'molecularProperties': 'properties' }
+        'molecularProperties': 'properties'}
     calculationTypes = []
     calculations = []
     for calc in calcs:
@@ -101,24 +138,18 @@ def calculation_properties(json_data):
 
     return properties
 
-# This is far from ideal as it is a CPU intensive task blocking the main thread.
-def calculate_mo(cjson, mo):
-    mol = Molecule()
-    conv = FileFormatManager()
-    conv.read_string(mol, json.dumps(cjson), 'cjson')
-    # Do some scaling of our spacing based on the size of the molecule.
-    atom_count = mol.atom_count()
-    spacing = 0.30
-    if atom_count > 50:
-        spacing = 0.5
-    elif atom_count > 30:
-        spacing = 0.4
-    elif atom_count > 10:
-        spacing = 0.33
-    cube = mol.add_cube()
-    # Hard wiring spacing/padding for now, this could be exposed in future too.
-    cube.set_limits(mol, spacing, 4)
-    gaussian = GaussianSetTools(mol)
-    gaussian.calculate_molecular_orbital(cube, mo)
 
-    return json.loads(conv.write_string(mol, "cjson"))
+def calculate_mo(cjson, mo):
+    base_url = avogadro_base_url()
+    path = 'calculate-mo'
+    url = '/'.join([base_url, path])
+
+    data = {
+        'cjson': cjson,
+        'mo': mo,
+    }
+
+    r = requests.post(url, json=data)
+    r.raise_for_status()
+
+    return r.json()
