@@ -27,6 +27,8 @@ from pytest_girder.assertions import assertStatusOk
 @pytest.mark.plugin('molecules')
 def test_create_geometry(server, molecule, user):
 
+    molecule = molecule(user)
+
     # The molecule will have been created by the fixture
     assert '_id' in molecule
 
@@ -70,7 +72,10 @@ def test_create_geometry(server, molecule, user):
 
 
 @pytest.mark.plugin('molecules')
-def test_get_geometry(server, geometry, user):
+def test_get_geometry(server, geometry, molecule, user):
+
+    molecule = molecule(user)
+    geometry = geometry(user, molecule)
 
     # The geometry will have been created by the fixture
     assert '_id' in geometry

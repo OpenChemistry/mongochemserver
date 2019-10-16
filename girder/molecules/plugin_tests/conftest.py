@@ -54,37 +54,43 @@ def molecule():
         Molecule().remove(mol)
 
 @pytest.fixture
-def geometry(user, molecule):
+def geometry():
     """Our method for creating a geometry within girder."""
     from molecules.models.geometry import Geometry
 
-    # The molecule will have been created by the fixture
-    assert '_id' in molecule
+    geometries = []
+    def _geometry(user, molecule):
+        # The molecule will have been created by the fixture
+        assert '_id' in molecule
 
-    molecule_id = molecule['_id']
+        molecule_id = molecule['_id']
 
-    # Get some cjson
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    with open(dir_path + '/data/ethane.cjson', 'r') as rf:
-        ethane_cjson = json.load(rf)
+        # Get some cjson
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        with open(dir_path + '/data/ethane.cjson', 'r') as rf:
+            ethane_cjson = json.load(rf)
 
-    # Whitelist the cjson to only contain the parts needed for geometry
-    whitelist = ['atoms', 'bonds', 'chemical json']
-    cjson = {}
-    for item in whitelist:
-        cjson[item] = ethane_cjson[item]
+        # Whitelist the cjson to only contain the parts needed for geometry
+        whitelist = ['atoms', 'bonds', 'chemical json']
+        cjson = {}
+        for item in whitelist:
+            cjson[item] = ethane_cjson[item]
 
-    # Create a geometry
-    geometry = Geometry().create(user, molecule_id, json.dumps(cjson),
-                                 'user', user['_id'])
+        # Create a geometry
+        geometry = Geometry().create(user, molecule_id, json.dumps(cjson),
+                                     'user', user['_id'])
+        geometries.append(geometry)
 
-    # This is normally performed in a _clean() function
-    del geometry['access']
+        # This is normally performed in a _clean() function
+        del geometry['access']
 
-    yield geometry
+        return geometry
 
-    # Delete mol
-    Geometry().remove(geometry)
+    yield _geometry
+
+    for geometry in geometries:
+        # Delete the geometries
+        Geometry().remove(geometry)
 
 @pytest.fixture
 def calculation():
