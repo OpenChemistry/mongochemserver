@@ -24,6 +24,7 @@ from . import avogadro
 from . import openbabel
 from .molecule import Molecule
 
+from molecules.models.geometry import Geometry as GeometryModel
 
 class Calculation(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf']
@@ -384,6 +385,16 @@ class Calculation(Resource):
         scratch_folder_id = body.get('scratchFolderId')
         if scratch_folder_id is not None:
             calculation['scratchFolderId'] = scratch_folder_id
+
+        # If this was a geometry optimization, create a geometry from it
+        task = parse('input.parameters.task').find(calculation)
+        if task and task[0].value == 'optimize':
+            moleculeId = calculation.get('moleculeId')
+            provenanceType = 'calculation'
+            provenanceId = calculation.get('_id')
+            # The cjson will be whitelisted
+            GeometryModel().create(getCurrentUser(), moleculeId, cjson,
+                                   provenanceType, provenanceId)
 
         return CalculationModel().save(calculation)
 
