@@ -4,6 +4,7 @@ from girder.models.model_base import AccessControlledModel
 from girder.constants import AccessType
 
 from molecules.models.molecule import Molecule as MoleculeModel
+from molecules.utilities.get_cjson_energy import get_cjson_energy
 from molecules.utilities.pagination import parse_pagination_params
 from molecules.utilities.pagination import search_results_dict
 from molecules.utilities.whitelist_cjson import whitelist_cjson
@@ -44,6 +45,11 @@ class Geometry(AccessControlledModel):
         if provenanceId is not None:
             geometry['provenanceId'] = provenanceId
 
+        # If the cjson has an energy, set it
+        energy = get_cjson_energy(cjson)
+        if energy is not None:
+            geometry['energy'] = energy
+
         self.setUserAccess(geometry, user=user, level=AccessType.ADMIN)
         if public:
             self.setPublic(geometry, True)
@@ -62,7 +68,8 @@ class Geometry(AccessControlledModel):
           'creatorId',
           'moleculeId',
           'provenanceId',
-          'provenanceType'
+          'provenanceType',
+          'energy'
         ]
 
         cursor = self.findWithPermissions(query, user=user, fields=fields,
