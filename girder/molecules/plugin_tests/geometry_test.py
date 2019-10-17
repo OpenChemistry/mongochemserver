@@ -104,6 +104,5 @@ def test_get_geometry(server, geometry, molecule, user):
     # Everything should match
     assert geometry.get('_id') == str(_id)
     assert geometry.get('moleculeId') == str(molecule_id)
-    assert geometry.get('cjson') == cjson
     assert geometry.get('provenanceType') == provenance_type
     assert geometry.get('provenanceId') == str(provenance_id)

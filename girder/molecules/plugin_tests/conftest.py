@@ -77,8 +77,8 @@ def geometry():
             cjson[item] = ethane_cjson[item]
 
         # Create a geometry
-        geometry = Geometry().create(user, molecule_id, json.dumps(cjson),
-                                     'user', user['_id'])
+        geometry = Geometry().create(user, molecule_id, cjson, 'user',
+                                     user['_id'])
         geometries.append(geometry)
 
         # This is normally performed in a _clean() function
