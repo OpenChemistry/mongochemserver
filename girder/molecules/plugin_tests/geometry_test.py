@@ -97,9 +97,9 @@ def test_get_geometry(server, geometry, molecule, user):
     r = server.request(path, method='GET', user=user)
     assertStatusOk(r)
 
-    # Should just be one
-    assert len(r.json) == 1
-    geometry = r.json[0]
+    # There should be exactly one
+    assert len(r.json['results']) == 1
+    geometry = r.json['results'][0]
 
     # Everything should match
     assert geometry.get('_id') == str(_id)

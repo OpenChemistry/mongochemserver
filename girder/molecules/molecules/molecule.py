@@ -521,12 +521,19 @@ class Molecule(Resource):
     @autoDescribeRoute(
         Description('Find geometries of a given molecule.')
         .param('moleculeId', 'The id of the parent molecule.')
+        .pagingParams(defaultSort='_id',
+                      defaultSortDir=SortDir.DESCENDING,
+                      defaultLimit=25)
     )
-    def find_geometries(self, moleculeId):
+    def find_geometries(self, moleculeId, limit, offset, sort):
+        paging_params = {
+            'limit': limit,
+            'offset': offset,
+            'sort': sort[0][0],
+            'sortdir': sort[0][1]
+        }
         user = getCurrentUser()
-        geometries = GeometryModel().find_geometries(moleculeId, user)
-
-        return [self._clean(x) for x in geometries]
+        return GeometryModel().find_geometries(moleculeId, user, paging_params)
 
     @access.public
     @autoDescribeRoute(

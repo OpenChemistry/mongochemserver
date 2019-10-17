@@ -4,6 +4,8 @@ from girder.models.model_base import AccessControlledModel
 from girder.constants import AccessType
 
 from molecules.models.molecule import Molecule as MoleculeModel
+from molecules.utilities.pagination import parse_pagination_params
+from molecules.utilities.pagination import search_results_dict
 from molecules.utilities.whitelist_cjson import whitelist_cjson
 
 class Geometry(AccessControlledModel):
@@ -48,9 +50,26 @@ class Geometry(AccessControlledModel):
 
         return self.save(geometry)
 
-    def find_geometries(self, moleculeId, user=None):
+    def find_geometries(self, moleculeId, user, paging_params):
+
+        limit, offset, sort = parse_pagination_params(paging_params)
+
         query = {
             'moleculeId': ObjectId(moleculeId)
         }
 
-        return self.findWithPermissions(query, user=user)
+        fields = [
+          'creatorId',
+          'moleculeId',
+          'provenanceId',
+          'provenanceType'
+        ]
+
+        cursor = self.findWithPermissions(query, user=user, fields=fields,
+                                          limit=limit, offset=offset,
+                                          sort=sort)
+
+        num_matches = cursor.collection.count_documents(query)
+
+        geometries = [x for x in cursor]
+        return search_results_dict(geometries, num_matches, limit, offset, sort)
