@@ -65,6 +65,8 @@ class Molecule(Resource):
 
         # Methods for geometries
         self.route('GET', (':moleculeId', 'geometries'), self.find_geometries)
+        self.route('GET', (':moleculeId', 'geometries', ':id'),
+                   self.find_geometry)
         self.route('GET', (':moleculeId', 'geometries', ':id',
                            ':output_format'),
                    self.get_geometry_format)
@@ -534,6 +536,21 @@ class Molecule(Resource):
         }
         user = getCurrentUser()
         return GeometryModel().find_geometries(moleculeId, user, paging_params)
+
+    @access.public
+    @autoDescribeRoute(
+        Description('Find a geometry of a given molecule.')
+        .param('moleculeId', 'The id of the parent molecule.')
+        .param('id', 'The id of the geometry.')
+    )
+    def find_geometry(self, moleculeId, id):
+        user = getCurrentUser()
+        geometry = GeometryModel().load(id, level=AccessType.READ, user=user)
+
+        if not geometry:
+            raise RestException('Geometry not found.', code=404)
+
+        return self._clean(geometry)
 
     @access.public
     @autoDescribeRoute(
