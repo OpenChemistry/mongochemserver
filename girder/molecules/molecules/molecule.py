@@ -351,7 +351,7 @@ class Molecule(Resource):
     })
     conversions.description = (
             Description('Update a molecule by id.')
-            .param('format', 'The format to convert to', paramType='path')
+            .param('output_format', 'The format to convert to', paramType='path')
             .param(
             'body',
             'Details of molecule data to perform conversion on',
