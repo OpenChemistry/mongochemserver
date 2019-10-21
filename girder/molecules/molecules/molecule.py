@@ -287,23 +287,22 @@ class Molecule(Resource):
 
         body = self.getBodyJson()
 
-        if 'fileId' not in body:
+        if 'fileId' not in body and 'cjson' not in body:
             raise RestException('Invalid request body.', code=400)
 
-        file_id = body['fileId']
+        if 'fileId' in body:
+            file_id = body['fileId']
+            file = ModelImporter.model('file').load(file_id, user=user)
+            input_format = file['name'].split('.')[-1]
 
-        file = ModelImporter.model('file').load(file_id, user=user)
+            if input_format not in Molecule.input_formats:
+                raise RestException('Input format not supported.', code=400)
 
-        input_format = file['name'].split('.')[-1]
-
-        if input_format not in Molecule.input_formats:
-            raise RestException('Input format not supported.', code=400)
-
-        if file is None:
-            raise RestException('File not found.', code=404)
-
-        with File().load(file) as f:
-            data_str = f.read().decode()
+            with File().open(file) as f:
+                data_str = f.read().decode()
+        else:
+            input_format = 'cjson'
+            data_str = json.dumps(body['cjson'])
 
         if output_format.startswith('inchi'):
             atom_count = 0
@@ -351,7 +350,7 @@ class Molecule(Resource):
     })
     conversions.description = (
             Description('Update a molecule by id.')
-            .param('format', 'The format to convert to', paramType='path')
+            .param('output_format', 'The format to convert to', paramType='path')
             .param(
             'body',
             'Details of molecule data to perform conversion on',
