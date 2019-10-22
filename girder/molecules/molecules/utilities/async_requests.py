@@ -23,7 +23,17 @@ from ..models.molecule import Molecule as MoleculeModel
 
 
 def schedule_svg_gen(mol, user):
-    mol['generating_svg'] = True
+    query = {
+        '_id': mol['_id']
+    }
+
+    updates = {
+        '$set': {
+            'generating_svg': True
+        }
+    }
+
+    super(MoleculeModel, MoleculeModel()).update(query, updates)
 
     base_url = openbabel_base_url()
     path = 'convert'
@@ -69,8 +79,18 @@ def _finish_svg_gen(inchikey, user, future):
         raise ValidationException('Invalid inchikey (%s)' % inchikey)
 
 
-def schedule_3d_coords_gen(mol, user):
-    mol['generating_3d_coords'] = True
+def schedule_3d_coords_gen(mol, user, on_complete=None):
+    query = {
+        '_id': mol['_id']
+    }
+
+    updates = {
+        '$set': {
+            'generating_3d_coords': True
+        }
+    }
+
+    super(MoleculeModel, MoleculeModel()).update(query, updates)
 
     base_url = openbabel_base_url()
     path = 'convert'
@@ -89,10 +109,10 @@ def schedule_3d_coords_gen(mol, user):
 
     inchikey = mol['inchikey']
     future.add_done_callback(functools.partial(_finish_3d_coords_gen,
-                                               inchikey, user))
+                                               inchikey, user, on_complete))
 
 
-def _finish_3d_coords_gen(inchikey, user, future):
+def _finish_3d_coords_gen(inchikey, user, on_complete, future):
 
     resp = future.result()
 
@@ -120,11 +140,10 @@ def _finish_3d_coords_gen(inchikey, user, future):
     if update_result.matched_count == 0:
         raise ValidationException('Invalid inchikey (%s)' % inchikey)
 
-    # Upload the molecule to virtuoso
-    try:
-        semantic.upload_molecule(MoleculeModel().findOne(query))
-    except requests.ConnectionError:
-        print(TerminalColor.warning('WARNING: Couldn\'t connect to Jena.'))
+    # Call the on_complete callback is we have one.
+    if on_complete is not None:
+        mol = MoleculeModel().findOne(query)
+        on_complete(mol)
 
 
 def schedule_orbital_gen(cjson, mo, id, orig_mo):
