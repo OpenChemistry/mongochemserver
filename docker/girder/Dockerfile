@@ -31,5 +31,11 @@ RUN pip install -e /mongochemserver/girder/molecules && \
 # Install OAuth plugin
 RUN pip install -e /girder/plugins/oauth
 
+# Install autojoin plugin, needed to share clusters via groups
+RUN pip install -e /girder/plugins/autojoin
+
+# Rebuild the Girder UI
+RUN girder build
+
 # Install clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
