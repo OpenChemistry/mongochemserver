@@ -90,7 +90,7 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
 
         mol = MoleculeModel().create(user, mol_dict, public)
 
-        if not cjson and using_2d_format and gen3d:
+        if using_2d_format and gen3d:
             def _on_complete(mol):
                 # Upload the molecule to Jen
                 try:
