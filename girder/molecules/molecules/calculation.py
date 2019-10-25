@@ -189,6 +189,9 @@ class Calculation(Resource):
 
     @access.public
     def get_calc_cube(self, id, mo, params):
+        if 'status' in params:
+            raise RestException('Invalid JSON or MO.', params['status'])
+
         orig_mo = mo
         try:
             mo = int(mo)
@@ -234,7 +237,7 @@ class Calculation(Resource):
         # This is where the cube gets calculated, should be cached in future.
         if 'async' in params and params['async']:
             async_requests.schedule_orbital_gen(
-                calc['cjson'], mo, id, orig_mo)
+                calc['cjson'], mo, id, orig_mo, self.getCurrentUser())
             calc['cjson']['cube'] = {
                 'dimensions': [0, 0, 0],
                 'scalars': []

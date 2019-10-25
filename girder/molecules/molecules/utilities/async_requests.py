@@ -5,7 +5,6 @@ import datetime
 
 from requests_futures.sessions import FuturesSession
 
-from girder.api.rest import getCurrentUser
 from girder.constants import TerminalColor
 from girder.models.notification import Notification
 from girder.models.model_base import ValidationException
@@ -146,7 +145,7 @@ def _finish_3d_coords_gen(inchikey, user, on_complete, future):
         on_complete(mol)
 
 
-def schedule_orbital_gen(cjson, mo, id, orig_mo):
+def schedule_orbital_gen(cjson, mo, id, orig_mo, user):
     cjson['generating_orbital'] = True
 
     base_url = avogadro_base_url()
@@ -162,22 +161,26 @@ def schedule_orbital_gen(cjson, mo, id, orig_mo):
     future = session.post(url, json=data)
 
     future.add_done_callback(functools.partial(
-        _finish_orbital_gen, mo, id, getCurrentUser(), orig_mo))
+        _finish_orbital_gen, mo, id, user, orig_mo))
 
 
 def _finish_orbital_gen(mo, id, user, orig_mo, future):
     resp = future.result()
-    cjson = json.loads(resp.text)
-    cjson['generating_orbital'] = False
+    if resp.status_code == 200:
+        cjson = json.loads(resp.text)
+        cjson['generating_orbital'] = False
 
-    if 'vibrations' in cjson:
-        del cjson['vibrations']
+        if 'vibrations' in cjson:
+            del cjson['vibrations']
 
-    # Add cube to cache
-    ModelImporter.model('cubecache', 'molecules').create(id, mo, cjson)
+        # Add cube to cache
+        ModelImporter.model('cubecache', 'molecules').create(id, mo, cjson)
 
-    # #Create notification to indicate cube can be retrieved now
-    data = {'id': id, 'mo': orig_mo}
+        # Create notification to indicate cube can be retrieved now
+        data = {'id': id, 'mo': orig_mo}
+    else:
+        data = {'id': id, 'mo': orig_mo, 'error': resp.status_code}
+
     Notification().createNotification(
         type='cube.status',
         data=data,
