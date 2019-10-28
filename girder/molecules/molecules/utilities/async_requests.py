@@ -1,14 +1,19 @@
 import functools
 import json
 import requests
+import datetime
 
 from requests_futures.sessions import FuturesSession
 
+from girder.api.rest import getCurrentUser
 from girder.constants import TerminalColor
+from girder.models.notification import Notification
 from girder.models.model_base import ValidationException
+from girder.utility.model_importer import ModelImporter
 
 from .whitelist_cjson import whitelist_cjson
 
+from molecules.avogadro import avogadro_base_url
 from molecules.openbabel import openbabel_base_url
 
 from .. import avogadro
@@ -18,7 +23,17 @@ from ..models.molecule import Molecule as MoleculeModel
 
 
 def schedule_svg_gen(mol, user):
-    mol['generating_svg'] = True
+    query = {
+        '_id': mol['_id']
+    }
+
+    updates = {
+        '$set': {
+            'generating_svg': True
+        }
+    }
+
+    super(MoleculeModel, MoleculeModel()).update(query, updates)
 
     base_url = openbabel_base_url()
     path = 'convert'
@@ -64,8 +79,18 @@ def _finish_svg_gen(inchikey, user, future):
         raise ValidationException('Invalid inchikey (%s)' % inchikey)
 
 
-def schedule_3d_coords_gen(mol, user):
-    mol['generating_3d_coords'] = True
+def schedule_3d_coords_gen(mol, user, on_complete=None):
+    query = {
+        '_id': mol['_id']
+    }
+
+    updates = {
+        '$set': {
+            'generating_3d_coords': True
+        }
+    }
+
+    super(MoleculeModel, MoleculeModel()).update(query, updates)
 
     base_url = openbabel_base_url()
     path = 'convert'
@@ -84,10 +109,10 @@ def schedule_3d_coords_gen(mol, user):
 
     inchikey = mol['inchikey']
     future.add_done_callback(functools.partial(_finish_3d_coords_gen,
-                                               inchikey, user))
+                                               inchikey, user, on_complete))
 
 
-def _finish_3d_coords_gen(inchikey, user, future):
+def _finish_3d_coords_gen(inchikey, user, on_complete, future):
 
     resp = future.result()
 
@@ -115,8 +140,46 @@ def _finish_3d_coords_gen(inchikey, user, future):
     if update_result.matched_count == 0:
         raise ValidationException('Invalid inchikey (%s)' % inchikey)
 
-    # Upload the molecule to virtuoso
-    try:
-        semantic.upload_molecule(MoleculeModel().findOne(query))
-    except requests.ConnectionError:
-        print(TerminalColor.warning('WARNING: Couldn\'t connect to Jena.'))
+    # Call the on_complete callback is we have one.
+    if on_complete is not None:
+        mol = MoleculeModel().findOne(query)
+        on_complete(mol)
+
+
+def schedule_orbital_gen(cjson, mo, id, orig_mo):
+    cjson['generating_orbital'] = True
+
+    base_url = avogadro_base_url()
+    path = 'calculate-mo'
+    url = '/'.join([base_url, path])
+
+    data = {
+        'cjson': cjson,
+        'mo': mo,
+    }
+
+    session = FuturesSession()
+    future = session.post(url, json=data)
+
+    future.add_done_callback(functools.partial(
+        _finish_orbital_gen, mo, id, getCurrentUser(), orig_mo))
+
+
+def _finish_orbital_gen(mo, id, user, orig_mo, future):
+    resp = future.result()
+    cjson = json.loads(resp.text)
+    cjson['generating_orbital'] = False
+
+    if 'vibrations' in cjson:
+        del cjson['vibrations']
+
+    # Add cube to cache
+    ModelImporter.model('cubecache', 'molecules').create(id, mo, cjson)
+
+    # #Create notification to indicate cube can be retrieved now
+    data = {'id': id, 'mo': orig_mo}
+    Notification().createNotification(
+        type='cube.status',
+        data=data,
+        user=user,
+        expires=datetime.datetime.utcnow() + datetime.timedelta(seconds=30))

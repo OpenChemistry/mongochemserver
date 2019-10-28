@@ -13,6 +13,7 @@ from girder.api import access
 from girder.constants import AccessType
 from girder.constants import SortDir
 from girder.constants import TerminalColor
+from girder.constants import TokenScope
 from girder.models.file import File
 from girder.utility.model_importer import ModelImporter
 from . import avogadro
@@ -97,12 +98,6 @@ class Molecule(Resource):
                    paramType='query', required=False)
             .param('creatorId', 'The id of the user that created the molecule',
                    paramType='query', required=False)
-            .jsonParam('minValues', 'A dict of { key: minValue } representing '
-                       'minimum allowable values', requireObject=True,
-                       required=False)
-            .jsonParam('maxValues', 'A dict of { key: maxValue } representing '
-                       'maximum allowable values', requireObject=True,
-                       required=False)
             .param('queryString', 'The query string to use for this search '
                                   '(supercedes all other search parameters)',
                    paramType='query', required=False)
@@ -139,7 +134,7 @@ class Molecule(Resource):
         .param('cjson', 'Attach the cjson data of the molecule to the response (Default: true)', paramType='query', required=False)
     )
 
-    @access.user
+    @access.user(scope=TokenScope.DATA_WRITE)
     def create(self, params):
         body = self.getBodyJson()
         user = self.getCurrentUser()
@@ -204,7 +199,7 @@ class Molecule(Resource):
             required=True, paramType='body')
         .errorResponse('Input format not supported.', code=400))
 
-    @access.user
+    @access.user(scope=TokenScope.DATA_WRITE)
     def delete(self, id, params):
         user = self.getCurrentUser()
         mol = MoleculeModel().load(id, user=user, level=AccessType.WRITE)
@@ -220,7 +215,7 @@ class Molecule(Resource):
             .errorResponse()
             .errorResponse('Molecule not found.', 404))
 
-    @access.user
+    @access.user(scope=TokenScope.DATA_WRITE)
     def update(self, id, params):
         user = self.getCurrentUser()
 
@@ -271,7 +266,7 @@ class Molecule(Resource):
             required=True, paramType='body')
             .errorResponse('Molecule not found.', 404))
 
-    @access.user
+    @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
         Description('Add notebooks ( file ids ) to molecule.')
         .modelParam('id', 'The molecule id',
@@ -284,7 +279,7 @@ class Molecule(Resource):
         if notebooks is not None:
             MoleculeModel().add_notebooks(molecule, notebooks)
 
-    @access.user
+    @access.user(scope=TokenScope.DATA_READ)
     def conversions(self, output_format, params):
         user = self.getCurrentUser()
 
@@ -293,23 +288,22 @@ class Molecule(Resource):
 
         body = self.getBodyJson()
 
-        if 'fileId' not in body:
+        if 'fileId' not in body and 'cjson' not in body:
             raise RestException('Invalid request body.', code=400)
 
-        file_id = body['fileId']
+        if 'fileId' in body:
+            file_id = body['fileId']
+            file = ModelImporter.model('file').load(file_id, user=user)
+            input_format = file['name'].split('.')[-1]
 
-        file = ModelImporter.model('file').load(file_id, user=user)
+            if input_format not in Molecule.input_formats:
+                raise RestException('Input format not supported.', code=400)
 
-        input_format = file['name'].split('.')[-1]
-
-        if input_format not in Molecule.input_formats:
-            raise RestException('Input format not supported.', code=400)
-
-        if file is None:
-            raise RestException('File not found.', code=404)
-
-        with File().load(file) as f:
-            data_str = f.read().decode()
+            with File().open(file) as f:
+                data_str = f.read().decode()
+        else:
+            input_format = 'cjson'
+            data_str = json.dumps(body['cjson'])
 
         if output_format.startswith('inchi'):
             atom_count = 0
@@ -317,7 +311,7 @@ class Molecule(Resource):
                 props = openbabel.properties(data_str, input_format)
                 atom_count = props['atomCount']
             else:
-                atom_count = avogadro.atom_count(data_str, input_format)
+                atom_count = int(avogadro.atom_count(data_str, input_format))
 
             if atom_count > 1024:
                 raise RestException('Unable to generate InChI, molecule has more than 1024 atoms.', code=400)
@@ -357,7 +351,7 @@ class Molecule(Resource):
     })
     conversions.description = (
             Description('Update a molecule by id.')
-            .param('format', 'The format to convert to', paramType='path')
+            .param('output_format', 'The format to convert to', paramType='path')
             .param(
             'body',
             'Details of molecule data to perform conversion on',
@@ -493,7 +487,7 @@ class Molecule(Resource):
                           defaultSortDir=SortDir.DESCENDING,
                           defaultLimit=25))
 
-    @access.user
+    @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
             Description('Generate 3D coordinates for a molecule.')
             .modelParam('id', 'The id of the molecule', destName='mol',

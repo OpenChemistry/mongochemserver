@@ -1,84 +1,96 @@
 import pytest
 import six
 import os
+import json
 
 from girder.models.file import File
 from girder.models.folder import Folder
 from girder.models.upload import Upload
 
 @pytest.fixture
-def molecule(user):
+def molecule():
     """Our method for creating a molecule within girder."""
     from molecules.models.molecule import Molecule
     from molecules import openbabel
+    mols = []
+    def _molecule(user, mol_name='ethane'):
+        dir_path = os.path.dirname(os.path.realpath(__file__))
 
-    dir_path = os.path.dirname(os.path.realpath(__file__))
+        with open(dir_path + '/data/' + mol_name + '.xyz', 'r') as rf:
+            xyz_data = rf.read()
 
-    with open(dir_path + '/data/ethane.xyz', 'r') as rf:
-        xyz_data = rf.read()
+        input_format = 'xyz'
+        data = xyz_data
+        name = mol_name
 
-    input_format = 'xyz'
-    data = xyz_data
-    name = 'ethane'
+        (inchi, inchikey) = openbabel.to_inchi(data, input_format)
+        smiles = openbabel.to_smiles(data, input_format)
+        properties = openbabel.properties(data, input_format)
 
-    (inchi, inchikey) = openbabel.to_inchi(data, input_format)
-    smiles = openbabel.to_smiles(data, input_format)
-    properties = openbabel.properties(data, input_format)
-
-    mol = {
-        'inchi': inchi,
-        'inchikey': inchikey,
-        'smiles': smiles,
-        'name': name,
-        'properties': properties,
-        'cjson': {
-            'atoms': {}
+        mol = {
+            'inchi': inchi,
+            'inchikey': inchikey,
+            'smiles': smiles,
+            'name': name,
+            'properties': properties,
+            'cjson': {
+                'atoms': {}
+            }
         }
-    }
 
-    mol = Molecule().create(user, mol, public=False)
+        mol = Molecule().create(user, mol, public=False)
+        mols.append(mol)
 
-    # These are normally performed in the molecule resource _clean() function
-    del mol['access']
-    mol['_id'] = str(mol['_id'])
+        # These are normally performed in the molecule resource _clean() function
+        del mol['access']
+        mol['_id'] = str(mol['_id'])
 
-    yield mol
+        return mol
+
+    yield _molecule
 
     # Delete mol
-    Molecule().remove(mol)
-
+    for mol in mols:
+        Molecule().remove(mol)
 
 @pytest.fixture
-def calculation(user, molecule):
+def calculation():
     """Our method for creating a calculation within girder."""
     from molecules.models.calculation import Calculation
+    calcs = []
+    def _calculation(user, molecule, name='ethane'):
 
-    assert '_id' in molecule
+        assert '_id' in molecule
 
-    dir_path = os.path.dirname(os.path.realpath(__file__))
+        dir_path = os.path.dirname(os.path.realpath(__file__))
 
-    # This cjson should match the molecule
-    with open(dir_path + '/data/ethane.cjson', 'r') as rf:
-        ethane_cjson = rf.read()
+        # This cjson should match the molecule
+        with open(dir_path + '/data/'+ name + '.cjson', 'r') as rf:
+            mol_cjson = json.load(rf)
 
-    # Let's make some properties
-    properties = {
-        "molecular mass": 30.0690,
-        "melting point": -172,
-        "boiling point": -88
-    }
+        # Let's make some properties
+        properties = {}
+        if name == 'ethane':
+            properties = {
+                "molecular mass": 30.0690,
+                "melting point": -172,
+                "boiling point": -88
+            }
 
-    _calc = Calculation().create_cjson(user, ethane_cjson, properties,
-                                       molecule['_id'], notebooks=[],
-                                       public=False)
+        _calc = Calculation().create_cjson(user, mol_cjson, properties,
+                                        molecule['_id'], notebooks=[],
+                                        public=False)
 
-    calc = Calculation().filter(_calc, user)
+        calc = Calculation().filter(_calc, user)
+        calcs.append(calc)
 
-    yield calc
+        return calc
+
+    yield _calculation
 
     # Delete calc
-    Calculation().remove(calc)
-
+    for calc in calcs:
+        Calculation().remove(calc)
 
 @pytest.fixture
 def make_girder_file():

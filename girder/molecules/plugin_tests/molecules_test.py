@@ -242,6 +242,7 @@ def test_create_molecule_smiles(server, user):
 
 @pytest.mark.plugin('molecules')
 def test_get_molecule(server, molecule, user):
+    molecule = molecule(user)
 
     # The molecule will have been created by the fixture
     assert '_id' in molecule
@@ -368,6 +369,7 @@ def test_get_molecule(server, molecule, user):
 
 @pytest.mark.plugin('molecules')
 def test_get_molecule_inchikey(server, molecule, user):
+    molecule = molecule(user)
 
     # The molecule will have been created by the fixture
     assert '_id' in molecule
@@ -400,6 +402,7 @@ def test_get_molecule_inchikey(server, molecule, user):
 
 @pytest.mark.plugin('molecules')
 def test_search_molecule_formula(server, molecule, user):
+    molecule = molecule(user)
 
     # The molecule will have been created by the fixture
     assert '_id' in molecule

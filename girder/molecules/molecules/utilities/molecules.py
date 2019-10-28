@@ -27,6 +27,8 @@ openbabel_3d_formats = [
   'pdb'
 ]
 
+openbabel_formats = openbabel_2d_formats + openbabel_3d_formats
+
 
 def create_molecule(data_str, input_format, user, public, gen3d=True,
                     provenance='uploaded by user'):
@@ -48,7 +50,7 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
         inchi, inchikey = openbabel.to_inchi(sdf_data, 'sdf')
 
     if not inchi:
-        raise RestException('Unable to extract inchi', code=400)
+        raise RestException('Unable to extract InChI', code=400)
 
     # Check if the molecule exists, only create it if it does.
     molExists = MoleculeModel().find_inchikey(inchikey)
@@ -77,31 +79,29 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
             'provenance': provenance
         }
 
-        # Generate an svg file for an image
-        schedule_svg_gen(mol_dict, user)
-
         # Set a name if we find one
         name = chemspider.find_common_name(inchikey)
         if name is not None:
             mol_dict['name'] = name
 
-        if using_2d_format:
-            # Generate 3d coordinates in a background thread
-            if gen3d:
-                schedule_3d_coords_gen(mol_dict, user)
-            # This will be complete other than the cjson
-            return MoleculeModel().create(user, mol_dict, public)
-
-        # The cjson should already be a local variable
-        mol_dict['cjson'] = whitelist_cjson(cjson)
+        if not using_2d_format:
+            # The cjson should already be a local variable
+            mol_dict['cjson'] = whitelist_cjson(cjson)
 
         mol = MoleculeModel().create(user, mol_dict, public)
 
-        # Upload the molecule to virtuoso
-        try:
-            semantic.upload_molecule(mol)
-        except requests.ConnectionError:
-            print(TerminalColor.warning('WARNING: Couldn\'t connect to Jena.'))
+        if using_2d_format and gen3d:
+            def _on_complete(mol):
+                # Upload the molecule to Jen
+                try:
+                    semantic.upload_molecule(mol)
+                except requests.ConnectionError:
+                    print(TerminalColor.warning('WARNING: Couldn\'t connect to Jena.'))
+
+            schedule_3d_coords_gen(mol_dict, user, on_complete=_on_complete)
+
+        # Generate an svg file for an image
+        schedule_svg_gen(mol_dict, user)
 
     return mol
 
