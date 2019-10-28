@@ -1,6 +1,8 @@
 import json
 import requests
 
+from jsonpath_rw import parse
+
 from .. import avogadro
 from .. import openbabel
 from .. import chemspider
@@ -34,10 +36,17 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
     using_2d_format = (input_format in openbabel_2d_formats)
     inchi_format = 'inchi'
 
-    if input_format in openbabel_formats:
+    if using_2d_format:
         inchi, inchikey = openbabel.to_inchi(data_str, input_format)
     else:
-        sdf_data = avogadro.convert_str(data_str, input_format, 'sdf')
+        # Let's make sure the bonds look reasonable
+        cjson = convert_3d_format_to_cjson(data_str, input_format)
+        if bonding_looks_suspicious(cjson):
+            tmp = openbabel.autodetect_bonds(cjson)
+            cjson['bonds'] = tmp['bonds']
+
+        # Use this cjson for generating the inchi
+        sdf_data = avogadro.convert_str(json.dumps(cjson), 'cjson', 'sdf')
         inchi, inchikey = openbabel.to_inchi(sdf_data, 'sdf')
 
     if not inchi:
@@ -75,21 +84,8 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
         if name is not None:
             mol_dict['name'] = name
 
-        cjson = {}
-        if input_format == 'cjson':
-            cjson = json.loads(data_str)
-        elif not using_2d_format:
-            # Convert the 3D format to cjson
-            if input_format in openbabel_3d_formats:
-                sdf_data, mime = openbabel.convert_str(data_str, input_format,
-                                                       'sdf')
-                cjson = json.loads(avogadro.convert_str(sdf_data, 'sdf',
-                                                        'cjson'))
-            else:
-                cjson = json.loads(avogadro.convert_str(data_str, input_format,
-                                                        'cjson'))
-
-        if cjson:
+        if not using_2d_format:
+            # The cjson should already be a local variable
             mol_dict['cjson'] = whitelist_cjson(cjson)
 
         mol = MoleculeModel().create(user, mol_dict, public)
@@ -107,5 +103,27 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
         # Generate an svg file for an image
         schedule_svg_gen(mol_dict, user)
 
-
     return mol
+
+
+def convert_3d_format_to_cjson(data_str, input_format):
+    # This returns the cjson as a dictionary
+    if input_format == 'cjson':
+        return json.loads(data_str)
+
+    if input_format in openbabel_3d_formats:
+        data_str = openbabel.convert_str(data_str, input_format, 'sdf')
+        input_format = 'sdf'
+
+    cjson = avogadro.convert_str(data_str, input_format, 'cjson')
+    return json.loads(cjson)
+
+
+def bonding_looks_suspicious(cjson):
+    # Right now, we consider bonding to look suspicious if there
+    # are no bonds, or if there are only single bonds.
+    orders = parse('bonds.order').find(cjson)
+    if not orders or len(orders[0].value) == 0:
+        return True
+
+    return all(x == 1 for x in orders[0].value)
