@@ -266,7 +266,7 @@ class Calculation(Resource):
             'The molecular orbital to get the cube for.',
             dataType='string', required=True, paramType='path'))
 
-    @access.user
+    @access.user(scope=TokenScope.DATA_WRITE)
     def create_calc(self, params):
         body = getBodyJson()
         if 'cjson' not in body and ('fileId' not in body or 'format' not in body):
@@ -382,6 +382,10 @@ class Calculation(Resource):
         if image is not None:
             calculation['image'] = image
 
+        code = body.get('code')
+        if code is not None:
+            calculation['code'] = code
+
         scratch_folder_id = body.get('scratchFolderId')
         if scratch_folder_id is not None:
             calculation['scratchFolderId'] = scratch_folder_id
@@ -438,7 +442,7 @@ class Calculation(Resource):
             'The id of calculatino.',
             dataType='string', required=True, paramType='path'))
 
-    @access.user
+    @access.user(scope=TokenScope.DATA_WRITE)
     def delete(self, id, params):
         user = getCurrentUser()
         cal = self._model.load(id, level=AccessType.READ, user=user)
@@ -498,7 +502,7 @@ class Calculation(Resource):
 
         return calculation
 
-    @access.user
+    @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
         Description('Add notebooks ( file ids ) to molecule.')
         .modelParam('id', 'The calculation id',

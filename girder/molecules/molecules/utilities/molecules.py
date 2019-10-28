@@ -25,6 +25,8 @@ openbabel_3d_formats = [
   'pdb'
 ]
 
+openbabel_formats = openbabel_2d_formats + openbabel_3d_formats
+
 
 def create_molecule(data_str, input_format, user, public, gen3d=True,
                     provenance='uploaded by user'):
@@ -32,7 +34,7 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
     using_2d_format = (input_format in openbabel_2d_formats)
     inchi_format = 'inchi'
 
-    if using_2d_format or input_format in openbabel_3d_formats:
+    if input_format in openbabel_formats:
         inchi, inchikey = openbabel.to_inchi(data_str, input_format)
     else:
         sdf_data = avogadro.convert_str(data_str, input_format, 'sdf')
@@ -76,8 +78,8 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
         cjson = {}
         if input_format == 'cjson':
             cjson = json.loads(data_str)
-
-        if cjson or not using_2d_format:
+        elif not using_2d_format:
+            # Convert the 3D format to cjson
             if input_format in openbabel_3d_formats:
                 sdf_data, mime = openbabel.convert_str(data_str, input_format,
                                                        'sdf')
@@ -86,6 +88,8 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
             else:
                 cjson = json.loads(avogadro.convert_str(data_str, input_format,
                                                         'cjson'))
+
+        if cjson:
             mol_dict['cjson'] = whitelist_cjson(cjson)
 
         mol = MoleculeModel().create(user, mol_dict, public)

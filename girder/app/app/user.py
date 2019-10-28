@@ -1,6 +1,7 @@
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import getCurrentUser
+from girder.constants import TokenScope
 from girder.models.model_base import AccessType
 from girder.models.user import User
 
@@ -38,7 +39,7 @@ def get_orcid(user):
     return user.get('orcid')
 
 
-@access.user
+@access.user(scope=TokenScope.DATA_WRITE)
 @autoDescribeRoute(
     Description('Set the orcid of a user.')
     .modelParam('id', 'The ID of the user.', model=User,
@@ -70,7 +71,7 @@ def get_twitter(user):
     return user.get('twitter')
 
 
-@access.user
+@access.user(scope=TokenScope.DATA_WRITE)
 @autoDescribeRoute(
     Description('Set the twitter username of a user.')
     .modelParam('id', 'The ID of the user.', model=User,
