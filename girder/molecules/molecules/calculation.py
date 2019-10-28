@@ -390,7 +390,7 @@ class Calculation(Resource):
         Description('Search for particular calculation')
         .param('moleculeId', 'The molecule ID linked to this calculation', required=False)
         .param('imageName', 'The name of the Docker image that run this calculation', required=False)
-        .param('inputParameters', 'Json string of the input parameters. May be in percent encoding.', required=False)
+        .param('inputParameters', 'JSON string of the input parameters. May be in percent encoding.', required=False)
         .param('inputGeometryHash', 'The hash of the input geometry.', required=False)
         .param('name', 'The name of the molecule', paramType='query',
                    required=False)
