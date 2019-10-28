@@ -179,7 +179,10 @@ def _finish_orbital_gen(mo, id, user, orig_mo, future):
         # Create notification to indicate cube can be retrieved now
         data = {'id': id, 'mo': orig_mo}
     else:
-        data = {'id': id, 'mo': orig_mo, 'error': resp.status_code}
+        data = {
+            'id': id,
+            'mo': orig_mo,
+            'error': 'Status code ' + str(resp.status_code) + ': Orbital could not be calculated.'}
 
     Notification().createNotification(
         type='cube.status',

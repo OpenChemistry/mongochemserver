@@ -189,9 +189,6 @@ class Calculation(Resource):
 
     @access.public
     def get_calc_cube(self, id, mo, params):
-        if 'status' in params:
-            raise RestException('Invalid JSON or MO.', params['status'])
-
         orig_mo = mo
         try:
             mo = int(mo)
