@@ -394,7 +394,7 @@ class Calculation(Resource):
         Description('Search for particular calculation')
         .param('moleculeId', 'The molecule ID linked to this calculation', required=False)
         .param('imageName', 'The name of the Docker image that run this calculation', required=False)
-        .param('inputParametersHash', 'The hash of the input parameters dictionary.', required=False)
+        .param('inputParameters', 'JSON string of the input parameters. May be in percent encoding.', required=False)
         .param('inputGeometryHash', 'The hash of the input geometry.', required=False)
         .param('name', 'The name of the molecule', paramType='query',
                    required=False)
@@ -412,13 +412,13 @@ class Calculation(Resource):
         .pagingParams(defaultSort='_id', defaultSortDir=SortDir.DESCENDING, defaultLimit=25)
     )
     def find_calc(self, moleculeId=None, imageName=None,
-                  inputParametersHash=None, inputGeometryHash=None,
+                  inputParameters=None, inputGeometryHash=None,
                   name=None, inchi=None, inchikey=None, smiles=None,
                   formula=None, creatorId=None, pending=None, limit=None,
                   offset=None, sort=None):
         return CalculationModel().findcal(
             molecule_id=moleculeId, image_name=imageName,
-            input_parameters_hash=inputParametersHash,
+            input_parameters=inputParameters,
             input_geometry_hash=inputGeometryHash, name=name, inchi=inchi,
             inchikey=inchikey, smiles=smiles, formula=formula,
             creator_id=creatorId, pending=pending, limit=limit, offset=offset,
