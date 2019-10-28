@@ -25,6 +25,8 @@ openbabel_3d_formats = [
   'pdb'
 ]
 
+openbabel_formats = openbabel_2d_formats + openbabel_3d_formats
+
 
 def create_molecule(data_str, input_format, user, public, gen3d=True,
                     provenance='uploaded by user'):
@@ -32,7 +34,7 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
     using_2d_format = (input_format in openbabel_2d_formats)
     inchi_format = 'inchi'
 
-    if using_2d_format or input_format in openbabel_3d_formats:
+    if input_format in openbabel_formats:
         inchi, inchikey = openbabel.to_inchi(data_str, input_format)
     else:
         sdf_data = avogadro.convert_str(data_str, input_format, 'sdf')
@@ -68,9 +70,6 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
             'provenance': provenance
         }
 
-        # Generate an svg file for an image
-        schedule_svg_gen(mol_dict, user)
-
         # Set a name if we find one
         name = chemspider.find_common_name(inchikey)
         if name is not None:
@@ -79,14 +78,8 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
         cjson = {}
         if input_format == 'cjson':
             cjson = json.loads(data_str)
-
-        if not cjson and using_2d_format:
-            # Generate 3d coordinates in a background thread
-            if gen3d:
-                schedule_3d_coords_gen(mol_dict, user)
-            # This will be complete other than the cjson
-            return MoleculeModel().create(user, mol_dict, public)
-        else:
+        elif not using_2d_format:
+            # Convert the 3D format to cjson
             if input_format in openbabel_3d_formats:
                 sdf_data, mime = openbabel.convert_str(data_str, input_format,
                                                        'sdf')
@@ -96,14 +89,23 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
                 cjson = json.loads(avogadro.convert_str(data_str, input_format,
                                                         'cjson'))
 
-        mol_dict['cjson'] = whitelist_cjson(cjson)
+        if cjson:
+            mol_dict['cjson'] = whitelist_cjson(cjson)
 
         mol = MoleculeModel().create(user, mol_dict, public)
 
-        # Upload the molecule to virtuoso
-        try:
-            semantic.upload_molecule(mol)
-        except requests.ConnectionError:
-            print(TerminalColor.warning('WARNING: Couldn\'t connect to Jena.'))
+        if using_2d_format and gen3d:
+            def _on_complete(mol):
+                # Upload the molecule to Jen
+                try:
+                    semantic.upload_molecule(mol)
+                except requests.ConnectionError:
+                    print(TerminalColor.warning('WARNING: Couldn\'t connect to Jena.'))
+
+            schedule_3d_coords_gen(mol_dict, user, on_complete=_on_complete)
+
+        # Generate an svg file for an image
+        schedule_svg_gen(mol_dict, user)
+
 
     return mol

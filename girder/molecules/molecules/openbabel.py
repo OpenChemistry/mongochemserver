@@ -81,17 +81,20 @@ def properties(data_str, input_format, add_hydrogens=True):
 
 
 def autodetect_bonds(cjson):
+    # This function drops all bonding info and autodetects bonds
+    # using Open Babel.
+
     # Only autodetect bonds if we have 3D coordinates
     if not cjson_has_3d_coords(cjson):
         return cjson
 
     cjson_str = json.dumps(cjson)
-    sdf_str = avo_convert_str(cjson_str, 'cjson', 'sdf')
+    xyz_str = avo_convert_str(cjson_str, 'cjson', 'xyz')
 
     extra_options = {
         'perceiveBonds': True
     }
-    sdf_str, mime = convert_str(sdf_str, 'sdf', 'sdf', extra_options)
+    sdf_str, mime = convert_str(xyz_str, 'xyz', 'sdf', extra_options)
 
     cjson_str = avo_convert_str(sdf_str, 'sdf', 'cjson')
     return json.loads(cjson_str)
