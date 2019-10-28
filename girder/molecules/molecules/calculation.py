@@ -379,6 +379,10 @@ class Calculation(Resource):
         if image is not None:
             calculation['image'] = image
 
+        code = body.get('code')
+        if code is not None:
+            calculation['code'] = code
+
         scratch_folder_id = body.get('scratchFolderId')
         if scratch_folder_id is not None:
             calculation['scratchFolderId'] = scratch_folder_id
