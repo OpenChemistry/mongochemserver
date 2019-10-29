@@ -65,7 +65,7 @@ class Calculation(AccessControlledModel):
         ])
 
         self.exposeFields(level=AccessType.READ, fields=(
-            '_id', 'moleculeId', 'fileId', 'properties', 'notebooks', 'input', 'image'))
+            '_id', 'moleculeId', 'fileId', 'properties', 'notebooks', 'input', 'image', 'code'))
 
     def filter(self, calc, user):
         calc = super(Calculation, self).filter(doc=calc, user=user)
@@ -147,7 +147,7 @@ class Calculation(AccessControlledModel):
                     '$ne': True
                 }
 
-        fields = ['image', 'input',
+        fields = ['image', 'input', 'code',
                   'cjson', 'cjson.vibrations.modes', 'cjson.vibrations.intensities',
                   'cjson.vibrations.frequencies', 'properties', 'fileId', 'access',
                   'moleculeId', 'public']
