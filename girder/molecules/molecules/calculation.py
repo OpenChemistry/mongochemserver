@@ -436,7 +436,7 @@ class Calculation(Resource):
         Description('Get the calculation by id')
         .param(
             'id',
-            'The id of calculatino.',
+            'The id of calculation.',
             dataType='string', required=True, paramType='path'))
 
     @access.user(scope=TokenScope.DATA_WRITE)
