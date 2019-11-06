@@ -27,6 +27,7 @@ from molecules.utilities.molecules import create_molecule
 from molecules.utilities.pagination import parse_pagination_params
 from molecules.utilities.pagination import search_results_dict
 
+from molecules.models.geometry import Geometry as GeometryModel
 from molecules.models.molecule import Molecule as MoleculeModel
 
 class Molecule(Resource):
@@ -61,6 +62,17 @@ class Molecule(Resource):
         self.route('PATCH', (':id', 'notebooks'), self.add_notebooks)
         self.route('POST', ('conversions', ':output_format'), self.conversions)
         self.route('POST', (':id', '3d'), self.generate_3d_coords)
+
+        # Methods for geometries
+        self.route('GET', (':moleculeId', 'geometries'), self.find_geometries)
+        self.route('GET', (':moleculeId', 'geometries', ':id'),
+                   self.find_geometry)
+        self.route('GET', (':moleculeId', 'geometries', ':id',
+                           ':output_format'),
+                   self.get_geometry_format)
+        self.route('POST', (':moleculeId', 'geometries'), self.create_geometry)
+        self.route('DELETE', (':moleculeId', 'geometries', ':id'),
+                   self.delete_geometry)
 
     def _clean(self, doc, cjson=True):
         del doc['access']
@@ -498,10 +510,114 @@ class Molecule(Resource):
         """Generate 3D coords if not present and not being generated"""
 
         if (MoleculeModel().has_3d_coords(mol) or
-            mol.get('generating_3d_coords', False)):
+                mol.get('generating_3d_coords', False)):
             return self._clean(mol)
 
         user = self.getCurrentUser()
 
         async_requests.schedule_3d_coords_gen(mol, user)
         return self._clean(mol)
+
+    @access.public
+    @autoDescribeRoute(
+        Description('Find geometries of a given molecule.')
+        .param('moleculeId', 'The id of the parent molecule.')
+        .pagingParams(defaultSort='_id',
+                      defaultSortDir=SortDir.DESCENDING,
+                      defaultLimit=25)
+    )
+    def find_geometries(self, moleculeId, limit, offset, sort):
+        paging_params = {
+            'limit': limit,
+            'offset': offset,
+            'sort': sort[0][0],
+            'sortdir': sort[0][1]
+        }
+        user = getCurrentUser()
+        return GeometryModel().find_geometries(moleculeId, user, paging_params)
+
+    @access.public
+    @autoDescribeRoute(
+        Description('Find a geometry of a given molecule.')
+        .param('moleculeId', 'The id of the parent molecule.')
+        .param('id', 'The id of the geometry.')
+    )
+    def find_geometry(self, moleculeId, id):
+        user = getCurrentUser()
+        geometry = GeometryModel().load(id, level=AccessType.READ, user=user)
+
+        if not geometry:
+            raise RestException('Geometry not found.', code=404)
+
+        return self._clean(geometry)
+
+    @access.public
+    @autoDescribeRoute(
+        Description('Get a geometry in a specified format.')
+        .param('moleculeId', 'The id of the parent molecule.')
+        .param('id', 'The id of the geometry to be used.')
+        .param('output_format', 'The output format of the geometry.')
+        .errorResponse('Format not supported.')
+        .errorResponse('Geometry not found.', 404)
+    )
+    def get_geometry_format(self, moleculeId, id, output_format):
+
+        if output_format not in Molecule.output_formats:
+            raise RestException('Format not supported.')
+
+        if output_format in Molecule.output_formats_2d:
+            # It's just smiles or inchi, call the general end point
+            return self.get_format(moleculeId, output_format, None)
+
+        user = getCurrentUser()
+        geometry = GeometryModel().load(id, level=AccessType.READ, user=user)
+
+        if not geometry:
+            raise RestException('Geometry not found.', code=404)
+
+        data = json.dumps(geometry['cjson'])
+        if output_format != 'cjson':
+            data = avogadro.convert_str(data, 'cjson', output_format)
+
+        def stream():
+            cherrypy.response.headers['Content-Type'] = (
+                Molecule.mime_types[output_format]
+            )
+            yield data
+
+        return stream
+
+    @access.user(scope=TokenScope.DATA_WRITE)
+    @autoDescribeRoute(
+        Description('Create a geometry.')
+        .param('moleculeId', 'The id of the parent molecule.')
+        .jsonParam('cjson', 'The chemical json of the geometry.',
+                   paramType='body')
+        .param('provenanceType', 'The type of provenance.', required=False)
+        .param('provenanceId', 'The ID of the provnenace.', required=False)
+    )
+    def create_geometry(self, moleculeId, cjson, provenanceType, provenanceId):
+        user = getCurrentUser()
+
+        if provenanceType is None:
+            provenanceType = 'user uploaded'
+
+        geometry = GeometryModel().create(user, moleculeId, cjson,
+                                          provenanceType, provenanceId)
+        return self._clean(geometry)
+
+    @access.user(scope=TokenScope.DATA_WRITE)
+    @autoDescribeRoute(
+        Description('Delete a geometry.')
+        .param('moleculeId', 'The id of the parent molecule.')
+        .param('id', 'The id of the geometry to be deleted.')
+        .errorResponse('Geometry not found.', 404)
+    )
+    def delete_geometry(self, moleculeId, id):
+        user = self.getCurrentUser()
+        geometry = GeometryModel().load(id, user=user, level=AccessType.WRITE)
+
+        if not geometry:
+            raise RestException('Geometry not found.', code=404)
+
+        return GeometryModel().remove(geometry)

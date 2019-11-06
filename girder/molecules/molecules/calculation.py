@@ -24,6 +24,7 @@ from . import avogadro
 from . import openbabel
 from .molecule import Molecule
 
+from molecules.models.geometry import Geometry as GeometryModel
 
 class Calculation(Resource):
     output_formats = ['cml', 'xyz', 'inchikey', 'sdf']
@@ -274,6 +275,7 @@ class Calculation(Resource):
         cjson = body.get('cjson')
         props = body.get('properties', {})
         molecule_id = body.get('moleculeId', None)
+        geometry_id = body.get('geometryId', None)
         public = body.get('public', False)
         notebooks = body.get('notebooks', [])
         image = body.get('image')
@@ -291,6 +293,7 @@ class Calculation(Resource):
             molecule_id = mol['_id']
 
         calc = CalculationModel().create_cjson(user, cjson, props, molecule_id,
+                                               geometry_id=geometry_id,
                                                image=image,
                                                input_parameters=input_parameters,
                                                file_id=file_id,
@@ -387,12 +390,23 @@ class Calculation(Resource):
         if scratch_folder_id is not None:
             calculation['scratchFolderId'] = scratch_folder_id
 
+        # If this was a geometry optimization, create a geometry from it
+        task = parse('input.parameters.task').find(calculation)
+        if task and task[0].value == 'optimize':
+            moleculeId = calculation.get('moleculeId')
+            provenanceType = 'calculation'
+            provenanceId = calculation.get('_id')
+            # The cjson will be whitelisted
+            GeometryModel().create(getCurrentUser(), moleculeId, cjson,
+                                   provenanceType, provenanceId)
+
         return CalculationModel().save(calculation)
 
     @access.public
     @autoDescribeRoute(
         Description('Search for particular calculation')
         .param('moleculeId', 'The molecule ID linked to this calculation', required=False)
+        .param('geometryId', 'The geometry ID linked to this calculation', required=False)
         .param('imageName', 'The name of the Docker image that run this calculation', required=False)
         .param('inputParameters', 'JSON string of the input parameters. May be in percent encoding.', required=False)
         .param('inputGeometryHash', 'The hash of the input geometry.', required=False)
@@ -411,14 +425,14 @@ class Calculation(Resource):
                required=False)
         .pagingParams(defaultSort='_id', defaultSortDir=SortDir.DESCENDING, defaultLimit=25)
     )
-    def find_calc(self, moleculeId=None, imageName=None,
+    def find_calc(self, moleculeId=None, geometryId=None, imageName=None,
                   inputParameters=None, inputGeometryHash=None,
                   name=None, inchi=None, inchikey=None, smiles=None,
                   formula=None, creatorId=None, pending=None, limit=None,
                   offset=None, sort=None):
         return CalculationModel().findcal(
-            molecule_id=moleculeId, image_name=imageName,
-            input_parameters=inputParameters,
+            molecule_id=moleculeId, geometry_id=geometryId,
+            image_name=imageName, input_parameters=inputParameters,
             input_geometry_hash=inputGeometryHash, name=name, inchi=inchi,
             inchikey=inchikey, smiles=smiles, formula=formula,
             creator_id=creatorId, pending=pending, limit=limit, offset=offset,

@@ -12,6 +12,7 @@ from girder.utility import setting_utilities
 from .models.calculation import Calculation as CalculationModel
 from .models.cubecache import Cubecache as CubecacheModel
 from .models.experimental import Experimental as ExperimentalModel
+from .models.geometry import Geometry as GeometryModel
 from .models.molecule import Molecule as MoleculeModel
 
 from girder.plugin import GirderPlugin
@@ -45,6 +46,7 @@ class MoleculesPlugin(GirderPlugin):
         ModelImporter.registerModel('cubecache', CubecacheModel, 'molecules')
         ModelImporter.registerModel('experimental', ExperimentalModel,
                                     'molecules')
+        ModelImporter.registerModel('geometry', GeometryModel, 'molecules')
         ModelImporter.registerModel('molecule', MoleculeModel, 'molecules')
 
         info['apiRoot'].molecules = Molecule()
