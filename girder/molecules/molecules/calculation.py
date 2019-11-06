@@ -235,7 +235,7 @@ class Calculation(Resource):
         # This is where the cube gets calculated, should be cached in future.
         if 'async' in params and params['async']:
             async_requests.schedule_orbital_gen(
-                calc['cjson'], mo, id, orig_mo)
+                calc['cjson'], mo, id, orig_mo, self.getCurrentUser())
             calc['cjson']['cube'] = {
                 'dimensions': [0, 0, 0],
                 'scalars': []
@@ -264,7 +264,7 @@ class Calculation(Resource):
             'The molecular orbital to get the cube for.',
             dataType='string', required=True, paramType='path'))
 
-    @access.user
+    @access.user(scope=TokenScope.DATA_WRITE)
     def create_calc(self, params):
         body = getBodyJson()
         if 'cjson' not in body and ('fileId' not in body or 'format' not in body):
@@ -382,6 +382,10 @@ class Calculation(Resource):
         if image is not None:
             calculation['image'] = image
 
+        code = body.get('code')
+        if code is not None:
+            calculation['code'] = code
+
         scratch_folder_id = body.get('scratchFolderId')
         if scratch_folder_id is not None:
             calculation['scratchFolderId'] = scratch_folder_id
@@ -404,7 +408,7 @@ class Calculation(Resource):
         .param('moleculeId', 'The molecule ID linked to this calculation', required=False)
         .param('geometryId', 'The geometry ID linked to this calculation', required=False)
         .param('imageName', 'The name of the Docker image that run this calculation', required=False)
-        .param('inputParametersHash', 'The hash of the input parameters dictionary.', required=False)
+        .param('inputParameters', 'JSON string of the input parameters. May be in percent encoding.', required=False)
         .param('inputGeometryHash', 'The hash of the input geometry.', required=False)
         .param('name', 'The name of the molecule', paramType='query',
                    required=False)
@@ -422,13 +426,13 @@ class Calculation(Resource):
         .pagingParams(defaultSort='_id', defaultSortDir=SortDir.DESCENDING, defaultLimit=25)
     )
     def find_calc(self, moleculeId=None, geometryId=None, imageName=None,
-                  inputParametersHash=None, inputGeometryHash=None,
+                  inputParameters=None, inputGeometryHash=None,
                   name=None, inchi=None, inchikey=None, smiles=None,
                   formula=None, creatorId=None, pending=None, limit=None,
                   offset=None, sort=None):
         return CalculationModel().findcal(
             molecule_id=moleculeId, geometry_id=geometryId,
-            image_name=imageName, input_parameters_hash=inputParametersHash,
+            image_name=imageName, input_parameters=inputParameters,
             input_geometry_hash=inputGeometryHash, name=name, inchi=inchi,
             inchikey=inchikey, smiles=smiles, formula=formula,
             creator_id=creatorId, pending=pending, limit=limit, offset=offset,
@@ -446,10 +450,10 @@ class Calculation(Resource):
         Description('Get the calculation by id')
         .param(
             'id',
-            'The id of calculatino.',
+            'The id of calculation.',
             dataType='string', required=True, paramType='path'))
 
-    @access.user
+    @access.user(scope=TokenScope.DATA_WRITE)
     def delete(self, id, params):
         user = getCurrentUser()
         cal = self._model.load(id, level=AccessType.READ, user=user)
@@ -509,7 +513,7 @@ class Calculation(Resource):
 
         return calculation
 
-    @access.user
+    @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
         Description('Add notebooks ( file ids ) to molecule.')
         .modelParam('id', 'The calculation id',
