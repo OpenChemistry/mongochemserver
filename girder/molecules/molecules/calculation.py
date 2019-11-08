@@ -496,7 +496,7 @@ class Calculation(Resource):
             'The id of the molecule we are finding types for.',
             dataType='string', required=True, paramType='query'))
 
-    @access.token
+    @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
         Description('Update the calculation properties.')
         .notes('Override the exist properties')
