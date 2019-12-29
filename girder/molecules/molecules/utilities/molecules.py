@@ -31,7 +31,7 @@ openbabel_formats = openbabel_2d_formats + openbabel_3d_formats
 
 
 def create_molecule(data_str, input_format, user, public, gen3d=True,
-                    provenance='uploaded by user'):
+                    provenance='uploaded by user', parameters={}):
 
     using_2d_format = (input_format in openbabel_2d_formats)
     inchi_format = 'inchi'
@@ -79,10 +79,17 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
             'provenance': provenance
         }
 
-        # Set a name if we find one
-        name = chemspider.find_common_name(inchikey)
+        # Set a name if we find one or one is provided
+        if 'name' in parameters:
+            name = parameters['name']
+        else:
+            name = chemspider.find_common_name(inchikey)
         if name is not None:
             mol_dict['name'] = name
+
+        # Set a wikipedia link if one is provided
+        if 'wikipedia' in parameters:
+            mol_dict['wiki'] = parameters['wikipedia']
 
         if not using_2d_format:
             # The cjson should already be a local variable

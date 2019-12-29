@@ -168,7 +168,8 @@ class Molecule(Resource):
                 data_str = f.read().decode()
 
             mol = create_molecule(data_str, input_format, user, public, gen3d,
-                                  provenance)
+                              provenance, body)
+
         elif 'inchi' in body:
             input_format = 'inchi'
             data = body['inchi']
@@ -176,7 +177,7 @@ class Molecule(Resource):
                 data = 'InChI=' + data
 
             mol = create_molecule(data, input_format, user, public, gen3d,
-                                  provenance)
+                              provenance, body)
 
         for key in body:
             if key in Molecule.input_formats:
@@ -186,7 +187,7 @@ class Molecule(Resource):
                 if isinstance(data, dict):
                     data = json.dumps(data)
                 mol = create_molecule(data, input_format,  user, public, gen3d,
-                                      provenance)
+                                      provenance, body)
                 break
 
         if not mol:
