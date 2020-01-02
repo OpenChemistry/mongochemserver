@@ -78,7 +78,8 @@ def _finish_svg_gen(inchikey, user, future):
         raise ValidationException('Invalid inchikey (%s)' % inchikey)
 
 
-def schedule_3d_coords_gen(mol, user, on_complete=None):
+def schedule_3d_coords_gen(mol, user, on_complete=None,
+                           gen3d_forcefield='mmff94', gen3d_steps=100):
     query = {
         '_id': mol['_id']
     }
@@ -100,7 +101,9 @@ def schedule_3d_coords_gen(mol, user, on_complete=None):
     data = {
         'format': 'smi',
         'data': mol['smiles'],
-        'gen3d': True
+        'gen3d': True,
+        'gen3dForcefield': gen3d_forcefield,
+        'gen3dSteps': gen3d_steps
     }
 
     session = FuturesSession()

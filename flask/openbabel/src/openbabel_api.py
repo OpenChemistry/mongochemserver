@@ -16,7 +16,8 @@ def validate_start_of_inchi(inchi):
 
 # gen3d should be true for 2D input formats such as inchi or smiles
 def convert_str(str_data, in_format, out_format, gen3d=False,
-                add_hydrogens=False, perceive_bonds=False, out_options=None):
+                add_hydrogens=False, perceive_bonds=False, out_options=None,
+                gen3d_forcefield='mmff94', gen3d_steps=100):
 
     # Make sure that the start of InChI is valid before passing it to
     # Open Babel, or Open Babel will crash the server.
@@ -38,7 +39,7 @@ def convert_str(str_data, in_format, out_format, gen3d=False,
     if gen3d:
         # Generate 3D coordinates for the input
         mol = pybel.Molecule(obMol)
-        mol.make3D()
+        mol.make3D(gen3d_forcefield, gen3d_steps)
 
     if perceive_bonds:
         obMol.ConnectTheDots()
