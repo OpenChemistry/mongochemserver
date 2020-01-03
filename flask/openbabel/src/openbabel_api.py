@@ -1,6 +1,4 @@
-from openbabel import OBMol, OBConversion
-
-import pybel
+from openbabel import OBMol, OBConversion, pybel
 
 import re
 
