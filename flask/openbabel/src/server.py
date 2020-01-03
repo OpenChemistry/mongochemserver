@@ -55,12 +55,16 @@ def convert(output_format):
         add_hydrogens = json_data.get('addHydrogens', False)
         perceive_bonds = json_data.get('perceiveBonds', False)
         out_options = json_data.get('outOptions', {})
+        gen3d_forcefield = json_data.get('gen3dForcefield', 'mmff94')
+        gen3d_steps = json_data.get('gen3dSteps', 100)
 
         data, mime = openbabel.convert_str(data, input_format, output_format,
                                            gen3d=gen3d,
                                            add_hydrogens=add_hydrogens,
                                            perceive_bonds=perceive_bonds,
-                                           out_options=out_options)
+                                           out_options=out_options,
+                                           gen3d_forcefield=gen3d_forcefield,
+                                           gen3d_steps=gen3d_steps)
     return Response(data, mimetype=mime)
 
 

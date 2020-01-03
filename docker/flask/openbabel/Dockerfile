@@ -1,16 +1,11 @@
-FROM python:3.7-slim
+FROM continuumio/miniconda3:4.7.12
 
-RUN apt-get update -y
-RUN apt-get install -y \
-  build-essential \
-  pkg-config \
-  libopenbabel-dev \
-  swig
+RUN conda install -c conda-forge openbabel=3.0.0 -y
 
-RUN pip3 install gunicorn
+RUN pip install gunicorn
 
 COPY flask/openbabel/requirements.txt /app/
-RUN pip3 install -r /app/requirements.txt
+RUN pip install -r /app/requirements.txt
 
 COPY flask/openbabel/src/* /app/
 

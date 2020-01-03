@@ -152,6 +152,8 @@ class Molecule(Resource):
         user = self.getCurrentUser()
         public = body.get('public', False)
         gen3d = body.get('generate3D', True)
+        gen3d_forcefield = body.get('gen3dForcefield', 'mmff94')
+        gen3d_steps = body.get('gen3dSteps', 100)
         provenance = body.get('provenance', 'uploaded by user')
         mol = None
         if 'fileId' in body:
@@ -168,8 +170,7 @@ class Molecule(Resource):
                 data_str = f.read().decode()
 
             mol = create_molecule(data_str, input_format, user, public, gen3d,
-                              provenance, body)
-
+                                  provenance, gen3d_forcefield, gen3d_steps, body)
         elif 'inchi' in body:
             input_format = 'inchi'
             data = body['inchi']
@@ -177,7 +178,7 @@ class Molecule(Resource):
                 data = 'InChI=' + data
 
             mol = create_molecule(data, input_format, user, public, gen3d,
-                              provenance, body)
+                                  provenance, gen3d_forcefield, gen3d_steps, body)
 
         for key in body:
             if key in Molecule.input_formats:
@@ -186,8 +187,8 @@ class Molecule(Resource):
                 # Convert to str if necessary
                 if isinstance(data, dict):
                     data = json.dumps(data)
-                mol = create_molecule(data, input_format,  user, public, gen3d,
-                                      provenance, body)
+                mol = create_molecule(data, input_format, user, public, gen3d, provenance,
+                                      gen3d_forcefield, gen3d_steps, body)
                 break
 
         if not mol:
@@ -505,9 +506,13 @@ class Molecule(Resource):
             Description('Generate 3D coordinates for a molecule.')
             .modelParam('id', 'The id of the molecule', destName='mol',
                         level=AccessType.WRITE, model=MoleculeModel)
+            .param('forcefield', 'The force field to use', default='mmff94',
+                   strip=True)
+            .param('steps', 'The number of optimization steps', default='100',
+                   dataType='integer')
             .errorResponse('Molecule not found.', 404)
     )
-    def generate_3d_coords(self, mol):
+    def generate_3d_coords(self, mol, forcefield, steps):
         """Generate 3D coords if not present and not being generated"""
 
         if (MoleculeModel().has_3d_coords(mol) or
@@ -516,7 +521,9 @@ class Molecule(Resource):
 
         user = self.getCurrentUser()
 
-        async_requests.schedule_3d_coords_gen(mol, user)
+        async_requests.schedule_3d_coords_gen(mol, user,
+                                              gen3d_forcefield=forcefield,
+                                              gen3d_steps=steps)
         return self._clean(mol)
 
     @access.public

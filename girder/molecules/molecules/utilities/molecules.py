@@ -31,7 +31,8 @@ openbabel_formats = openbabel_2d_formats + openbabel_3d_formats
 
 
 def create_molecule(data_str, input_format, user, public, gen3d=True,
-                    provenance='uploaded by user', parameters={}):
+                    provenance='uploaded by user', gen3d_forcefield='mmff94',
+                    gen3d_steps=100, parameters={}):
 
     using_2d_format = (input_format in openbabel_2d_formats)
     inchi_format = 'inchi'
@@ -105,7 +106,9 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
                 except requests.ConnectionError:
                     print(TerminalColor.warning('WARNING: Couldn\'t connect to Jena.'))
 
-            schedule_3d_coords_gen(mol_dict, user, on_complete=_on_complete)
+            schedule_3d_coords_gen(mol_dict, user, on_complete=_on_complete,
+                                   gen3d_forcefield=gen3d_forcefield,
+                                   gen3d_steps=gen3d_steps)
 
         # Generate an svg file for an image
         schedule_svg_gen(mol_dict, user)

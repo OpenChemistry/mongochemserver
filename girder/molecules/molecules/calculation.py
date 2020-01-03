@@ -399,8 +399,10 @@ class Calculation(Resource):
             provenanceType = 'calculation'
             provenanceId = calculation.get('_id')
             # The cjson will be whitelisted
-            GeometryModel().create(getCurrentUser(), moleculeId, cjson,
-                                   provenanceType, provenanceId)
+            geometry = GeometryModel().create(getCurrentUser(), moleculeId,
+                                              cjson, provenanceType,
+                                              provenanceId)
+            calculation['optimizedGeometryId'] = geometry.get('_id')
 
         return CalculationModel().save(calculation)
 
