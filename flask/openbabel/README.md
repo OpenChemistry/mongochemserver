@@ -1,8 +1,9 @@
 Running the Open Babel Flask Server Locally
 ===========================================
 
-To run the Open Babel flask server locally, install the
-requirements.txt file and start the server like so:
+To run the Open Babel flask server locally, install openbabel>=3.0.0
+via conda (in the conda-forge channel), pip, or a local build, then
+install the requirements.txt file and start the server like so:
 ```
 pip install -r requirements.txt
 python src/server.py
