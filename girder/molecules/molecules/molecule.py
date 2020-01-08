@@ -519,6 +519,11 @@ class Molecule(Resource):
                 mol.get('generating_3d_coords', False)):
             return self._clean(mol)
 
+        try:
+            steps = int(steps)
+        except ValueError:
+            raise RestException(str(steps) + ' is not a number')
+
         user = self.getCurrentUser()
 
         async_requests.schedule_3d_coords_gen(mol, user,
