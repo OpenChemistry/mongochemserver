@@ -89,8 +89,8 @@ def create_molecule(data_str, input_format, user, public, gen3d=True,
             mol_dict['name'] = name
 
         # Set a wikipedia link if one is provided
-        if 'wikipedia' in parameters:
-            mol_dict['wiki'] = parameters['wikipedia']
+        if 'wikipediaUrl' in parameters:
+            mol_dict['wikipediaUrl'] = parameters['wikipediaUrl']
 
         if not using_2d_format:
             # The cjson should already be a local variable
