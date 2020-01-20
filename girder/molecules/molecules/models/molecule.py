@@ -28,7 +28,7 @@ class Molecule(AccessControlledModel):
     def validate(self, doc):
         return doc
 
-    def findmol(self, search = None):
+    def find_molecule(self, search = None):
         limit, offset, sort = parse_pagination_params(search)
 
         if search is None:

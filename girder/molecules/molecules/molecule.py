@@ -94,7 +94,7 @@ class Molecule(Resource):
 
     @access.public
     def find(self, params):
-        return MoleculeModel().findmol(params)
+        return MoleculeModel().find_molecule(params)
     find.description = (
             Description('Find a molecule.')
             .param('name', 'The name of the molecule', paramType='query',
@@ -469,7 +469,7 @@ class Molecule(Resource):
 
         elif formula:
             # Search using formula
-            return MoleculeModel().findmol(params)
+            return MoleculeModel().find_molecule(params)
 
         elif cactus:
             if getCurrentUser() is None:
