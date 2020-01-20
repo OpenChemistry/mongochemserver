@@ -388,8 +388,8 @@ class Molecule(Resource):
         if output_format in Molecule.output_formats_3d:
             # If it is a 3d output format, cjson is required
             if 'cjson' not in molecule:
-                raise RestException('Molecule does not have 3D coordinates.',
-                                    404)
+                # Returning None implies that there are no 3D coordinates
+                return
 
             data = json.dumps(molecule['cjson'])
             if output_format != 'cjson':
