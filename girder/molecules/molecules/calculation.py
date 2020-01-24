@@ -233,7 +233,7 @@ class Calculation(Resource):
         calc = self._model.load(id, fields=fields, force=True)
 
         # This is where the cube gets calculated, should be cached in future.
-        if 'async' in params and params['async']:
+        if ('async' in params) and (params['async']):
             async_requests.schedule_orbital_gen(
                 calc['cjson'], mo, id, orig_mo, self.getCurrentUser())
             calc['cjson']['cube'] = {
@@ -280,6 +280,8 @@ class Calculation(Resource):
         notebooks = body.get('notebooks', [])
         image = body.get('image')
         input_parameters = body.get('input', {}).get('parameters')
+        if input_parameters is None:
+            input_parameters = body.get('inputParameters', {})
         file_id = None
         file_format = body.get('format', 'cjson')
 
@@ -289,7 +291,7 @@ class Calculation(Resource):
             cjson = self._file_to_cjson(file, file_format)
 
         if molecule_id is None:
-            mol = create_molecule(json.dumps(cjson), 'cjson', user, public)
+            mol = create_molecule(json.dumps(cjson), 'cjson', user, public, parameters=input_parameters)
             molecule_id = mol['_id']
 
         calc = CalculationModel().create_cjson(user, cjson, props, molecule_id,

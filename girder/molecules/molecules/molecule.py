@@ -94,7 +94,7 @@ class Molecule(Resource):
 
     @access.public
     def find(self, params):
-        return MoleculeModel().findmol(params)
+        return MoleculeModel().find_molecule(params)
     find.description = (
             Description('Find a molecule.')
             .param('name', 'The name of the molecule', paramType='query',
@@ -170,7 +170,7 @@ class Molecule(Resource):
                 data_str = f.read().decode()
 
             mol = create_molecule(data_str, input_format, user, public, gen3d,
-                                  provenance, gen3d_forcefield, gen3d_steps)
+                                  provenance, gen3d_forcefield, gen3d_steps, body)
         elif 'inchi' in body:
             input_format = 'inchi'
             data = body['inchi']
@@ -178,7 +178,7 @@ class Molecule(Resource):
                 data = 'InChI=' + data
 
             mol = create_molecule(data, input_format, user, public, gen3d,
-                                  provenance, gen3d_forcefield, gen3d_steps)
+                                  provenance, gen3d_forcefield, gen3d_steps, body)
 
         for key in body:
             if key in Molecule.input_formats:
@@ -187,8 +187,8 @@ class Molecule(Resource):
                 # Convert to str if necessary
                 if isinstance(data, dict):
                     data = json.dumps(data)
-                mol = create_molecule(data, input_format, user, public, gen3d,
-                                      provenance, gen3d_forcefield, gen3d_steps)
+                mol = create_molecule(data, input_format, user, public, gen3d, provenance,
+                                      gen3d_forcefield, gen3d_steps, body)
                 break
 
         if not mol:
@@ -388,8 +388,8 @@ class Molecule(Resource):
         if output_format in Molecule.output_formats_3d:
             # If it is a 3d output format, cjson is required
             if 'cjson' not in molecule:
-                raise RestException('Molecule does not have 3D coordinates.',
-                                    404)
+                # Returning None implies that there are no 3D coordinates
+                return
 
             data = json.dumps(molecule['cjson'])
             if output_format != 'cjson':
@@ -469,7 +469,7 @@ class Molecule(Resource):
 
         elif formula:
             # Search using formula
-            return MoleculeModel().findmol(params)
+            return MoleculeModel().find_molecule(params)
 
         elif cactus:
             if getCurrentUser() is None:

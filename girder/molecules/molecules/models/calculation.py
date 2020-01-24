@@ -120,7 +120,7 @@ class Calculation(AccessControlledModel):
             if formula:
                 params['formula'] = formula
 
-            molecules = MoleculeModel().findmol(params)['results']
+            molecules = MoleculeModel().find_molecule(params)['results']
             molecule_ids = [molecule['_id'] for molecule in molecules]
             query['moleculeId'] = {'$in': molecule_ids}
 
