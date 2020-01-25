@@ -125,7 +125,8 @@ class Calculation(AccessControlledModel):
             query['moleculeId'] = {'$in': molecule_ids}
 
         if geometry_id:
-            query['geometryId'] = ObjectId(geometry_id)
+            # This is currently not being stored as an ObjectId
+            query['geometryId'] = geometry_id
 
         if image_name:
             repository, tag = oc.parse_image_name(image_name)
