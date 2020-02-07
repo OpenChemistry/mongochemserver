@@ -30,7 +30,7 @@ class Geometry(AccessControlledModel):
         return doc
 
     def create(self, user, moleculeId, cjson, provenanceType=None,
-               provenanceId=None, public=False):
+               provenanceId=None, public=True):
 
         # We will whitelist the cjson to only include the geometry parts
         geometry = {

@@ -86,7 +86,7 @@ class Molecule(AccessControlledModel):
         mol = self.findOne(query)
         return mol
 
-    def create(self, user, mol, public=False):
+    def create(self, user, mol, public=True):
 
         if 'properties' not in mol and mol.get('cjson') is not None:
             props = avogadro.molecule_properties(json.dumps(mol.get('cjson')), 'cjson')

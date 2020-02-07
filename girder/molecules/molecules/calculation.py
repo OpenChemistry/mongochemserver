@@ -276,7 +276,7 @@ class Calculation(Resource):
         props = body.get('properties', {})
         molecule_id = body.get('moleculeId', None)
         geometry_id = body.get('geometryId', None)
-        public = body.get('public', False)
+        public = body.get('public', True)
         notebooks = body.get('notebooks', [])
         image = body.get('image')
         input_parameters = body.get('input', {}).get('parameters')
