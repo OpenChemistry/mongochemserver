@@ -150,7 +150,7 @@ class Molecule(Resource):
     def create(self, params):
         body = self.getBodyJson()
         user = self.getCurrentUser()
-        public = body.get('public', False)
+        public = body.get('public', True)
         gen3d = body.get('generate3D', True)
         gen3d_forcefield = body.get('gen3dForcefield', 'mmff94')
         gen3d_steps = body.get('gen3dSteps', 100)

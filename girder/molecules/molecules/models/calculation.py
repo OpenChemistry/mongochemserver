@@ -169,7 +169,7 @@ class Calculation(AccessControlledModel):
 
     def create_cjson(self, user, cjson, props, molecule_id=None,
                      geometry_id=None, image=None, input_parameters=None,
-                     file_id = None, public=False, notebooks=None):
+                     file_id = None, public=True, notebooks=None):
         if notebooks is None:
             notebooks = []
 
