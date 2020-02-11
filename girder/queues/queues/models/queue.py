@@ -1,10 +1,10 @@
 import sys
 from bson.objectid import ObjectId, InvalidId
+from girder import logger
 from girder.constants import AccessType
 from girder.models.model_base import AccessControlledModel
 from girder.models.model_base import ValidationException
 from girder.models.user import User as UserModel
-from girder import events
 from girder.utility.model_importer import ModelImporter
 
 import cumulus
@@ -268,6 +268,7 @@ def cleanup_failed_taskflows():
             if status == TaskStatus.RUNNING:
                 taskflow = TaskflowModel().load(taskflow_id, force=True)
                 if taskflow['status'] in TASKFLOW_NON_RUNNING_STATES:
+                    logger.warning("Removing non-running taskflow {} from the queue {}".format(taskflow_id, queue["_id"]))
                     Queue().finish(queue, taskflow, user)
 
 def on_taskflow_status_update(event):
