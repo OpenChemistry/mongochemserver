@@ -1,14 +1,24 @@
 import sys
 from bson.objectid import ObjectId, InvalidId
+from girder import logger
 from girder.constants import AccessType
 from girder.models.model_base import AccessControlledModel
 from girder.models.model_base import ValidationException
-from girder import events
+from girder.models.user import User as UserModel
 from girder.utility.model_importer import ModelImporter
 
 import cumulus
 from cumulus.taskflow import load_class, TaskFlowState
 from taskflow.models.taskflow import Taskflow as TaskflowModel
+
+TASKFLOW_NON_RUNNING_STATES = [
+    TaskFlowState.CREATED,
+    TaskFlowState.COMPLETE,
+    TaskFlowState.ERROR,
+    TaskFlowState.UNEXPECTEDERROR,
+    TaskFlowState.TERMINATED,
+    TaskFlowState.DELETED
+]
 
 class QueueType(object):
     FIFO = 'fifo'
@@ -138,8 +148,7 @@ class Queue(AccessControlledModel):
         queue, popped = self._pop_many(queue, limit, user)
 
         for task in popped:
-            events.bind('cumulus.taskflow.status_update', str(task['taskflowId']), taskflow_status_callback(task['taskflowId'], queue, user))
-            self._start_taskflow(task['taskflowId'], task['start_params'], user)
+            self._start_taskflow(queue['_id'], task['taskflowId'], task['start_params'], user)
 
         return queue
 
@@ -227,8 +236,10 @@ class Queue(AccessControlledModel):
 
         return queue, popped
 
-    def _start_taskflow(self, taskflow_id, params, user):
-        taskflow = TaskflowModel().load(taskflow_id, user=user)
+    def _start_taskflow(self, queue_id, taskflow_id, params, user):
+        taskflow = {"_id": taskflow_id}
+        updates = {"meta": {"queueId": queue_id}}
+        taskflow = TaskflowModel().update_taskflow(user, taskflow, updates)
 
         constructor = load_class(taskflow['taskFlowClass'])
         token = ModelImporter.model('token').createToken(user=user, days=7)
@@ -246,24 +257,28 @@ class Queue(AccessControlledModel):
 
         return workflow
 
-def taskflow_status_callback(taskflow_id, queue, user):
+def cleanup_failed_taskflows():
+    queues = list(Queue().find(limit=sys.maxsize, force=True))
+    for queue in queues:
+        user = UserModel().load(queue['userId'], force=True)
+        if user is None:
+            continue
 
-    def callback(event):
-        taskflow = event.info['taskflow']
+        for taskflow_id, status in queue['taskflows'].items():
+            if status == TaskStatus.RUNNING:
+                taskflow = TaskflowModel().load(taskflow_id, force=True)
+                if taskflow['status'] in TASKFLOW_NON_RUNNING_STATES:
+                    logger.warning("Removing non-running taskflow {} from the queue {}".format(taskflow_id, queue["_id"]))
+                    Queue().finish(queue, taskflow, user)
 
-        if taskflow['_id'] != taskflow_id:
-            return
+def on_taskflow_status_update(event):
+    taskflow = event.info['taskflow']
+    queue_id = taskflow.get('meta', {}).get('queueId')
+    if queue_id is None:
+        return
 
-        non_running_states = [
-            TaskFlowState.COMPLETE,
-            TaskFlowState.ERROR,
-            TaskFlowState.UNEXPECTEDERROR,
-            TaskFlowState.TERMINATED,
-            TaskFlowState.DELETED
-        ]
-
-        if taskflow['status'] in non_running_states:
-            Queue().finish(queue, taskflow, user)
-            Queue().pop(queue, sys.maxsize, user)
-
-    return callback
+    if taskflow['status'] in TASKFLOW_NON_RUNNING_STATES:
+        queue = Queue().load(queue_id, force=True)
+        user = UserModel().load(queue['userId'], force=True)
+        Queue().finish(queue, taskflow, user)
+        Queue().pop(queue, sys.maxsize, user)
