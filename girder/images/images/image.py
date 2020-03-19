@@ -28,7 +28,6 @@ class Image(Resource):
     @access.user(scope=TokenScope.DATA_READ)
     @autoDescribeRoute(
         Description('Find image')
-        .param('type', 'Type of image (e.g. docker)', required=False)
         .param('repository', 'Image repository', required=False)
         .param('tag', 'Image tag', required=False)
         .param('digest', 'Image digest', required=False)
@@ -47,13 +46,14 @@ class Image(Resource):
         .param('repository', 'Image repository')
         .param('tag', 'Image tag')
         .param('digest', 'Image digest')
+        .param('size', 'Image size in MB')
     )
-    def create(self, type, repository, tag, digest):
+    def create(self, type, repository, tag, digest, size):
         if type not in ImageTypes.TYPES:
             raise RestException('Invalid image type: ' + type)
 
         image = ImageModel().create(type=type, repository=repository,
-                                    tag=tag, digest=digest,
+                                    tag=tag, digest=digest, size=size,
                                     user=self.getCurrentUser())
         cherrypy.response.status = 201
         return self._clean(image)
