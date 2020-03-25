@@ -15,6 +15,7 @@ class Image(Resource):
         super(Image, self).__init__()
         self.resourceName = 'images'
         self.route('GET', (), self.find)
+        self.route('GET', ('unique', ), self.find_unique)
         self.route('POST', (), self.create)
         self.route('GET', (':id', ), self.find_id)
         self.route('DELETE', (':id', ), self.remove)
@@ -36,7 +37,21 @@ class Image(Resource):
                       defaultLimit=25)
     )
     def find(self, **kwargs):
-        return ImageModel().find_image(kwargs, user=self.getCurrentUser())
+        return ImageModel().find_images(kwargs, user=self.getCurrentUser())
+
+    @access.user(scope=TokenScope.DATA_READ)
+    @autoDescribeRoute(
+        Description('Find unique images (unique repository:tag combinations)')
+        .param('repository', 'Image repository', required=False)
+        .param('tag', 'Image tag', required=False)
+        .param('digest', 'Image digest', required=False)
+        .pagingParams(defaultSort='_id',
+                      defaultSortDir=SortDir.DESCENDING,
+                      defaultLimit=25)
+    )
+    def find_unique(self, **kwargs):
+        return ImageModel().find_unique_images(kwargs,
+                                               user=self.getCurrentUser())
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(

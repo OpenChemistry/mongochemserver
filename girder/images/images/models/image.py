@@ -31,7 +31,7 @@ class Image(AccessControlledModel):
 
         return doc
 
-    def find_image(self, params=None, user=None):
+    def find_images(self, params=None, user=None):
         if params is None:
             params = {}
 
@@ -52,6 +52,53 @@ class Image(AccessControlledModel):
 
         images = [x for x in cursor]
         return search_results_dict(images, num_matches, limit, offset, sort)
+
+    def find_unique_images(self, params=None, user=None):
+        if params is None:
+            params = {}
+
+        limit, offset, sort = parse_pagination_params(params)
+
+        # This is for query fields that can just be copied over directly
+        query_fields = ['repository', 'tag', 'digest']
+        query_fields = [x for x in query_fields if params.get(x) is not None]
+        query = {x: params[x] for x in query_fields}
+
+        # Get unique combinations of repositories and tags
+        aggregate = []
+
+        if query:
+            aggregate.append({'$match': query})
+
+        grouping = {
+            '$group': {
+                '_id': {
+                    'repository': '$repository',
+                    'tag': '$tag'
+                }
+            }
+        }
+        aggregate.append(grouping)
+
+        unique = self.collection.aggregate(aggregate)
+        unique = [x for x in unique]
+
+        # This is for the returned fields
+        fields = ['repository', 'tag', 'digest'] + ImageTypes.TYPES
+
+        i = 0
+        images = []
+        while len(images) < limit and i < len(unique):
+            query['repository'] = unique[i]['_id']['repository']
+            query['tag'] = unique[i]['_id']['tag']
+            i += 1
+
+            cursor = self.findWithPermissions(query, fields=fields, limit=1,
+                                              offset=offset, sort=sort, user=user)
+
+            images += [x for x in cursor]
+
+        return search_results_dict(images, len(images), limit, offset, sort)
 
     def create(self, type, repository, tag, digest, size, user):
         if type not in ImageTypes.TYPES:

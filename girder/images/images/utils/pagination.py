@@ -24,8 +24,8 @@ def parse_pagination_params(params):
             limit = int(params['limit'])
         if 'offset' in params:
             offset = int(params['offset'])
-        if 'sort' in params and 'sortdir' in params:
-            sort = [(params['sort'], int(params['sortdir']))]
+        if 'sort' in params:
+            sort = params['sort']
 
     return limit, offset, sort
 
