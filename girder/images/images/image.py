@@ -61,7 +61,7 @@ class Image(Resource):
         .param('repository', 'Image repository')
         .param('tag', 'Image tag')
         .param('digest', 'Image digest')
-        .param('size', 'Image size in MB')
+        .param('size', 'Image size in GB')
     )
     def create(self, type, repository, tag, digest, size):
         if type not in ImageTypes.TYPES:
