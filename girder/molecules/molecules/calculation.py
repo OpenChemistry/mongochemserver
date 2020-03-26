@@ -238,7 +238,9 @@ class Calculation(Resource):
                 calc['cjson'], mo, id, orig_mo, self.getCurrentUser())
             calc['cjson']['cube'] = {
                 'dimensions': [0, 0, 0],
-                'scalars': []
+                'scalars': [],
+                'origin': [0, 0, 0],
+                'spacing': [1, 1, 1]
             }
             return calc['cjson']
         else:
