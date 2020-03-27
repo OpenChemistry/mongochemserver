@@ -70,34 +70,36 @@ class Image(AccessControlledModel):
         if query:
             aggregate.append({'$match': query})
 
+
+        # Sort before grouping
+        aggregate.append({'$sort': {sort[0][0]: sort[0][1]}})
         grouping = {
             '$group': {
                 '_id': {
                     'repository': '$repository',
                     'tag': '$tag'
+                },
+                'sorted_id': {
+                    '$first': '$_id'
                 }
             }
         }
         aggregate.append(grouping)
-
-        unique = self.collection.aggregate(aggregate)
-        unique = [x for x in unique]
+        # Sort and apply the limit
+        aggregate.append({'$sort': {'sorted_id': 1}})
+        aggregate.append({'$limit': limit})
 
         # This is for the returned fields
         fields = ['repository', 'tag', 'digest'] + ImageTypes.TYPES
 
-        i = 0
-        images = []
-        while len(images) < limit and i < len(unique):
-            query['repository'] = unique[i]['_id']['repository']
-            query['tag'] = unique[i]['_id']['tag']
-            i += 1
+        or_query = []
+        for unique in self.collection.aggregate(aggregate):
+            or_query.append({'_id': unique['sorted_id']})
 
-            cursor = self.findWithPermissions(query, fields=fields, limit=1,
-                                              offset=offset, sort=sort, user=user)
-
-            images += [x for x in cursor]
-
+        query['$or'] = or_query
+        cursor = self.findWithPermissions(query, fields=fields, limit=limit,
+                                          offset=offset, sort=sort, user=user)
+        images = [x for x in cursor]
         return search_results_dict(images, len(images), limit, offset, sort)
 
     def create(self, type, repository, tag, digest, size, user):
