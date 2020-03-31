@@ -15,9 +15,9 @@ def calculate():
     if 'cjson' not in json_data or 'mo' not in json_data:
         return Response(json_data, status=400, mimetype='application/json')
     else:
-        cjson = json_data['cjson']
-        mo = json_data['mo']
-        if not cjson or not mo:
+        cjson = json_data.get('cjson')
+        mo = json_data.get('mo')
+        if cjson is None or mo is None:
             return Response(cjson, status=400, mimetype='application/json')
 
     # Prevent potential segfault by checking for electronic structure
