@@ -2,6 +2,7 @@ from .configuration import Configuration
 from girder.utility import setting_utilities
 from .constants import Features, Branding, Deployment
 
+from .launch_taskflow import launch_taskflow
 from .user import get_orcid, set_orcid, get_twitter, set_twitter
 
 from girder.plugin import GirderPlugin
@@ -30,3 +31,6 @@ class AppPlugin(GirderPlugin):
         info['apiRoot'].user.route('POST', (':id', 'orcid'), set_orcid)
         info['apiRoot'].user.route('GET', (':id', 'twitter'), get_twitter)
         info['apiRoot'].user.route('POST', (':id', 'twitter'), set_twitter)
+
+        # Launch a taskflow with a single endpoint
+        info['apiRoot'].queues.route('POST', ('launchtaskflow',), launch_taskflow)
