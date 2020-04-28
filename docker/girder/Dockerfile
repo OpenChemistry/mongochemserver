@@ -1,4 +1,4 @@
-FROM girder/girder:latest-py3
+FROM girder/girder:latest
 
 # Install cumulus
 RUN git clone https://github.com/Kitware/cumulus.git /cumulus && \
