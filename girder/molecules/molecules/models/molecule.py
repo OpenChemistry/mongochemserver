@@ -45,7 +45,7 @@ class Molecule(AccessControlledModel):
         elif search:
             # If the search dict is not empty, perform a search
             if 'name' in search:
-                query['name'] = { '$regex': '^' + search['name'],
+                query['name'] = { '$regex': search['name'],
                                   '$options': 'i' }
             if 'inchi' in search:
                 query['inchi'] = search['inchi']
