@@ -1,4 +1,5 @@
 from .configuration import Configuration
+from girder.api.rest import Resource
 from girder.utility import setting_utilities
 from .constants import Features, Branding, Deployment
 
@@ -33,4 +34,5 @@ class AppPlugin(GirderPlugin):
         info['apiRoot'].user.route('POST', (':id', 'twitter'), set_twitter)
 
         # Launch a taskflow with a single endpoint
-        info['apiRoot'].queues.route('POST', ('launchtaskflow',), launch_taskflow)
+        info['apiRoot'].launch_taskflow = Resource()
+        info['apiRoot'].launch_taskflow.route('POST', ('launch',), launch_taskflow)
