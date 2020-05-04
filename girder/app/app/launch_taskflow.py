@@ -15,12 +15,11 @@ from taskflow.models.taskflow import Taskflow as TaskflowModel
 @access.user(scope=TokenScope.DATA_WRITE)
 @autoDescribeRoute(
     Description('Launch a taskflow.')
-    .param('clusterId', 'The cluster ID to use.', required=False)
     .param('body',
            'Contains "taskFlowBody" and "taskBody" for the taskflow and task',
            paramType='body')
 )
-def launch_taskflow(clusterId):
+def launch_taskflow():
     user = getCurrentUser()
     body = getBodyJson()
 
@@ -46,7 +45,7 @@ def launch_taskflow(clusterId):
     taskBody = body.get('taskBody', {})
     if 'cluster' not in taskBody:
         # Make a cluster
-        taskBody['cluster'] = create_cluster_object(clusterId, user)
+        taskBody['cluster'] = create_cluster_object(user)
 
     if 'container' not in taskBody:
         taskBody['container'] = 'docker'
@@ -81,20 +80,14 @@ def fetch_or_create_queue(user):
     return queue
 
 
-def create_cluster_object(cluster_id=None, user=None):
-    if cluster_id is None and not _nersc():
-        # Get the first cluster we can find
-        clusters = ClusterModel().find_cluster({}, user=user)
-
-        if len(clusters) > 0:
-            cluster_id = clusters[0]['_id']
-        else:
-            raise Exception('Unable to register images, no cluster configured')
-
-    if cluster_id is not None:
-        return {'_id': cluster_id}
-
+def create_cluster_object(user=None):
     if _nersc():
         return {'name': 'cori'}
 
-    raise Exception('Failed to configure cluster')
+    # Get the first cluster we can find
+    clusters = ClusterModel().find_cluster({}, user=user)
+
+    if len(clusters) > 0:
+        return {'_id': clusters[0]['_id']}
+
+    raise Exception('Unable to register images, no cluster configured')
