@@ -19,10 +19,13 @@ from taskflow.models.taskflow import Taskflow as TaskflowModel
            'Contains "taskFlowBody" and "taskBody" for the taskflow and task',
            paramType='body')
 )
-def launch_taskflow():
+def launch_taskflow_endpoint():
     user = getCurrentUser()
     body = getBodyJson()
+    return launch_taskflow(user, body)
 
+
+def launch_taskflow(user, body):
     # Perform some validation
     taskFlowBody = body.get('taskFlowBody')
     if taskFlowBody is None:
