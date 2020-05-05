@@ -6,8 +6,7 @@ setup(
     description='Keep track of images used in OpenChemistry.',
     packages=find_packages(),
     install_requires=[
-      'girder>=3.0.0a5',
-      'girder_client'
+      'girder>=3.0.0a5'
     ],
     entry_points={
       'girder.plugin': [
