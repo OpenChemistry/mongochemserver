@@ -160,7 +160,13 @@ class Calculation(Resource):
     @access.public
     @loadmodel(model='calculation', plugin='molecules', level=AccessType.READ)
     def get_calc_cjson(self, calculation, params):
-        return calculation['cjson']
+        data = json.dumps(calculation['cjson'])
+
+        def stream():
+            cherrypy.response.headers['Content-Type'] = Molecule.mime_types['cjson']
+            yield data
+
+        return stream
 
     get_calc_cjson.description = (
         Description('Get the molecular structure of a give calculation in CJSON format')
