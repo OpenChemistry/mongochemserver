@@ -6,7 +6,6 @@ from girder.api.rest import Resource, RestException
 from girder.constants import AccessType, SortDir, TokenScope
 
 from images.models.image import Image as ImageModel
-from images.models.image import ImageTypes
 
 
 class Image(Resource):
@@ -62,11 +61,10 @@ class Image(Resource):
         .param('tag', 'Image tag')
         .param('digest', 'Image digest')
         .param('size', 'Image size in GB')
+        .errorResponse('Invalid image type', 400)
+        .errorResponse('Image already exists', 409)
     )
     def create(self, type, repository, tag, digest, size):
-        if type not in ImageTypes.TYPES:
-            raise RestException('Invalid image type: ' + type)
-
         image = ImageModel().create(type=type, repository=repository,
                                     tag=tag, digest=digest, size=size,
                                     user=self.getCurrentUser())

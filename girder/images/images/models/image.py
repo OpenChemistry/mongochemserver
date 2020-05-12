@@ -109,7 +109,7 @@ class Image(AccessControlledModel):
         image = self._get_or_create_base(repository, tag, digest, user)
 
         if type in image:
-            raise RestException('Image already exists')
+            raise RestException('Image already exists', 409)
 
         # Write access is required
         self.requireAccess(image, user, AccessType.WRITE)
