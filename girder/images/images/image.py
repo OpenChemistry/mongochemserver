@@ -16,6 +16,7 @@ class Image(Resource):
         self.route('GET', (), self.find)
         self.route('GET', ('unique', ), self.find_unique)
         self.route('POST', (), self.create)
+        self.route('POST', ('register', ), self.register)
         self.route('GET', (':id', ), self.find_id)
         self.route('DELETE', (':id', ), self.remove)
         self.route('DELETE', (), self.remove_all)
@@ -70,6 +71,14 @@ class Image(Resource):
                                     user=self.getCurrentUser())
         cherrypy.response.status = 201
         return self._clean(image)
+
+    @access.user(scope=TokenScope.DATA_WRITE)
+    @autoDescribeRoute(
+        Description('Find and register images on a cluster.')
+        .param('clusterId', 'The id of the cluster', required=False)
+    )
+    def register(self, clusterId):
+        return ImageModel().register(self.getCurrentUser(), clusterId)
 
     @access.user(scope=TokenScope.DATA_READ)
     @autoDescribeRoute(

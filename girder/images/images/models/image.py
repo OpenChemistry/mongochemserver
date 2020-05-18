@@ -5,6 +5,7 @@ from girder.constants import AccessType
 from girder.exceptions import ValidationException
 from girder.models.model_base import AccessControlledModel
 
+from app.launch_taskflow import launch_taskflow
 from images.utils.pagination import parse_pagination_params
 from images.utils.pagination import search_results_dict
 
@@ -134,6 +135,21 @@ class Image(AccessControlledModel):
 
         # Reload the image
         return Image().load(image['_id'], user=user)
+
+    def register(self, user, cluster_id=None):
+        body = {
+            'taskFlowBody': {
+                'taskFlowClass': 'taskflows.ContainerListTaskFlow'
+            },
+            'taskBody': {
+                'container': 'docker'
+            }
+        }
+
+        if cluster_id:
+            body['taskBody'].setdefault('cluster', {})['_id'] = cluster_id
+
+        return launch_taskflow(user, body)
 
     def remove_all(self, user):
         cursor = self.findWithPermissions({}, fields=[], user=user,
