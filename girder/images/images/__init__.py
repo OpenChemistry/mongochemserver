@@ -17,11 +17,11 @@ class ImagesPlugin(GirderPlugin):
 
 
 def populate_images(event):
-    cluster_id = str(event.info['_id'])
+    cluster = event.info
+    cluster_id = str(cluster['_id'])
 
-    # Use the first admin user we can find
-    users = UserModel().find({'admin': True})
-    if users.count() == 0:
-        raise Exception('No admin users found. Cannot populate images')
+    # We will register the images using the cluster creator
+    creator_id = str(cluster['userId'])
+    creator = UserModel().load(creator_id, force=True)
 
-    register_images(users[0], cluster_id)
+    register_images(creator, cluster_id)
