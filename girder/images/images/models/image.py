@@ -71,7 +71,6 @@ class Image(AccessControlledModel):
         if query:
             aggregate.append({'$match': query})
 
-
         # Sort before grouping
         aggregate.append({'$sort': {sort[0][0]: sort[0][1]}})
         grouping = {
@@ -96,6 +95,10 @@ class Image(AccessControlledModel):
         or_query = []
         for unique in self.collection.aggregate(aggregate):
             or_query.append({'_id': unique['sorted_id']})
+
+        if not or_query:
+            # No results. Just return.
+            return search_results_dict([], 0, limit, offset, sort)
 
         query['$or'] = or_query
         cursor = self.findWithPermissions(query, fields=fields, limit=limit,
