@@ -2,7 +2,7 @@ import cherrypy
 
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
-from girder.api.rest import Resource, RestException
+from girder.api.rest import Resource
 from girder.constants import AccessType, SortDir, TokenScope
 
 from images.models.image import Image as ImageModel
@@ -14,7 +14,6 @@ class Image(Resource):
         super(Image, self).__init__()
         self.resourceName = 'images'
         self.route('GET', (), self.find)
-        self.route('GET', ('unique', ), self.find_unique)
         self.route('POST', (), self.create)
         self.route('POST', ('register', ), self.register)
         self.route('GET', (':id', ), self.find_id)
@@ -32,26 +31,14 @@ class Image(Resource):
         .param('repository', 'Image repository', required=False)
         .param('tag', 'Image tag', required=False)
         .param('digest', 'Image digest', required=False)
+        .param('unique', 'Unique repository:tag combinations only',
+               dataType='boolean', default=False, required=False)
         .pagingParams(defaultSort='_id',
                       defaultSortDir=SortDir.DESCENDING,
                       defaultLimit=25)
     )
     def find(self, **kwargs):
         return ImageModel().find_images(kwargs, user=self.getCurrentUser())
-
-    @access.user(scope=TokenScope.DATA_READ)
-    @autoDescribeRoute(
-        Description('Find unique images (unique repository:tag combinations)')
-        .param('repository', 'Image repository', required=False)
-        .param('tag', 'Image tag', required=False)
-        .param('digest', 'Image digest', required=False)
-        .pagingParams(defaultSort='_id',
-                      defaultSortDir=SortDir.DESCENDING,
-                      defaultLimit=25)
-    )
-    def find_unique(self, **kwargs):
-        return ImageModel().find_unique_images(kwargs,
-                                               user=self.getCurrentUser())
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(

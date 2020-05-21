@@ -43,31 +43,26 @@ class Image(AccessControlledModel):
         query_fields = [x for x in query_fields if params.get(x) is not None]
         query = {x: params[x] for x in query_fields}
 
+        unique = params.get('unique', False)
+
         # This is for the returned fields
         fields = ['repository', 'tag', 'digest'] + ImageTypes.TYPES
 
+        if unique:
+            # This is a special case
+            return self._find_unique_images(query, fields, limit, offset,
+                                            sort, user)
+
         cursor = self.findWithPermissions(query, fields=fields, limit=limit,
-                                          offset=offset, sort=sort, user=user)
-
+                                          offset=offset, sort=sort,
+                                          user=user)
         num_matches = cursor.collection.count_documents(query)
-
         images = [x for x in cursor]
         return search_results_dict(images, num_matches, limit, offset, sort)
 
-    def find_unique_images(self, params=None, user=None):
-        if params is None:
-            params = {}
-
-        limit, offset, sort = parse_pagination_params(params)
-
-        # This is for query fields that can just be copied over directly
-        query_fields = ['repository', 'tag', 'digest']
-        query_fields = [x for x in query_fields if params.get(x) is not None]
-        query = {x: params[x] for x in query_fields}
-
+    def _find_unique_images(self, query, fields, limit, offset, sort, user):
         # Get unique combinations of repositories and tags
         aggregate = []
-
         if query:
             aggregate.append({'$match': query})
 
@@ -88,9 +83,6 @@ class Image(AccessControlledModel):
         # Sort and apply the limit
         aggregate.append({'$sort': {'sorted_id': 1}})
         aggregate.append({'$limit': limit})
-
-        # This is for the returned fields
-        fields = ['repository', 'tag', 'digest'] + ImageTypes.TYPES
 
         or_query = []
         for unique in self.collection.aggregate(aggregate):
