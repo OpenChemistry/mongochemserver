@@ -16,7 +16,7 @@ from taskflow.models.taskflow import Taskflow as TaskflowModel
 @autoDescribeRoute(
     Description('Launch a taskflow.')
     .param('body',
-           'Contains "taskFlowBody" and "taskBody" for the taskflow and task',
+           'Contains "taskFlowBody" and "taskFlowInput" for the taskflow and task',
            paramType='body')
 )
 def launch_taskflow_endpoint():
@@ -44,14 +44,14 @@ def launch_taskflow(user, body):
               (taskflow_class, ex)
         raise RestException(msg, 400)
 
-    # Set up the task body
-    taskBody = body.get('taskBody', {})
-    if 'cluster' not in taskBody:
+    # Set up the taskflow input
+    taskFlowInput = body.get('taskFlowInput', {})
+    if 'cluster' not in taskFlowInput:
         # Make a cluster
-        taskBody['cluster'] = create_cluster_object(user)
+        taskFlowInput['cluster'] = create_cluster_object(user)
 
-    if 'container' not in taskBody:
-        taskBody['container'] = 'docker'
+    if 'container' not in taskFlowInput:
+        taskFlowInput['container'] = 'docker'
 
     # Load the queue
     queue = fetch_or_create_queue(user)
@@ -60,7 +60,7 @@ def launch_taskflow(user, body):
     taskflow = TaskflowModel().create(user, taskFlowBody)
 
     # Add it to the queue and start it
-    QueueModel().add(queue, taskflow, taskBody, user)
+    QueueModel().add(queue, taskflow, taskFlowInput, user)
     QueueModel().pop(queue, limit=sys.maxsize, user=user)
 
     return taskflow['_id']

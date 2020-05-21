@@ -136,13 +136,13 @@ class Image(AccessControlledModel):
             'taskFlowBody': {
                 'taskFlowClass': 'taskflows.ContainerListTaskFlow'
             },
-            'taskBody': {
+            'taskFlowInput': {
                 'container': 'docker'
             }
         }
 
         if cluster_id:
-            body['taskBody'].setdefault('cluster', {})['_id'] = cluster_id
+            body['taskFlowInput'].setdefault('cluster', {})['_id'] = cluster_id
 
         return launch_taskflow(user, body)
 
