@@ -31,6 +31,7 @@ class Image(Resource):
         .param('repository', 'Image repository', required=False)
         .param('tag', 'Image tag', required=False)
         .param('digest', 'Image digest', required=False)
+        .param('clusterId', 'Cluster the image is on', required=False)
         .param('unique', 'Unique repository:tag combinations only',
                dataType='boolean', default=False, required=False)
         .pagingParams(defaultSort='_id',
@@ -48,13 +49,15 @@ class Image(Resource):
         .param('repository', 'Image repository')
         .param('tag', 'Image tag')
         .param('digest', 'Image digest')
+        .param('clusterId', 'Cluster the image is on')
         .param('size', 'Image size in GB')
         .errorResponse('Invalid image type', 400)
         .errorResponse('Image already exists', 409)
     )
-    def create(self, type, repository, tag, digest, size):
+    def create(self, type, repository, tag, digest, clusterId, size):
         image = ImageModel().create(type=type, repository=repository,
-                                    tag=tag, digest=digest, size=size,
+                                    tag=tag, digest=digest,
+                                    cluster_id=clusterId, size=size,
                                     user=self.getCurrentUser())
         cherrypy.response.status = 201
         return self._clean(image)

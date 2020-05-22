@@ -26,7 +26,7 @@ class Image(AccessControlledModel):
         # Make sure this doesn't already exist. Otherwise, raise an
         # exception.
         image = self._get_base(doc.get('repository'), doc.get('tag'),
-                               doc.get('digest'))
+                               doc.get('digest'), doc.get('clusterId'))
         if image is not None:
             raise ValidationException('An identical image already exists')
 
@@ -39,14 +39,16 @@ class Image(AccessControlledModel):
         limit, offset, sort = parse_pagination_params(params)
 
         # This is for query fields that can just be copied over directly
-        query_fields = ['repository', 'tag', 'digest']
+        query_fields = ['repository', 'tag', 'digest', 'clusterId']
         query_fields = [x for x in query_fields if params.get(x) is not None]
         query = {x: params[x] for x in query_fields}
 
         unique = params.get('unique', False)
 
         # This is for the returned fields
-        fields = ['repository', 'tag', 'digest'] + ImageTypes.TYPES
+        fields = (
+            ['repository', 'tag', 'digest', 'clusterId'] + ImageTypes.TYPES
+        )
 
         if unique:
             # This is a special case
@@ -98,11 +100,12 @@ class Image(AccessControlledModel):
         images = [x for x in cursor]
         return search_results_dict(images, len(images), limit, offset, sort)
 
-    def create(self, type, repository, tag, digest, size, user):
+    def create(self, type, repository, tag, digest, cluster_id, size, user):
         if type not in ImageTypes.TYPES:
             raise RestException('Invalid image type: ' + type)
 
-        image = self._get_or_create_base(repository, tag, digest, user)
+        image = self._get_or_create_base(repository, tag, digest, cluster_id,
+                                         user)
 
         if type in image:
             raise RestException('Image already exists', 409)
@@ -152,11 +155,12 @@ class Image(AccessControlledModel):
         for image in cursor:
             self.remove(image)
 
-    def _create_base(self, repository, tag, digest, user):
+    def _create_base(self, repository, tag, digest, cluster_id, user):
         image = {
           'repository': repository,
           'tag': tag,
           'digest': digest,
+          'clusterId': cluster_id,
           'creatorId': user.get('_id')
         }
 
@@ -167,19 +171,20 @@ class Image(AccessControlledModel):
 
         return self.save(image)
 
-    def _get_base(self, repository, tag, digest):
+    def _get_base(self, repository, tag, digest, cluster_id):
         query = {
             'repository': repository,
             'tag': tag,
-            'digest': digest
+            'digest': digest,
+            'clusterId': cluster_id
         }
         cursor = self.find(query, limit=1)
         imgs = [x for x in cursor]
         return imgs[0] if imgs else None
 
-    def _get_or_create_base(self, repository, tag, digest, user):
-        image = self._get_base(repository, tag, digest)
+    def _get_or_create_base(self, repository, tag, digest, cluster_id, user):
+        image = self._get_base(repository, tag, digest, cluster_id)
         if image is not None:
             return image
 
-        return self._create_base(repository, tag, digest, user)
+        return self._create_base(repository, tag, digest, cluster_id, user)
