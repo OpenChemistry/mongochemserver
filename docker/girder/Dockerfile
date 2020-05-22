@@ -26,7 +26,8 @@ COPY . /mongochemserver
 RUN pip install -e /mongochemserver/girder/molecules && \
   pip install -e /mongochemserver/girder/notebooks && \
   pip install -e /mongochemserver/girder/queues && \
-  pip install -e /mongochemserver/girder/app
+  pip install -e /mongochemserver/girder/app && \
+  pip install -e /mongochemserver/girder/images
 
 # Install OAuth plugin
 RUN pip install -e /girder/plugins/oauth
