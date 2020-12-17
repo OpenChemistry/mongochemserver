@@ -153,7 +153,7 @@ class Calculation(AccessControlledModel):
                 }
 
         fields = ['image', 'input', 'code',
-                  'cjson', 'cjson.vibrations.modes', 'cjson.vibrations.intensities',
+                  'cjson.vibrations.modes', 'cjson.vibrations.intensities',
                   'cjson.vibrations.frequencies', 'properties', 'fileId', 'access',
                   'moleculeId', 'public']
 
