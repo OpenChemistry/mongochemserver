@@ -1,4 +1,4 @@
-FROM girder/girder:latest-py3
+FROM girder/girder:3.1.0
 
 # Install cumulus
 RUN git clone https://github.com/Kitware/cumulus.git /cumulus && \
@@ -26,7 +26,8 @@ COPY . /mongochemserver
 RUN pip install -e /mongochemserver/girder/molecules && \
   pip install -e /mongochemserver/girder/notebooks && \
   pip install -e /mongochemserver/girder/queues && \
-  pip install -e /mongochemserver/girder/app
+  pip install -e /mongochemserver/girder/app && \
+  pip install -e /mongochemserver/girder/images
 
 # Install OAuth plugin
 RUN pip install -e /girder/plugins/oauth

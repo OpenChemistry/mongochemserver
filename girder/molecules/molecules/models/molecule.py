@@ -45,7 +45,7 @@ class Molecule(AccessControlledModel):
         elif search:
             # If the search dict is not empty, perform a search
             if 'name' in search:
-                query['name'] = { '$regex': '^' + search['name'],
+                query['name'] = { '$regex': search['name'],
                                   '$options': 'i' }
             if 'inchi' in search:
                 query['inchi'] = search['inchi']
@@ -55,8 +55,7 @@ class Molecule(AccessControlledModel):
                 # Make sure it is canonical before searching
                 query['smiles'] = openbabel.to_smiles(search['smiles'], 'smi')
             if 'formula' in search:
-                formula_regx = re.compile('^%s$' % search['formula'],
-                                          re.IGNORECASE)
+                formula_regx = re.compile(search['formula'], re.IGNORECASE)
                 query['properties.formula'] = formula_regx
             if 'creatorId' in search:
                 query['creatorId'] = ObjectId(search['creatorId'])
