@@ -1,2 +1,2 @@
 Flask
-avogadro==1.92.1
+avogadro==1.93.1
