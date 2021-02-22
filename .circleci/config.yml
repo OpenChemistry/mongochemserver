@@ -13,6 +13,12 @@ jobs:
     steps:
       - checkout
       - run:
+          # See: https://github.com/girder/girder/issues/3298
+          name: Update packages to be compatibile with girder
+          command: >
+            pip install -U six requests jsonschema importlib-metadata boto3 urllib3
+
+      - run:
           name: Install requirements
           command: >
             pip install -U --no-cache-dir -r /mongochemserver/requirements-dev.txt
