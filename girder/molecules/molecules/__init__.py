@@ -3,6 +3,7 @@
 from .molecule import Molecule
 from .calculation import Calculation
 from .experiment import Experiment
+from .training import Training
 from girder import events
 from girder.models.model_base import ValidationException
 from girder.utility.model_importer import ModelImporter
@@ -14,6 +15,7 @@ from .models.cubecache import Cubecache as CubecacheModel
 from .models.experimental import Experimental as ExperimentalModel
 from .models.geometry import Geometry as GeometryModel
 from .models.molecule import Molecule as MoleculeModel
+from .models.training import Training as TrainingModel
 
 from girder.plugin import GirderPlugin
 
@@ -48,9 +50,11 @@ class MoleculesPlugin(GirderPlugin):
                                     'molecules')
         ModelImporter.registerModel('geometry', GeometryModel, 'molecules')
         ModelImporter.registerModel('molecule', MoleculeModel, 'molecules')
+        ModelImporter.registerModel('training', TrainingModel, 'molecules')
 
         info['apiRoot'].molecules = Molecule()
         info['apiRoot'].calculations = Calculation()
         info['apiRoot'].experiments = Experiment()
+        info['apiRoot'].trainings = Training()
         events.bind('model.setting.validate', 'molecules',
                     validateSettings)

@@ -9,7 +9,7 @@ setup(
       'girder>=3.0.0a5',
       'girder-jobs',
       'jsonpath-rw==1.4.0',
-      'avogadro==1.92.1',
+      'avogadro==1.93.1',
       'chemspipy==1.0.4',
       'pyparsing==2.0.5',
       'rdflib==4.2.1',

@@ -278,6 +278,7 @@ class Calculation(Resource):
         props = body.get('properties', {})
         molecule_id = body.get('moleculeId', None)
         geometry_id = body.get('geometryId', None)
+        model_id = body.get('modelId', None)
         public = body.get('public', True)
         notebooks = body.get('notebooks', [])
         image = body.get('image')
@@ -298,6 +299,7 @@ class Calculation(Resource):
 
         calc = CalculationModel().create_cjson(user, cjson, props, molecule_id,
                                                geometry_id=geometry_id,
+                                               model_id=model_id,
                                                image=image,
                                                input_parameters=input_parameters,
                                                file_id=file_id,
