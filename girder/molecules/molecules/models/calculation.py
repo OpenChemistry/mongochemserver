@@ -168,7 +168,7 @@ class Calculation(AccessControlledModel):
         return search_results_dict(calcs, num_matches, limit, offset, sort)
 
     def create_cjson(self, user, cjson, props, molecule_id=None,
-                     geometry_id=None, image=None, input_parameters=None,
+                     geometry_id=None, model_id=None, image=None, input_parameters=None,
                      file_id = None, public=True, notebooks=None):
         if notebooks is None:
             notebooks = []
@@ -182,6 +182,8 @@ class Calculation(AccessControlledModel):
             calc['moleculeId'] = molecule_id
         if geometry_id:
             calc['geometryId'] = geometry_id
+        if model_id:
+            calc['modelId'] = model_id
         if file_id:
             calc['fileId'] = file_id
         if image is not None:

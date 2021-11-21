@@ -6,3 +6,4 @@
 *.py[cod]
 girder/molecules/server/__pycache__/
 girder/molecules/server/models/__pycache__/
+girder/molecules/openchemistry_molecules.egg-info/
