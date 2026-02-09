@@ -7,7 +7,7 @@ setup(
     packages=find_packages(),
     install_requires=[
       'girder>=3.0.0a5',
-      'nbconvert==5.4.1'
+      'nbconvert==7.17.0'
     ],
     entry_points={
       'girder.plugin': [
